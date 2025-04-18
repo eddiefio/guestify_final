@@ -15,6 +15,8 @@ interface Property {
   address: string
   city?: string
   country?: string
+  has_wifi?: boolean
+  has_how_things_work?: boolean
 }
 
 export default function DashboardClient() {
@@ -31,6 +33,8 @@ export default function DashboardClient() {
     const fetchProperties = async () => {
       try {
         setLoading(true)
+        
+        // Fetch properties
         const { data, error } = await supabase
           .from('properties')
           .select('*')
@@ -38,7 +42,35 @@ export default function DashboardClient() {
           .order('created_at', { ascending: false })
 
         if (error) throw error
-        setProperties(data || [])
+        
+        // Fetch additional data for properties
+        if (data && data.length > 0) {
+          const propertiesWithData = await Promise.all(
+            data.map(async (property) => {
+              // Check if property has wifi credentials
+              const { count: wifiCount, error: wifiError } = await supabase
+                .from('wifi_credentials')
+                .select('id', { count: 'exact', head: true })
+                .eq('property_id', property.id)
+              
+              // Check if property has how things work guides
+              const { count: howThingsCount, error: howThingsError } = await supabase
+                .from('how_things_work')
+                .select('id', { count: 'exact', head: true })
+                .eq('property_id', property.id)
+              
+              return {
+                ...property,
+                has_wifi: wifiCount ? wifiCount > 0 : false,
+                has_how_things_work: howThingsCount ? howThingsCount > 0 : false
+              }
+            })
+          )
+          
+          setProperties(propertiesWithData)
+        } else {
+          setProperties([])
+        }
       } catch (error) {
         console.error('Error fetching properties:', error)
         toast.error('Error loading properties')
@@ -143,7 +175,7 @@ export default function DashboardClient() {
                       <p className="text-gray-600 mb-4 font-medium">{property.address}</p>
                       
                       {/* Property feature buttons */}
-                      <div className="grid grid-cols-2 gap-3 mt-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
                         <Link href={`/dashboard/property/${property.id}/house-rules`}>
                           <div className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition h-full">
                             <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
@@ -163,6 +195,34 @@ export default function DashboardClient() {
                               </svg>
                             </div>
                             <span className="ml-3 font-bold text-base">QR Code</span>
+                          </div>
+                        </Link>
+                        
+                        <Link href={`/dashboard/property/${property.id}/wifi-connection`}>
+                          <div className="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition h-full relative">
+                            <div className="w-9 h-9 rounded-full bg-yellow-500 flex items-center justify-center text-white shrink-0">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
+                              </svg>
+                            </div>
+                            <span className="ml-3 font-bold text-base">Wifi Connection</span>
+                            {property.has_wifi && (
+                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></span>
+                            )}
+                          </div>
+                        </Link>
+
+                        <Link href={`/dashboard/property/${property.id}/how-things-work`}>
+                          <div className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition h-full relative">
+                            <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white shrink-0">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                            </div>
+                            <span className="ml-3 font-bold text-base">How Things Work</span>
+                            {property.has_how_things_work && (
+                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></span>
+                            )}
                           </div>
                         </Link>
                         
