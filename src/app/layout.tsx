@@ -17,9 +17,6 @@ export default function RootLayout({
     <html lang="it">
       <head>
         <link rel="icon" href="/favicon.ico" />
-      </head>
-      <head>
-        <link rel="icon" href="/favicon.ico" />
         <link
           href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
           rel="stylesheet"
