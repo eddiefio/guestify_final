@@ -169,7 +169,7 @@ export default function AddCityGuide() {
                           />
                         )}
                         <p className="text-sm text-gray-500 mt-2">
-                          {file?.name} - {(file?.size / 1024 / 1024).toFixed(2)} MB
+                          {file?.name} - {(file?.size !== undefined ? (file.size / 1024 / 1024).toFixed(2) : '0')} MB
                         </p>
                         <button
                           type="button"
