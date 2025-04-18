@@ -6,6 +6,8 @@ una pagina con all'interno : Servizi Extra, Regole della casa, Connessione al Wi
 
 ## ***COME FUNZIONA***
 
+L'app deve essere completamente in inglese.
+
 2 Divisioni fondamentali dell'app:
 Host e Guest
 

@@ -16,8 +16,8 @@ interface Property {
   id: string
   name: string
   address: string
-  city: string
-  country: string
+  city?: string
+  country?: string
 }
 
 export default function DeletePropertyClient({ propertyId }: DeletePropertyClientProps) {
@@ -34,7 +34,7 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
     async function fetchProperty() {
       try {
         const { data, error } = await supabase
-          .from('apartments')
+          .from('properties')
           .select('*')
           .eq('id', propertyId)
           .single()
@@ -43,7 +43,7 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
         setProperty(data)
       } catch (err: any) {
         console.error('Error fetching property:', err)
-        setError('Impossibile trovare la proprietà')
+        setError('Could not find property')
       } finally {
         setLoading(false)
       }
@@ -57,17 +57,17 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
     try {
       setDeleting(true)
       
-      // Utilizziamo la funzione per eliminare la proprietà e tutte le risorse correlate
-      setDeleteProgress({ step: 'Eliminazione della proprietà e delle risorse correlate...', completed: false })
+      // Use the function to delete the property and all related resources
+      setDeleteProgress({ step: 'Deleting property and related resources...', completed: false })
       
       const result = await deletePropertyWithResources(propertyId)
       
       if (!result.success) {
-        throw new Error(result.error?.message || 'Impossibile eliminare la proprietà')
+        throw new Error(result.error?.message || 'Failed to delete property')
       }
       
-      setDeleteProgress({ step: 'Completato!', completed: true })
-      toast.success('Proprietà eliminata con successo!')
+      setDeleteProgress({ step: 'Complete!', completed: true })
+      toast.success('Property deleted successfully!')
       
       // Redirect to dashboard after successful deletion
       setTimeout(() => {
@@ -76,16 +76,16 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
       
     } catch (err: any) {
       console.error('Error deleting property:', err)
-      setError(`Errore durante l'eliminazione della proprietà: ${err.message}`)
+      setError(`Failed to delete property: ${err.message}`)
       setDeleting(false)
-      toast.error('Errore durante l\'eliminazione della proprietà')
+      toast.error('Error deleting property')
     }
   }
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <Layout title="Elimina Proprietà - Guestify">
+        <Layout title="Delete Property - Guestify">
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5E2BFF] mx-auto"></div>
           </div>
@@ -97,7 +97,7 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
   if (error) {
     return (
       <ProtectedRoute>
-        <Layout title="Elimina Proprietà - Guestify">
+        <Layout title="Delete Property - Guestify">
           <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
             <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
               {error}
@@ -105,7 +105,7 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
             
             <ButtonLayout 
               cancelHref="/dashboard"
-              cancelText="Torna alla Dashboard"
+              cancelText="Back to Dashboard"
             />
           </div>
         </Layout>
@@ -115,14 +115,14 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
 
   return (
     <ProtectedRoute>
-      <Layout title="Elimina Proprietà - Guestify">
+      <Layout title="Delete Property - Guestify">
         <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
-          <h2 className="text-xl font-bold text-red-600 mb-4">Elimina Proprietà</h2>
+          <h2 className="text-xl font-bold text-red-600 mb-4">Delete Property</h2>
           
           {property && (
             <form onSubmit={handleDelete}>
               <p className="mb-4">
-                Sei sicuro di voler eliminare la proprietà:
+                Are you sure you want to delete this property:
                 <span className="font-semibold block mt-2">{property.name}</span>
               </p>
               <p className="text-sm text-gray-500 mb-6">{property.address}</p>
@@ -136,14 +136,14 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-yellow-700">
-                      Questa azione non può essere annullata. Tutti i dati relativi a questa proprietà saranno eliminati definitivamente, inclusi:
+                      This action cannot be undone. All data related to this property will be permanently deleted, including:
                     </p>
                     <ul className="list-disc list-inside text-sm text-yellow-700 mt-2">
-                      <li>Tutti i servizi extra</li>
-                      <li>Tutte le regole della casa</li>
-                      <li>Tutte le configurazioni WiFi</li>
-                      <li>Tutte le guide della città</li>
-                      <li>Tutti i codici QR</li>
+                      <li>All extra services</li>
+                      <li>All house rules</li>
+                      <li>All WiFi configurations</li>
+                      <li>All city guides</li>
+                      <li>All QR codes</li>
                     </ul>
                   </div>
                 </div>
@@ -168,9 +168,9 @@ export default function DeletePropertyClient({ propertyId }: DeletePropertyClien
               
               <ButtonLayout 
                 cancelHref="/dashboard"
-                submitText="Elimina"
+                submitText="Delete"
                 loading={deleting}
-                loadingText="Eliminazione..."
+                loadingText="Deleting..."
                 danger={true}
               />
             </form>

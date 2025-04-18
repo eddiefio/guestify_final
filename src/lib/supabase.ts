@@ -48,7 +48,7 @@ export const deletePropertyWithResources = async (propertyId: string) => {
     const { error: extraServicesError } = await supabase
       .from('extra_services')
       .delete()
-      .eq('apartment_id', propertyId)
+      .eq('property_id', propertyId)
     
     if (extraServicesError) {
       console.error('Error deleting extra services:', extraServicesError)
@@ -59,7 +59,7 @@ export const deletePropertyWithResources = async (propertyId: string) => {
     const { error: houseRulesError } = await supabase
       .from('house_rules')
       .delete()
-      .eq('apartment_id', propertyId)
+      .eq('property_id', propertyId)
     
     if (houseRulesError) {
       console.error('Error deleting house rules:', houseRulesError)
@@ -68,9 +68,9 @@ export const deletePropertyWithResources = async (propertyId: string) => {
     
     // 3. Elimina eventuali configurazioni WiFi associate alla proprietà
     const { error: wifiConfigError } = await supabase
-      .from('wifi_configs')
+      .from('wifi_credentials')
       .delete()
-      .eq('apartment_id', propertyId)
+      .eq('property_id', propertyId)
     
     if (wifiConfigError) {
       console.error('Error deleting WiFi config:', wifiConfigError)
@@ -81,7 +81,7 @@ export const deletePropertyWithResources = async (propertyId: string) => {
     const { error: cityGuidesError } = await supabase
       .from('city_guides')
       .delete()
-      .eq('apartment_id', propertyId)
+      .eq('property_id', propertyId)
     
     if (cityGuidesError) {
       console.error('Error deleting city guides:', cityGuidesError)
@@ -90,7 +90,7 @@ export const deletePropertyWithResources = async (propertyId: string) => {
     
     // 5. Infine, elimina la proprietà stessa
     const { error: propertyError } = await supabase
-      .from('apartments')
+      .from('properties')
       .delete()
       .eq('id', propertyId)
     

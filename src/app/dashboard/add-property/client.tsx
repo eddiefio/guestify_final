@@ -37,13 +37,13 @@ export default function AddPropertyClient() {
     e.preventDefault()
     
     if (!user) {
-      setError('Devi essere loggato per aggiungere una proprietà')
+      setError('You must be logged in to add a property')
       return
     }
     
-    // Validazione del form
+    // Form validation
     if (!formData.country) {
-      setError('Seleziona un paese')
+      setError('Please select a country')
       return
     }
     
@@ -51,15 +51,15 @@ export default function AddPropertyClient() {
     setError(null)
     
     try {
-      // Impostiamo un timeout per evitare blocchi infiniti
+      // Set a timeout to avoid infinite blocks
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Richiesta scaduta')), 10000)
+        setTimeout(() => reject(new Error('Request timed out')), 10000)
       })
       
-      // Utilizziamo una funzione per gestire i tentativi di invio
+      // Function to handle submission attempts
       const insertPromise = async () => {
         const { data, error } = await supabase
-          .from('apartments')
+          .from('properties')
           .insert([
             {
               host_id: user.id,
@@ -78,31 +78,31 @@ export default function AddPropertyClient() {
         return data
       }
       
-      // Race per gestire il timeout
+      // Race to handle timeout
       const data = await Promise.race([insertPromise(), timeoutPromise])
       
       setSuccess(true)
-      toast.success('Proprietà aggiunta con successo!')
+      toast.success('Property added successfully!')
       
       // Redirect to dashboard after a brief delay
       setTimeout(() => {
         router.push('/dashboard')
       }, 1000)
     } catch (error: any) {
-      console.error('Errore durante la creazione della proprietà:', error)
-      setError(error.message || 'Errore durante la creazione della proprietà. Riprova.')
+      console.error('Error creating property:', error)
+      setError(error.message || 'Failed to create property. Please try again.')
       setLoading(false)
     }
   }
 
-  // Se siamo in uno stato di successo, mostriamo un messaggio invece che il form
+  // If successful, show a message instead of the form
   if (success) {
     return (
       <ProtectedRoute>
-        <Layout title="Proprietà Aggiunta - Guestify">
+        <Layout title="Property Added - Guestify">
           <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
             <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
-              Proprietà aggiunta con successo! Reindirizzamento alla dashboard...
+              Property added successfully! Redirecting to dashboard...
             </div>
           </div>
         </Layout>
@@ -112,9 +112,9 @@ export default function AddPropertyClient() {
 
   return (
     <ProtectedRoute>
-      <Layout title="Aggiungi Proprietà - Guestify">
+      <Layout title="Add Property - Guestify">
         <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
-          <h2 className="text-xl font-bold mb-4">Aggiungi Proprietà</h2>
+          <h2 className="text-xl font-bold mb-4">Add Property</h2>
           
           {error && (
             <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
@@ -124,7 +124,7 @@ export default function AddPropertyClient() {
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="rental_name" className="block text-sm font-medium text-gray-700 mb-1">Nome della Proprietà</label>
+              <label htmlFor="rental_name" className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
               <input
                 type="text"
                 id="rental_name"
@@ -132,14 +132,14 @@ export default function AddPropertyClient() {
                 value={formData.rental_name}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                placeholder="Casa al Mare"
+                placeholder="Beach House"
                 required
                 disabled={loading}
               />
             </div>
             
             <div>
-              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Seleziona Paese</label>
+              <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Select Country</label>
               <CountrySelect
                 id="country"
                 name="country" 
@@ -150,12 +150,12 @@ export default function AddPropertyClient() {
                 disabled={loading}
               />
               {formData.country && (
-                <p className="text-xs text-green-600 mt-1">Selezionato: {formData.country}</p>
+                <p className="text-xs text-green-600 mt-1">Selected: {formData.country}</p>
               )}
             </div>
             
             <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
+              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input
                 type="text"
                 id="address"
@@ -163,14 +163,14 @@ export default function AddPropertyClient() {
                 value={formData.address}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                placeholder="Via Roma 123"
+                placeholder="123 Main Street"
                 required
                 disabled={loading}
               />
             </div>
             
             <div>
-              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">Città</label>
+              <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City</label>
               <input
                 type="text"
                 id="city"
@@ -178,14 +178,14 @@ export default function AddPropertyClient() {
                 value={formData.city}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                placeholder="Milano"
+                placeholder="New York"
                 required
                 disabled={loading}
               />
             </div>
             
             <div>
-              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">Provincia/Stato</label>
+              <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
               <input
                 type="text"
                 id="state"
@@ -193,13 +193,13 @@ export default function AddPropertyClient() {
                 value={formData.state}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                placeholder="MI"
+                placeholder="NY"
                 disabled={loading}
               />
             </div>
             
             <div>
-              <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">CAP</label>
+              <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">ZIP/Postal Code</label>
               <input
                 type="text"
                 id="zip"
@@ -207,16 +207,16 @@ export default function AddPropertyClient() {
                 value={formData.zip}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                placeholder="20100"
+                placeholder="10001"
                 disabled={loading}
               />
             </div>
             
             <ButtonLayout 
               cancelHref="/dashboard"
-              submitText="Salva"
+              submitText="Save"
               loading={loading}
-              loadingText="Salvataggio..."
+              loadingText="Saving..."
             />
           </form>
         </div>

@@ -33,7 +33,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
     async function fetchProperty() {
       try {
         const { data, error } = await supabase
-          .from('apartments')
+          .from('properties')
           .select('*')
           .eq('id', propertyId)
           .single()
@@ -50,7 +50,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
         })
       } catch (err: any) {
         console.error('Error fetching property:', err)
-        setError('Impossibile caricare i dati della proprietà')
+        setError('Could not load property data')
       } finally {
         setLoading(false)
       }
@@ -73,7 +73,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
     
     try {
       const { error } = await supabase
-        .from('apartments')
+        .from('properties')
         .update({
           name: formData.rental_name,
           address: formData.address,
@@ -86,22 +86,22 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
       if (error) throw error
       
-      toast.success('Proprietà aggiornata con successo!')
+      toast.success('Property updated successfully!')
       
       // Redirect back to dashboard
       router.push('/dashboard')
     } catch (err: any) {
       console.error('Error updating property:', err)
-      setError('Errore durante l\'aggiornamento della proprietà')
+      setError('Failed to update property')
       setSaving(false)
-      toast.error('Errore durante l\'aggiornamento della proprietà')
+      toast.error('Error updating property')
     }
   }
 
   if (loading) {
     return (
       <ProtectedRoute>
-        <Layout title="Modifica Proprietà - Guestify">
+        <Layout title="Edit Property - Guestify">
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5E2BFF] mx-auto"></div>
           </div>
@@ -112,9 +112,9 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
   return (
     <ProtectedRoute>
-      <Layout title="Modifica Proprietà - Guestify">
+      <Layout title="Edit Property - Guestify">
         <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
-          <h2 className="text-xl font-bold mb-4">Modifica Proprietà</h2>
+          <h2 className="text-xl font-bold mb-4">Edit Property</h2>
           
           {error && (
             <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
@@ -124,7 +124,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nome della Proprietà</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
               <input
                 type="text"
                 name="rental_name"
@@ -136,7 +136,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Indirizzo</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input
                 type="text"
                 name="address"
@@ -148,7 +148,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Città</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
               <input
                 type="text"
                 name="city"
@@ -160,7 +160,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Provincia/Stato</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
               <input
                 type="text"
                 name="state"
@@ -171,7 +171,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CAP</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">ZIP/Postal Code</label>
               <input
                 type="text"
                 name="zip"
@@ -182,7 +182,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Paese</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
               <CountrySelect
                 id="country"
                 name="country"
@@ -192,15 +192,15 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
                 required
               />
               {formData.country && (
-                <p className="text-xs text-green-600 mt-1">Selezionato: {formData.country}</p>
+                <p className="text-xs text-green-600 mt-1">Selected: {formData.country}</p>
               )}
             </div>
             
-            {/* Container dei bottoni */}
+            {/* Button container */}
             <div className="flex justify-end space-x-4">
               <Link href="/dashboard">
                 <span className="inline-block px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition cursor-pointer">
-                  Annulla
+                  Cancel
                 </span>
               </Link>
               <button
@@ -208,7 +208,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
                 disabled={saving}
                 className="inline-block px-4 py-2 bg-[#ffde59] text-black rounded hover:opacity-90 transition font-semibold"
               >
-                {saving ? 'Salvataggio...' : 'Salva Modifiche'}
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
           </form>
