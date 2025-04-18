@@ -1,11 +1,9 @@
 import DeletePropertyClient from './client'
 
-interface DeletePropertyPageProps {
-  params: {
-    propertyId: string
-  }
-}
-
-export default function DeletePropertyPage({ params }: DeletePropertyPageProps) {
+export default function DeletePropertyPage({
+  params,
+}: {
+  params: { propertyId: string }
+}) {
   return <DeletePropertyClient propertyId={params.propertyId} />
 }

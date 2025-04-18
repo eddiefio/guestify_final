@@ -1,11 +1,9 @@
 import EditPropertyClient from './client'
 
-interface EditPropertyPageProps {
-  params: {
-    propertyId: string
-  }
-}
-
-export default function EditPropertyPage({ params }: EditPropertyPageProps) {
+export default function EditPropertyPage({
+  params,
+}: {
+  params: { propertyId: string }
+}) {
   return <EditPropertyClient propertyId={params.propertyId} />
 }
