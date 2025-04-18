@@ -1,8 +1,10 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
+  // Create a response object that we'll use to set cookies
+  const res = new NextResponse(JSON.stringify({ status: 'ok' }))
+  
   try {
     // Estrai i parametri dalla richiesta
     const { code, password, email } = await req.json()
@@ -11,17 +13,42 @@ export async function POST(req: NextRequest) {
     if (!code || !password || !email) {
       return NextResponse.json(
         { error: 'Codice di reset, password e email sono richiesti' },
-        { status: 400 }
+        {
+          status: 400,
+          headers: res.headers
+        }
       )
     }
 
     // Debug
     console.log(`API chiamata con: code=${code}, email=${email}`)
-
+    
     // Approccio 1: Tentativo diretto standard con verifyOtp
     try {
       // Usa un client standard per il reset
-      const supabase = createRouteHandlerClient({ cookies })
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get: (name) => req.cookies.get(name)?.value,
+            set: (name, value, options) => {
+              res.cookies.set({
+                name,
+                value,
+                ...options,
+              })
+            },
+            remove: (name, options) => {
+              res.cookies.set({
+                name,
+                value: '',
+                ...options,
+              })
+            },
+          },
+        }
+      )
 
       // Aggiorniamo la password con il codice recovery
       const { data, error } = await supabase.auth.verifyOtp({
@@ -50,6 +77,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Password aggiornata con successo'
+      }, {
+        headers: res.headers
       })
     } catch (error) {
       console.error('Errore verifica OTP standard:', error)
@@ -61,9 +90,28 @@ export async function POST(req: NextRequest) {
       console.log(`API: Tentativo di reset con Admin API per email ${email}`)
 
       // Crea un client con Service Role Key
-      const supabaseAdmin = createRouteHandlerClient(
-        { cookies },
-        { supabaseKey: process.env.SUPABASE_SERVICE_ROLE_KEY }
+      const supabaseAdmin = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        {
+          cookies: {
+            get: (name) => req.cookies.get(name)?.value,
+            set: (name, value, options) => {
+              res.cookies.set({
+                name,
+                value,
+                ...options,
+              })
+            },
+            remove: (name, options) => {
+              res.cookies.set({
+                name,
+                value: '',
+                ...options,
+              })
+            },
+          },
+        }
       )
 
       // Cerca l'utente tramite email
@@ -78,14 +126,20 @@ export async function POST(req: NextRequest) {
         console.error('Errore ricerca utente:', listError)
         return NextResponse.json(
           { error: 'Errore ricerca utente' },
-          { status: 400 }
+          {
+            status: 400,
+            headers: res.headers
+          }
         )
       }
 
       if (!users || users.length === 0) {
         return NextResponse.json(
           { error: 'Utente non trovato' },
-          { status: 404 }
+          {
+            status: 404,
+            headers: res.headers
+          }
         )
       }
 
@@ -108,25 +162,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Password aggiornata con successo'
+      }, {
+        headers: res.headers
       })
     } catch (error) {
       console.error('Errore aggiornamento password:', error)
       return NextResponse.json(
-        { 
+        {
           error: 'Impossibile aggiornare la password',
           details: (error as any).message
         },
-        { status: 400 }
+        {
+          status: 400,
+          headers: res.headers
+        }
       )
     }
   } catch (err) {
     console.error('Server error:', err)
     return NextResponse.json(
-      { 
+      {
         error: 'Errore server generale',
         details: (err as any).message
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: res.headers
+      }
     )
   }
 }
