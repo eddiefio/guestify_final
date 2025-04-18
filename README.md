@@ -14,7 +14,7 @@ Visualizzazioni :
 Host :
 - Gli host accederanno alla dashboard tramite registrazione e si presenterà loro davanti:
 - La lista delle proprietà che hanno aggiunto, visualizzate come card (che potranno aggiungere, modificare o eliminare).
-All'interno delle card di ogni proprietà aggiunta si troveranno 5 toggle : 
+All'interno delle card si troveranno 5 toggle : 
 - QR code : pagina per scaricare e stampare il pdf del qr code da inserire nell'appartamento. Ogni appartamento, anche se dello stesso utente, ha un QR code personalizzato.
 - Extra Services : lista di servizi a pagamento che l'host vuole proporre agli ospiti, ogni servizio è singolo
 - House Rules : lista di regole della casa personalizzabili dall'host, ogni regola è singola, non un unico file di testo.
