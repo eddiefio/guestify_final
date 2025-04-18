@@ -3,9 +3,9 @@
 import SignInForm from '../../../components/auth/SignInForm';
 import AuthLayout from '../../../components/auth/AuthLayout';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function SignInPage() {
+function SignInContent() {
   const searchParams = useSearchParams();
   const [message, setMessage] = useState<string | null>(null);
   
@@ -22,13 +22,23 @@ export default function SignInPage() {
   }, [searchParams]);
 
   return (
-    <AuthLayout title="Sign in to your account">
+    <>
       {message && (
         <div className="mb-4 bg-green-50 text-green-500 p-3 rounded text-center">
           {message}
         </div>
       )}
       <SignInForm />
+    </>
+  );
+}
+
+export default function SignInPage() {
+  return (
+    <AuthLayout title="Sign in to your account">
+      <Suspense fallback={<div>Loading...</div>}>
+        <SignInContent />
+      </Suspense>
     </AuthLayout>
   );
 }
