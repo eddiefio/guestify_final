@@ -46,7 +46,13 @@ export default function DashboardClient() {
         // Fetch additional data for properties
         if (data && data.length > 0) {
           const propertiesWithData = await Promise.all(
-            data.map(async (property) => {
+            data.map(async (property: {
+              id: string;
+              name: string;
+              address: string;
+              city?: string;
+              country?: string;
+            }) => {
               // Check if property has wifi credentials
               const { count: wifiCount, error: wifiError } = await supabase
                 .from('wifi_credentials')
