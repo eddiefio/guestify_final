@@ -198,7 +198,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password,
         options: {
-          data: { name, country }
+          data: { name, country },
+          emailRedirectTo: `${window.location.origin}/auth/signin?confirmed=true`
         }
       })
 
