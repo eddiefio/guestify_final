@@ -6,6 +6,12 @@ export const metadata: Metadata = {
   description: 'Manage your property house rules',
 }
 
-export default function HouseRulesPage({ params }: { params: { propertyId: string } }) {
+interface HouseRulesPageProps {
+  params: {
+    propertyId: string
+  }
+}
+
+export default function HouseRulesPage({ params }: HouseRulesPageProps) {
   return <HouseRulesClient propertyId={params.propertyId} />
 } 
