@@ -5,6 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 
+// Disabilitiamo il prerendering per questa pagina
+export const dynamic = 'force-dynamic'
+export const runtime = 'edge'
+
 export default function Dashboard() {
   const { user, isLoading, isAuthenticated, signOut } = useAuth()
   const [userName, setUserName] = useState<string>('')
