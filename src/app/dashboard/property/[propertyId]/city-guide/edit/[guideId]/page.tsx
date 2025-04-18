@@ -135,7 +135,7 @@ export default function EditCityGuide() {
             .storage
             .from('city-guides')
             .remove([currentFilePath.replace('city-guides/', '')])
-            .catch(error => {
+            .catch((error: unknown) => {
               console.error('Error deleting old file:', error)
               // Continuiamo comunque con l'aggiornamento
             })
