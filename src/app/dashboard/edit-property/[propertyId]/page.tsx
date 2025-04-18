@@ -1,9 +1,14 @@
 import EditPropertyClient from './client'
 
+type PageParams = {
+  params: {
+    propertyId: string;
+  };
+  searchParams: Record<string, string | string[] | undefined>;
+}
+
 export default function EditPropertyPage({
   params,
-}: {
-  params: { propertyId: string }
-}) {
+}: PageParams) {
   return <EditPropertyClient propertyId={params.propertyId} />
 }
