@@ -226,55 +226,41 @@ export default function ExtraServices() {
                     <p className="text-gray-500 mt-1">Add services to earn additional income from your guests.</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Service
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {services.map((service) => (
-                          <tr key={service.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="font-medium text-gray-900">{service.title}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-bold text-[#5E2BFF]">{formatPrice(service.price)}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <div className="flex justify-end space-x-2">
-                                <Link href={`/dashboard/property/${propertyId}/extra-services/edit/${service.id}`}>
-                                  <button className="text-[#5E2BFF] hover:underline font-bold text-sm px-2 py-1">
-                                    <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                    </svg>
-                                    Edit
-                                  </button>
-                                </Link>
-                                <button 
-                                  onClick={() => handleDeleteService(service.id)}
-                                  className="text-red-500 hover:underline font-bold text-sm px-2 py-1"
-                                >
-                                  <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                  </svg>
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {services.map((service) => (
+                      <div key={service.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition">
+                        <div className="flex justify-between items-start">
+                          <h3 className="font-bold text-lg text-gray-800">{service.title}</h3>
+                          <span className="text-sm font-bold text-[#5E2BFF] bg-purple-50 px-2 py-1 rounded-full">
+                            {formatPrice(service.price)}
+                          </span>
+                        </div>
+                        
+                        {service.description && (
+                          <p className="text-gray-600 text-sm mt-2 mb-3 line-clamp-2">{service.description}</p>
+                        )}
+                        
+                        <div className="flex justify-end mt-2 space-x-2">
+                          <Link href={`/dashboard/property/${propertyId}/extra-services/edit/${service.id}`}>
+                            <button className="text-[#5E2BFF] hover:bg-purple-50 font-bold text-sm px-2 py-1 rounded">
+                              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                              </svg>
+                              Edit
+                            </button>
+                          </Link>
+                          <button 
+                            onClick={() => handleDeleteService(service.id)}
+                            className="text-red-500 hover:bg-red-50 font-bold text-sm px-2 py-1 rounded"
+                          >
+                            <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -285,51 +271,31 @@ export default function ExtraServices() {
                   <h2 className="text-xl font-bold text-gray-800 mb-4">Suggested Services</h2>
                   <p className="text-gray-600 mb-6">Common services that hosts offer to their guests. Click "Add" to include them in your list.</p>
                   
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Service
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Description
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
-                          </th>
-                          <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Add
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredSuggestedServices.map((service) => (
-                          <tr key={service.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="font-medium text-gray-900">{service.title}</div>
-                            </td>
-                            <td className="px-6 py-4">
-                              <div className="text-sm text-gray-600">{service.description}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-bold text-[#5E2BFF]">{formatPrice(service.price)}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button 
-                                onClick={() => handleAddSuggestedService(service)}
-                                className="bg-[#5E2BFF] text-white px-3 py-1 rounded hover:bg-[#4c22cc] transition duration-200 font-bold text-sm"
-                              >
-                                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                                Add
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredSuggestedServices.map((service) => (
+                      <div key={service.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-bold text-lg text-gray-800">{service.title}</h3>
+                          <span className="text-sm font-bold text-[#5E2BFF] bg-white px-2 py-1 rounded-full shadow-sm">
+                            {formatPrice(service.price)}
+                          </span>
+                        </div>
+                        
+                        <p className="text-gray-600 text-sm mb-4">{service.description}</p>
+                        
+                        <div className="flex justify-end">
+                          <button 
+                            onClick={() => handleAddSuggestedService(service)}
+                            className="bg-[#5E2BFF] text-white px-3 py-1.5 rounded hover:bg-[#4c22cc] transition duration-200 font-bold text-sm"
+                          >
+                            <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
+                            Add Service
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
