@@ -1,14 +1,8 @@
 import DeletePropertyClient from './client'
+import { createDynamicPageComponent } from '@/lib/pageUtils'
 
-type PageParams = {
-  params: {
-    propertyId: string;
-  };
-  searchParams: Record<string, string | string[] | undefined>;
-}
-
-export default function DeletePropertyPage({
-  params,
-}: PageParams) {
+function DeletePropertyPage({ params }: { params: { propertyId: string } }) {
   return <DeletePropertyClient propertyId={params.propertyId} />
 }
+
+export default createDynamicPageComponent<{ propertyId: string }>(DeletePropertyPage)

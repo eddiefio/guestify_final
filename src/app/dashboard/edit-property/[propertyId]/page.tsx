@@ -1,14 +1,8 @@
 import EditPropertyClient from './client'
+import { createDynamicPageComponent } from '@/lib/pageUtils'
 
-type PageParams = {
-  params: {
-    propertyId: string;
-  };
-  searchParams: Record<string, string | string[] | undefined>;
-}
-
-export default function EditPropertyPage({
-  params,
-}: PageParams) {
+function EditPropertyPage({ params }: { params: { propertyId: string } }) {
   return <EditPropertyClient propertyId={params.propertyId} />
 }
+
+export default createDynamicPageComponent<{ propertyId: string }>(EditPropertyPage)
