@@ -1,10 +1,7 @@
-'use client'
-
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AuthProvider } from '@/contexts/AuthContext'
-import { Toaster } from 'react-hot-toast'
+import Providers from './providers'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -21,10 +18,9 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={inter.className}>
-        <AuthProvider>
+        <Providers>
           {children}
-          <Toaster position="top-center" />
-        </AuthProvider>
+        </Providers>
       </body>
     </html>
   )
