@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import Providers from './providers'
-
-const inter = Inter({ subsets: ['latin'] })
+import Script from 'next/script'
 
 export const metadata: Metadata = {
   title: 'Guestify - La piattaforma per gli host di affitti brevi',
@@ -17,10 +15,25 @@ export default function RootLayout({
 }) {
   return (
     <html lang="it">
-      <body className={inter.className}>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+      </head>
+      <head>
+        <link rel="icon" href="/favicon.ico" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
+      </head>
+      <body className="font-sans">
         <Providers>
           {children}
         </Providers>
+        {/* Font Awesome */}
+        <Script
+          src="https://kit.fontawesome.com/a076d05399.js"
+          crossOrigin="anonymous"
+        />
       </body>
     </html>
   )
