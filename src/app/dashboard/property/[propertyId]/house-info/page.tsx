@@ -372,6 +372,114 @@ export default function HouseInfo() {
     )
   }
 
+  // Definizione delle card per le varie sezioni
+  const infoCards = [
+    {
+      id: 'house-rules',
+      title: 'House Rules',
+      description: 'Manage house rules and regulations',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+      ),
+      color: 'bg-blue-50 hover:bg-blue-100',
+      iconColor: 'text-blue-500',
+      path: `/dashboard/property/${propertyId}/house-rules`
+    },
+    {
+      id: 'wifi-connection',
+      title: 'WiFi Connection',
+      description: 'Setup WiFi credentials for guests',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
+        </svg>
+      ),
+      color: 'bg-yellow-50 hover:bg-yellow-100',
+      iconColor: 'text-yellow-500',
+      path: `/dashboard/property/${propertyId}/wifi-connection`
+    },
+    {
+      id: 'how-things-work',
+      title: 'How Things Work',
+      description: 'Add guides for appliances and features',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+      ),
+      color: 'bg-green-50 hover:bg-green-100',
+      iconColor: 'text-green-500',
+      path: `/dashboard/property/${propertyId}/how-things-work`
+    },
+    {
+      id: 'checkin-information',
+      title: 'Check-in Information',
+      description: 'Manage check-in details for guests',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+        </svg>
+      ),
+      color: 'bg-emerald-50 hover:bg-emerald-100',
+      iconColor: 'text-emerald-500',
+      path: `/dashboard/property/${propertyId}/checkin-information`
+    },
+    {
+      id: 'before-you-leave',
+      title: 'Before You Leave',
+      description: 'Pre-departure instructions for guests',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+        </svg>
+      ),
+      color: 'bg-amber-50 hover:bg-amber-100',
+      iconColor: 'text-amber-500',
+      path: `/dashboard/property/${propertyId}/before-you-leave`
+    },
+    {
+      id: 'checkout-information',
+      title: 'Check-out Information',
+      description: 'Checkout procedures and instructions',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      ),
+      color: 'bg-rose-50 hover:bg-rose-100',
+      iconColor: 'text-rose-500',
+      path: `/dashboard/property/${propertyId}/checkout-information`
+    },
+    {
+      id: 'useful-contacts',
+      title: 'Useful Contacts',
+      description: 'Emergency and useful contact numbers',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+        </svg>
+      ),
+      color: 'bg-sky-50 hover:bg-sky-100',
+      iconColor: 'text-sky-500',
+      path: `/dashboard/property/${propertyId}/useful-contacts`
+    },
+    {
+      id: 'book-again',
+      title: 'Book Again',
+      description: 'Help guests book their next stay',
+      icon: (
+        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      ),
+      color: 'bg-violet-50 hover:bg-violet-100',
+      iconColor: 'text-violet-500',
+      path: `/dashboard/property/${propertyId}/book-again`
+    }
+  ]
+
   return (
     <ProtectedRoute>
       <Layout title={`House Info - ${property?.name || 'Property'}`}>
@@ -390,6 +498,7 @@ export default function HouseInfo() {
             <h1 className="text-2xl font-bold text-gray-800">
               House Info for {property?.name || 'Loading...'}
             </h1>
+            <p className="text-gray-600 mt-1">Manage all information about your property for guests</p>
           </div>
 
           {loading ? (
@@ -398,279 +507,18 @@ export default function HouseInfo() {
               <p className="text-gray-600 font-medium">Loading house information...</p>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              {/* Tab navigation - ora con tabs scorrevoli su mobile */}
-              <div className="overflow-x-auto border-b">
-                <div className="flex whitespace-nowrap min-w-max">
-                  {/* Tab originali */}
-                  <button
-                    onClick={() => handleTabChange('house-rules')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'house-rules'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                    </svg>
-                    House Rules
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('wifi-connection')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'wifi-connection'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
-                    </svg>
-                    WiFi
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('how-things-work')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'how-things-work'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    How Things Work
-                  </button>
-                  
-                  {/* Nuove tabs */}
-                  <button
-                    onClick={() => handleTabChange('checkin_information')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'checkin_information'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {getSectionIcon('checkin_information')}
-                    <span className="ml-1.5">Check-in</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('before_you_leave')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'before_you_leave'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {getSectionIcon('before_you_leave')}
-                    <span className="ml-1.5">Before Leaving</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('checkout_information')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'checkout_information'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {getSectionIcon('checkout_information')}
-                    <span className="ml-1.5">Check-out</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('useful_contacts')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'useful_contacts'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {getSectionIcon('useful_contacts')}
-                    <span className="ml-1.5">Contacts</span>
-                  </button>
-                  <button
-                    onClick={() => handleTabChange('book_again')}
-                    className={`px-6 py-3 text-sm md:text-base font-bold flex items-center ${
-                      activeTab === 'book_again'
-                        ? 'border-b-2 border-[#5E2BFF] text-[#5E2BFF]'
-                        : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    {getSectionIcon('book_again')}
-                    <span className="ml-1.5">Book Again</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Navigazione secondaria come interfaccia a griglia, per mobile */}
-              <div className="lg:hidden p-4 bg-gray-50">
-                <div className="grid grid-cols-3 gap-2">
-                  {['house-rules', 'wifi-connection', 'how-things-work', 'checkin_information', 'before_you_leave', 'checkout_information', 'useful_contacts', 'book_again'].map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => handleTabChange(tab)}
-                      className={`p-2 text-xs text-center rounded-lg ${
-                        activeTab === tab
-                          ? 'bg-[#5E2BFF] text-white'
-                          : 'bg-white hover:bg-gray-100'
-                      }`}
-                    >
-                      {tab === 'house-rules' && 'Rules'}
-                      {tab === 'wifi-connection' && 'WiFi'}
-                      {tab === 'how-things-work' && 'Guides'}
-                      {tab === 'checkin_information' && 'Check-in'}
-                      {tab === 'before_you_leave' && 'Before Leaving'}
-                      {tab === 'checkout_information' && 'Check-out'}
-                      {tab === 'useful_contacts' && 'Contacts'}
-                      {tab === 'book_again' && 'Book Again'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tab content */}
-              <div className="p-6">
-                {/* House Rules Tab */}
-                {activeTab === 'house-rules' && (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-gray-800">House Rules</h2>
-                      <Link href={`/dashboard/property/${propertyId}/house-rules`}>
-                        <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                          <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                          </svg> Manage Rules
-                        </button>
-                      </Link>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {infoCards.map((card) => (
+                <Link href={card.path} key={card.id}>
+                  <div className={`rounded-xl shadow hover:shadow-md transition p-6 ${card.color} cursor-pointer h-full flex flex-col`}>
+                    <div className={`${card.iconColor} mb-4 flex justify-center`}>
+                      {card.icon}
                     </div>
-
-                    {houseRules.length === 0 ? (
-                      <div className="bg-gray-50 rounded-lg p-6 text-center">
-                        <p className="text-gray-600 mb-4">No house rules have been added yet.</p>
-                        <Link href={`/dashboard/property/${propertyId}/house-rules`}>
-                          <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                            Add House Rules
-                          </button>
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {houseRules.map((rule) => (
-                          <div key={rule.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-sm transition">
-                            <h3 className="font-bold text-lg text-gray-800">{rule.title}</h3>
-                            {rule.description && (
-                              <p className="text-gray-600 mt-2">{rule.description}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    <h2 className="text-xl font-bold text-gray-800 text-center mb-2">{card.title}</h2>
+                    <p className="text-gray-600 text-center text-sm">{card.description}</p>
                   </div>
-                )}
-
-                {/* WiFi Connection Tab */}
-                {activeTab === 'wifi-connection' && (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-gray-800">WiFi Connection</h2>
-                      <Link href={`/dashboard/property/${propertyId}/wifi-connection`}>
-                        <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                          {wifiCredentials ? 'Edit WiFi' : 'Set Up WiFi'}
-                        </button>
-                      </Link>
-                    </div>
-
-                    {!wifiCredentials ? (
-                      <div className="bg-gray-50 rounded-lg p-6 text-center">
-                        <p className="text-gray-600 mb-4">No WiFi credentials have been added yet.</p>
-                        <Link href={`/dashboard/property/${propertyId}/wifi-connection`}>
-                          <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                            Set Up WiFi
-                          </button>
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="bg-yellow-50 rounded-lg p-6">
-                        <div className="mb-4">
-                          <h3 className="text-sm text-gray-500 font-medium">Network Name</h3>
-                          <p className="text-lg font-bold">{wifiCredentials.network_name}</p>
-                        </div>
-                        <div className="mb-4">
-                          <h3 className="text-sm text-gray-500 font-medium">Password</h3>
-                          <p className="text-lg font-bold">{wifiCredentials.password}</p>
-                        </div>
-                        <div className="mt-4">
-                          <p className="text-sm text-gray-600">
-                            <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Guests will be able to connect to your WiFi by scanning the QR code.
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* How Things Work Tab */}
-                {activeTab === 'how-things-work' && (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-gray-800">How Things Work</h2>
-                      <Link href={`/dashboard/property/${propertyId}/how-things-work`}>
-                        <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                          <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                          </svg> Manage Guides
-                        </button>
-                      </Link>
-                    </div>
-
-                    {howThingsWork.length === 0 ? (
-                      <div className="bg-gray-50 rounded-lg p-6 text-center">
-                        <p className="text-gray-600 mb-4">No guides have been added yet.</p>
-                        <Link href={`/dashboard/property/${propertyId}/how-things-work`}>
-                          <button className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold">
-                            Add Guides
-                          </button>
-                        </Link>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {howThingsWork.map((item) => (
-                          <div key={item.id} className="border border-gray-100 rounded-lg p-4 hover:shadow-sm transition">
-                            <h3 className="font-bold text-lg text-gray-800">{item.title}</h3>
-                            {item.description && (
-                              <p className="text-gray-600 mt-2">{item.description}</p>
-                            )}
-                            <div className="mt-3">
-                              <a 
-                                href={item.file_path} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="text-[#5E2BFF] font-bold hover:underline flex items-center"
-                              >
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                </svg>
-                                View Guide
-                              </a>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Nuove sezioni */}
-                {activeTab === 'checkin_information' && renderInfoSection('checkin_information')}
-                {activeTab === 'before_you_leave' && renderInfoSection('before_you_leave')}
-                {activeTab === 'checkout_information' && renderInfoSection('checkout_information')}
-                {activeTab === 'useful_contacts' && renderInfoSection('useful_contacts')}
-                {activeTab === 'book_again' && renderInfoSection('book_again')}
-              </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
