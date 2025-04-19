@@ -181,54 +181,15 @@ export default function DashboardClient() {
                       <p className="text-gray-600 mb-4 font-medium">{property.address}</p>
                       
                       {/* Property feature buttons */}
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-4">
-                        <Link href={`/dashboard/property/${property.id}/house-rules`}>
+                      <div className="grid grid-cols-2 gap-3 mt-4">
+                        <Link href={`/dashboard/property/${property.id}/house-info`}>
                           <div className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition h-full">
                             <div className="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-white shrink-0">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                               </svg>
                             </div>
-                            <span className="ml-3 font-bold text-base">House Rules</span>
-                          </div>
-                        </Link>
-                        
-                        <Link href={`/dashboard/property/${property.id}/qr-code`}>
-                          <div className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition h-full">
-                            <div className="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white shrink-0">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
-                              </svg>
-                            </div>
-                            <span className="ml-3 font-bold text-base">QR Code</span>
-                          </div>
-                        </Link>
-                        
-                        <Link href={`/dashboard/property/${property.id}/wifi-connection`}>
-                          <div className="flex items-center p-4 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition h-full relative">
-                            <div className="w-9 h-9 rounded-full bg-yellow-500 flex items-center justify-center text-white shrink-0">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0"></path>
-                              </svg>
-                            </div>
-                            <span className="ml-3 font-bold text-base">Wifi Connection</span>
-                            {property.has_wifi && (
-                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></span>
-                            )}
-                          </div>
-                        </Link>
-
-                        <Link href={`/dashboard/property/${property.id}/how-things-work`}>
-                          <div className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition h-full relative">
-                            <div className="w-9 h-9 rounded-full bg-indigo-500 flex items-center justify-center text-white shrink-0">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                              </svg>
-                            </div>
-                            <span className="ml-3 font-bold text-base">How Things Work</span>
-                            {property.has_how_things_work && (
-                              <span className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></span>
-                            )}
+                            <span className="ml-3 font-bold text-base">House Info</span>
                           </div>
                         </Link>
                         
@@ -243,6 +204,17 @@ export default function DashboardClient() {
                           </div>
                         </Link>
                         
+                        <Link href={`/dashboard/property/${property.id}/qr-code`}>
+                          <div className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition h-full">
+                            <div className="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white shrink-0">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path>
+                              </svg>
+                            </div>
+                            <span className="ml-3 font-bold text-base">QR Code</span>
+                          </div>
+                        </Link>
+
                         <Link href={`/dashboard/property/${property.id}/city-guide`}>
                           <div className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition h-full">
                             <div className="w-9 h-9 rounded-full bg-purple-500 flex items-center justify-center text-white shrink-0">
@@ -255,7 +227,6 @@ export default function DashboardClient() {
                         </Link>
                       </div>
                       
-                      {/* Management actions */}
                       <div className="flex justify-between mt-6 pt-4 border-t border-gray-100">
                         <Link href={`/dashboard/edit-property/${property.id}`}>
                           <button className="text-[#5E2BFF] hover:underline font-bold">
