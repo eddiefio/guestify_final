@@ -665,6 +665,55 @@ export default function HowThingsWork() {
     }
   }
 
+  // Gestione dello spostamento di una foto/istruzione
+  const handleMovePhoto = async (photoId: string, itemId: string, direction: 'up' | 'down') => {
+    if (!selectedItem) return
+    
+    const photos = itemPhotos[itemId] || []
+    const currentIndex = photos.findIndex(photo => photo.id === photoId)
+    
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === photos.length - 1)
+    ) {
+      return // Non fare nulla se non si può spostare nella direzione specificata
+    }
+    
+    try {
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+      const targetPhoto = photos[targetIndex]
+      
+      // Aggiorna gli ordini di visualizzazione
+      await supabase
+        .from('how_things_work_item_photos')
+        .update({ display_order: targetIndex })
+        .eq('id', photoId)
+      
+      await supabase
+        .from('how_things_work_item_photos')
+        .update({ display_order: currentIndex })
+        .eq('id', targetPhoto.id)
+      
+      // Aggiorna le foto
+      const { data: updatedPhotos, error: fetchError } = await supabase
+        .from('how_things_work_item_photos')
+        .select('*')
+        .eq('item_id', itemId)
+        .order('display_order', { ascending: true })
+      
+      if (fetchError) throw fetchError
+      
+      setItemPhotos({
+        ...itemPhotos,
+        [itemId]: updatedPhotos || []
+      })
+      
+    } catch (error) {
+      console.error(`Error moving instruction ${direction}:`, error)
+      toast.error('Failed to reorder instructions')
+    }
+  }
+
   // Gestione dello spostamento di un elemento
   const handleMoveItem = async (itemId: string, direction: 'up' | 'down') => {
     if (!activeCategory) return
@@ -1083,13 +1132,34 @@ export default function HowThingsWork() {
                                             <p className="text-gray-500 italic">No description provided</p>
                                           )}
                                         </div>
-                                        <button
-                                          onClick={() => handleDeletePhoto(photo.id, photo.photo_path)}
-                                          className="p-1 text-red-600 hover:text-red-800"
-                                          title="Delete"
-                                        >
-                                          <Trash2Icon size={16} />
-                                        </button>
+                                        <div className="flex space-x-1">
+                                          <button
+                                            onClick={() => handleMovePhoto(photo.id, selectedItem, 'up')}
+                                            className="p-1 text-gray-600 hover:text-gray-800"
+                                            title="Move up"
+                                            disabled={itemPhotos[selectedItem].indexOf(photo) === 0}
+                                          >
+                                            <ArrowUpIcon size={16} />
+                                          </button>
+                                          <button
+                                            onClick={() => handleMovePhoto(photo.id, selectedItem, 'down')}
+                                            className="p-1 text-gray-600 hover:text-gray-800"
+                                            title="Move down"
+                                            disabled={
+                                              itemPhotos[selectedItem].indexOf(photo) === 
+                                              itemPhotos[selectedItem].length - 1
+                                            }
+                                          >
+                                            <ArrowDownIcon size={16} />
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeletePhoto(photo.id, photo.photo_path)}
+                                            className="p-1 text-red-600 hover:text-red-800"
+                                            title="Delete"
+                                          >
+                                            <Trash2Icon size={16} />
+                                          </button>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
