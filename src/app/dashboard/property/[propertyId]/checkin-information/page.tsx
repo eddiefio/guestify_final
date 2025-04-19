@@ -8,11 +8,8 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import dynamic from 'next/dynamic'
-import { ArrowUp, ArrowDown, Trash2, PenLine, Upload, MapPin, X, PlusCircle, ArrowLeftIcon } from 'lucide-react'
-
-// Importazione dinamica di ProtectedRoute senza SSR
-const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
+import ProtectedRoute from '@/components/ProtectedRoute'
+import { ArrowUp, ArrowDown, Trash2, PenLine, Upload, MapPin, X } from 'lucide-react'
 
 interface HouseInfoItem {
   id: string
@@ -731,15 +728,31 @@ export default function CheckinInformation() {
 
   return (
     <ProtectedRoute>
-      <Layout>
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex justify-between items-center mb-6">
-            <Link href={`/dashboard/property/${propertyId}/house-info`} className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
-              <ArrowLeftIcon size={16} className="mr-1" />
-              Back to House Info
-            </Link>
-            <h1 className="text-2xl font-bold">Check-in Information</h1>
-            <div></div> {/* Elemento vuoto per bilanciare la navbar */}
+      <Layout title={`Check-in Information - ${property?.name || 'Property'}`}>
+        <div className="container mx-auto px-4 py-6 font-spartan">
+          {/* Header con breadcrumb e nome proprietà */}
+          <div className="mb-6">
+            <div className="flex items-center text-sm text-gray-500 mb-2">
+              <Link href="/dashboard">
+                <span className="hover:text-[#5E2BFF] transition">Dashboard</span>
+              </Link>
+              <svg className="w-3 h-3 mx-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
+              </svg>
+              <Link href={`/dashboard/property/${propertyId}/house-info`}>
+                <span className="hover:text-[#5E2BFF] transition">House Info</span>
+              </Link>
+              <svg className="w-3 h-3 mx-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
+              </svg>
+              <span className="font-medium">Check-in Information</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+              Check-in Information for {property?.name || 'Loading...'}
+            </h1>
+            <p className="text-gray-600">
+              Provide your guests with detailed check-in instructions, including access methods, arrival times, and parking details.
+            </p>
           </div>
 
           {loading ? (

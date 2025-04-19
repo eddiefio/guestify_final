@@ -6,9 +6,13 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/ProtectedRoute'
-import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon, ImageIcon } from 'lucide-react'
+import dynamic from 'next/dynamic'
+import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon, ImageIcon, ArrowLeftIcon } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
+
+// Importazione dinamica di ProtectedRoute senza SSR
+const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
 
 // Tipi per le categorie e gli elementi
 interface RoomCategory {
@@ -935,7 +939,14 @@ export default function HowThingsWork() {
     <ProtectedRoute>
       <Layout>
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-6">How Things Work</h1>
+          <div className="flex justify-between items-center mb-6">
+            <Link href={`/dashboard/property/${propertyId}/house-info`} className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+              <ArrowLeftIcon size={16} className="mr-1" />
+              Back to House Info
+            </Link>
+            <h1 className="text-3xl font-bold">How Things Work</h1>
+            <div></div> {/* Elemento vuoto per bilanciare la navbar */}
+          </div>
           <p className="text-gray-600 mb-8">
             Add information about how different items and appliances work in your property.
             Organize them by room or category and provide clear instructions with images.
