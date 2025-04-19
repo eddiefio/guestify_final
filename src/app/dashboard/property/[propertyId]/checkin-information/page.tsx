@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { ArrowUp, ArrowDown, Trash2, PenLine, Upload, MapPin, X } from 'lucide-react'
 
 interface HouseInfoItem {
   id: string
@@ -60,6 +61,7 @@ export default function CheckinInformation() {
   const { user } = useAuth()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<SectionType>('access_and_keys')
+  const [isMobileView, setIsMobileView] = useState(false)
 
   // Carica i dati della proprietà e le informazioni di checkin
   useEffect(() => {
@@ -140,6 +142,16 @@ export default function CheckinInformation() {
 
     fetchData()
   }, [propertyId, user, router])
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768)
+    }
+    
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Gestione upload foto
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, sectionType: SectionType) => {
@@ -346,6 +358,54 @@ export default function CheckinInformation() {
     }
   }
 
+  // Gestione spostamento ordine delle foto
+  const movePhotoOrder = async (photoId: string, sectionType: SectionType, direction: 'up' | 'down') => {
+    const sectionPhotos = photos[sectionType]
+    const index = sectionPhotos.findIndex(p => p.id === photoId)
+    
+    if (
+      (direction === 'up' && index === 0) || 
+      (direction === 'down' && index === sectionPhotos.length - 1)
+    ) return
+    
+    try {
+      const targetIndex = direction === 'up' ? index - 1 : index + 1
+      const currentPhoto = sectionPhotos[index]
+      const targetPhoto = sectionPhotos[targetIndex]
+      
+      // Scambia gli ordini
+      const { error: error1 } = await supabase
+        .from('checkin_photos')
+        .update({ display_order: targetPhoto.display_order })
+        .eq('id', currentPhoto.id)
+      
+      if (error1) throw error1
+      
+      const { error: error2 } = await supabase
+        .from('checkin_photos')
+        .update({ display_order: currentPhoto.display_order })
+        .eq('id', targetPhoto.id)
+      
+      if (error2) throw error2
+      
+      // Aggiorna lo state locale
+      const updatedPhotos = [...sectionPhotos]
+      updatedPhotos[index] = {...updatedPhotos[index], display_order: targetPhoto.display_order}
+      updatedPhotos[targetIndex] = {...updatedPhotos[targetIndex], display_order: currentPhoto.display_order}
+      updatedPhotos.sort((a, b) => a.display_order - b.display_order)
+      
+      setPhotos(prev => ({
+        ...prev,
+        [sectionType]: updatedPhotos
+      }))
+      
+      toast.success('Ordine foto aggiornato')
+    } catch (error) {
+      console.error('Errore durante lo spostamento della foto:', error)
+      toast.error('Impossibile modificare l\'ordine delle foto')
+    }
+  }
+
   // Funzione per renderizzare una sezione
   const renderSection = (sectionType: SectionType) => {
     const sectionTitle = getSectionTitle(sectionType)
@@ -354,128 +414,8 @@ export default function CheckinInformation() {
     
     return (
       <div>
-        {/* Foto della sezione */}
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold text-gray-800">Photos</h3>
-            <button
-              onClick={() => setUploadingSection(sectionType)}
-              className="bg-[#5E2BFF] text-white px-3 py-1.5 rounded-lg hover:bg-[#4a22cd] transition font-bold text-sm"
-              disabled={uploading}
-            >
-              <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              Add Photo
-            </button>
-          </div>
-          
-          {uploadingSection === sectionType && (
-            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">Upload a new photo</h4>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                onChange={(e) => handleFileChange(e, sectionType)}
-                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#5E2BFF] file:text-white hover:file:bg-[#4a22cd]"
-                disabled={uploading}
-              />
-              {uploading && (
-                <div className="mt-2 flex items-center">
-                  <div className="w-5 h-5 border-2 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mr-2"></div>
-                  <span className="text-sm text-gray-500">Uploading...</span>
-                </div>
-              )}
-              <div className="flex mt-3 justify-end">
-                <button
-                  onClick={() => setUploadingSection(null)}
-                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {sectionPhotos.length === 0 ? (
-            <div className="text-center p-6 bg-gray-50 rounded-lg">
-              <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-              </svg>
-              <p className="text-gray-500">No photos added yet</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {sectionPhotos.map((photo) => (
-                <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                  <div className="relative aspect-video">
-                    <Image
-                      src={photo.photo_url}
-                      alt={photo.description || 'Check-in photo'}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
-                  </div>
-                  <div className="p-4">
-                    {editingPhotoDescription === photo.id ? (
-                      <div>
-                        <textarea
-                          value={photoDescription}
-                          onChange={(e) => setPhotoDescription(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] resize-none text-sm"
-                          placeholder="Add a description..."
-                          rows={3}
-                        ></textarea>
-                        <div className="flex justify-end mt-2 space-x-2">
-                          <button
-                            onClick={() => setEditingPhotoDescription(null)}
-                            className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={() => handleUpdatePhotoDescription(photo.id, sectionType)}
-                            className="bg-[#5E2BFF] text-white px-3 py-1 rounded-lg hover:bg-[#4a22cd] transition font-medium text-xs"
-                          >
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-gray-700 text-sm mb-3">
-                          {photo.description || 'No description added'}
-                        </p>
-                        <div className="flex justify-between">
-                          <button
-                            onClick={() => {
-                              setEditingPhotoDescription(photo.id);
-                              setPhotoDescription(photo.description || '');
-                            }}
-                            className="text-[#5E2BFF] text-xs font-medium"
-                          >
-                            Edit Description
-                          </button>
-                          <button
-                            onClick={() => handleDeletePhoto(photo.id, sectionType)}
-                            className="text-red-500 text-xs font-medium"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        
         {/* Informazioni testuali della sezione */}
-        <div className="mt-8">
+        <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-bold text-gray-800">Information</h3>
             {!editingSectionContent && (
@@ -547,6 +487,194 @@ export default function CheckinInformation() {
                   </button>
                 </div>
               )}
+            </div>
+          )}
+        </div>
+        
+        {/* Foto della sezione con layout simile a DirectionsSection */}
+        <div className="mb-6">
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-lg font-bold text-gray-800">Photos</h3>
+            <button
+              onClick={() => setUploadingSection(sectionType)}
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a22cd] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF] disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={uploading}
+            >
+              {uploading ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload size={16} className="mr-2" />
+                  Add Photo
+                </>
+              )}
+            </button>
+          </div>
+          
+          {uploadingSection === sectionType && (
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-700 mb-2">Upload a new photo</h4>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                onChange={(e) => handleFileChange(e, sectionType)}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-[#5E2BFF] file:text-white hover:file:bg-[#4a22cd]"
+                disabled={uploading}
+              />
+              {uploading && (
+                <div className="mt-2 flex items-center">
+                  <div className="w-5 h-5 border-2 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mr-2"></div>
+                  <span className="text-sm text-gray-500">Uploading...</span>
+                </div>
+              )}
+              <div className="flex mt-3 justify-end">
+                <button
+                  onClick={() => setUploadingSection(null)}
+                  className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {sectionPhotos.length === 0 ? (
+            <div className="text-center py-10 bg-gray-100 rounded-lg">
+              <MapPin size={40} className="mx-auto text-gray-400 mb-3" />
+              <p className="text-gray-600 mb-2">
+                No photos available for {sectionTitle}
+              </p>
+              <p className="text-gray-500 text-sm">
+                Upload photos to help your guests with check-in information
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {sectionPhotos.map((photo, index) => (
+                <div key={photo.id} className="bg-white p-4 rounded-md shadow-sm">
+                  <div className="flex flex-col md:flex-row md:gap-6">
+                    <div className="md:w-1/3 mb-4 md:mb-0 relative">
+                      <div className="relative aspect-[4/3] w-full">
+                        <Image
+                          src={photo.photo_url}
+                          alt={`${sectionTitle} photo ${index + 1}`}
+                          fill
+                          className="rounded-md object-cover"
+                        />
+                      </div>
+                      <div className="flex justify-between mt-2">
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => movePhotoOrder(photo.id, sectionType, 'up')}
+                            disabled={index === 0}
+                            className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
+                            title="Move up"
+                          >
+                            <ArrowUp size={18} />
+                          </button>
+                          <button
+                            onClick={() => movePhotoOrder(photo.id, sectionType, 'down')}
+                            disabled={index === sectionPhotos.length - 1}
+                            className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
+                            title="Move down"
+                          >
+                            <ArrowDown size={18} />
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => handleDeletePhoto(photo.id, sectionType)}
+                          className="p-1 text-red-500 hover:text-red-700"
+                          title="Delete photo"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="md:w-2/3">
+                      {editingPhotoDescription === photo.id ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={photoDescription}
+                            onChange={(e) => setPhotoDescription(e.target.value)}
+                            className="w-full h-32 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                            placeholder="Add a description for this photo..."
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => setEditingPhotoDescription(null)}
+                              className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <X size={16} className="inline mr-1" />
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleUpdatePhotoDescription(photo.id, sectionType)}
+                              className="px-3 py-1 bg-[#5E2BFF] text-white rounded-md text-sm hover:bg-[#4a22cd]"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="inline mr-1"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="text-sm text-gray-500">
+                              Photo {index + 1}
+                            </h4>
+                            <button
+                              onClick={() => {
+                                setEditingPhotoDescription(photo.id);
+                                setPhotoDescription(photo.description || '');
+                              }}
+                              className="p-1 text-[#5E2BFF] hover:text-[#4a22cd]"
+                              title="Edit description"
+                            >
+                              <PenLine size={18} />
+                            </button>
+                          </div>
+                          
+                          {photo.description ? (
+                            <p className="text-gray-700">{photo.description}</p>
+                          ) : (
+                            <p className="text-gray-400 italic">
+                              No description. Click the pen icon to add one.
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {sectionType !== 'checkin_time' && (
+            <div className="mt-4 bg-blue-50 p-4 rounded-md">
+              <h4 className="text-sm font-medium text-blue-700 mb-2">Tips:</h4>
+              <ul className="list-disc pl-5 text-sm text-blue-600 space-y-1">
+                {sectionType === 'access_and_keys' && (
+                  <>
+                    <li>Upload clear photos of entrance, keys, lockboxes, or key pickup locations</li>
+                    <li>Add detailed descriptions to help guests access your property easily</li>
+                    <li>Include photos of any special instructions for entry systems or door codes</li>
+                  </>
+                )}
+                {sectionType === 'parking_info' && (
+                  <>
+                    <li>Show clearly marked parking areas available for your guests</li>
+                    <li>Include photos of parking spots, garages, or street parking options</li>
+                    <li>Add any special instructions about parking permits or restrictions</li>
+                  </>
+                )}
+                <li>Organize photos in logical order using the arrows</li>
+              </ul>
             </div>
           )}
         </div>
