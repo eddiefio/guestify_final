@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon } from 'lucide-react'
+import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon, ImageIcon } from 'lucide-react'
 import Image from 'next/image'
 
 // Tipi per le categorie e gli elementi
@@ -26,6 +26,16 @@ interface HowThingsWorkItem {
   title: string
   description?: string
   image_path: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+interface ItemPhoto {
+  id: string
+  item_id: string
+  photo_path: string
+  description?: string
   display_order: number
   created_at: string
   updated_at: string
@@ -54,6 +64,7 @@ export default function HowThingsWork() {
   const [roomCategories, setRoomCategories] = useState<RoomCategory[]>([])
   const [suggestedCategories, setSuggestedCategories] = useState<SuggestedCategory[]>([])
   const [howThingsWorkItems, setHowThingsWorkItems] = useState<{ [key: string]: HowThingsWorkItem[] }>({})
+  const [itemPhotos, setItemPhotos] = useState<{ [key: string]: ItemPhoto[] }>({})
   
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState<string | null>(null)
@@ -67,9 +78,15 @@ export default function HowThingsWork() {
   // Stati per la gestione degli elementi
   const [isAddingItem, setIsAddingItem] = useState(false)
   const [newItemTitle, setNewItemTitle] = useState('')
-  const [newItemDescription, setNewItemDescription] = useState('')
   const [newItemImage, setNewItemImage] = useState<File | null>(null)
   const [uploadingImage, setUploadingImage] = useState(false)
+  
+  // Stati per la gestione delle foto aggiuntive degli elementi
+  const [selectedItem, setSelectedItem] = useState<string | null>(null)
+  const [isAddingPhoto, setIsAddingPhoto] = useState(false)
+  const [newPhotoImage, setNewPhotoImage] = useState<File | null>(null)
+  const [newPhotoDescription, setNewPhotoDescription] = useState('')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
 
   // Carica i dati della proprietà e le categorie
   useEffect(() => {
@@ -121,6 +138,7 @@ export default function HowThingsWork() {
         
         // Inizializza lo state degli elementi per tutte le categorie
         const itemsMap: { [key: string]: HowThingsWorkItem[] } = {}
+        const photosMap: { [key: string]: ItemPhoto[] } = {}
         
         if (categoriesData && categoriesData.length > 0) {
           // Carica gli elementi per ogni categoria
@@ -133,10 +151,25 @@ export default function HowThingsWork() {
             
             if (itemsError) throw itemsError
             itemsMap[category.id] = itemsData || []
+            
+            // Carica le foto per ogni elemento
+            if (itemsData && itemsData.length > 0) {
+              for (const item of itemsData) {
+                const { data: photosData, error: photosError } = await supabase
+                  .from('how_things_work_item_photos')
+                  .select('*')
+                  .eq('item_id', item.id)
+                  .order('display_order', { ascending: true })
+                
+                if (photosError) throw photosError
+                photosMap[item.id] = photosData || []
+              }
+            }
           }
         }
         
         setHowThingsWorkItems(itemsMap)
+        setItemPhotos(photosMap)
         
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -396,7 +429,6 @@ export default function HowThingsWork() {
         .insert({
           category_id: activeCategory,
           title: newItemTitle,
-          description: newItemDescription,
           image_path: fileName,
           display_order: howThingsWorkItems[activeCategory]?.length || 0
         })
@@ -420,10 +452,17 @@ export default function HowThingsWork() {
         [activeCategory]: updatedItems || []
       })
       
+      // Inizializza l'array delle foto per questo nuovo elemento
+      if (data && data.length > 0) {
+        setItemPhotos({
+          ...itemPhotos,
+          [data[0].id]: []
+        })
+      }
+      
       // Reimposta i campi del form
       setIsAddingItem(false)
       setNewItemTitle('')
-      setNewItemDescription('')
       setNewItemImage(null)
       
     } catch (error) {
@@ -441,7 +480,7 @@ export default function HowThingsWork() {
     }
     
     try {
-      // Prima elimina l'immagine dal bucket di storage
+      // Prima elimina l'immagine principale dal bucket di storage
       if (imagePath) {
         const { error: storageError } = await supabase.storage
           .from('how-things-work-images')
@@ -450,7 +489,17 @@ export default function HowThingsWork() {
         if (storageError) throw storageError
       }
       
-      // Poi elimina l'elemento
+      // Elimina tutte le foto associate all'elemento
+      const photos = itemPhotos[itemId] || []
+      for (const photo of photos) {
+        if (photo.photo_path) {
+          await supabase.storage
+            .from('item-photos')
+            .remove([photo.photo_path])
+        }
+      }
+      
+      // Poi elimina l'elemento (le foto saranno eliminate a cascata)
       const { error } = await supabase
         .from('how_things_work_items')
         .delete()
@@ -476,9 +525,137 @@ export default function HowThingsWork() {
         })
       }
       
+      // Rimuovi le foto di questo elemento dallo state
+      const updatedPhotos = { ...itemPhotos }
+      delete updatedPhotos[itemId]
+      setItemPhotos(updatedPhotos)
+      
+      // Se l'elemento selezionato è stato eliminato, deselezionalo
+      if (selectedItem === itemId) {
+        setSelectedItem(null)
+      }
+      
     } catch (error) {
       console.error('Error deleting item:', error)
       toast.error('Failed to delete item')
+    }
+  }
+
+  // Gestione dell'aggiunta di una nuova foto ad un elemento
+  const handleAddPhoto = async () => {
+    if (!selectedItem) {
+      toast.error('Please select an item first')
+      return
+    }
+    
+    if (!newPhotoImage) {
+      toast.error('Please select an image')
+      return
+    }
+    
+    if (!user) {
+      toast.error('You must be logged in to add photos')
+      return
+    }
+    
+    try {
+      setUploadingPhoto(true)
+      
+      // Carica l'immagine
+      const fileName = `${user.id}/${Date.now()}_${newPhotoImage.name}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('item-photos')
+        .upload(fileName, newPhotoImage)
+      
+      if (uploadError) throw uploadError
+      
+      // Aggiungi la nuova foto
+      const { data, error } = await supabase
+        .from('how_things_work_item_photos')
+        .insert({
+          item_id: selectedItem,
+          photo_path: fileName,
+          description: newPhotoDescription || null,
+          display_order: (itemPhotos[selectedItem] || []).length
+        })
+        .select()
+      
+      if (error) throw error
+      
+      toast.success('Photo added successfully')
+      
+      // Aggiorna le foto
+      const { data: updatedPhotos, error: fetchError } = await supabase
+        .from('how_things_work_item_photos')
+        .select('*')
+        .eq('item_id', selectedItem)
+        .order('display_order', { ascending: true })
+      
+      if (fetchError) throw fetchError
+      
+      setItemPhotos({
+        ...itemPhotos,
+        [selectedItem]: updatedPhotos || []
+      })
+      
+      // Reimposta i campi del form
+      setIsAddingPhoto(false)
+      setNewPhotoImage(null)
+      setNewPhotoDescription('')
+      
+    } catch (error) {
+      console.error('Error adding photo:', error)
+      toast.error('Failed to add photo')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
+  // Gestione dell'eliminazione di una foto
+  const handleDeletePhoto = async (photoId: string, photoPath: string) => {
+    if (!confirm('Are you sure you want to delete this photo?')) {
+      return
+    }
+    
+    try {
+      // Prima elimina l'immagine dal bucket di storage
+      if (photoPath) {
+        const { error: storageError } = await supabase.storage
+          .from('item-photos')
+          .remove([photoPath])
+        
+        if (storageError) throw storageError
+      }
+      
+      // Poi elimina la foto
+      const { error } = await supabase
+        .from('how_things_work_item_photos')
+        .delete()
+        .eq('id', photoId)
+      
+      if (error) throw error
+      
+      toast.success('Photo deleted successfully')
+      
+      // Aggiorna le foto
+      if (selectedItem) {
+        const { data: updatedPhotos, error: fetchError } = await supabase
+          .from('how_things_work_item_photos')
+          .select('*')
+          .eq('item_id', selectedItem)
+          .order('display_order', { ascending: true })
+        
+        if (fetchError) throw fetchError
+        
+        setItemPhotos({
+          ...itemPhotos,
+          [selectedItem]: updatedPhotos || []
+        })
+      }
+      
+    } catch (error) {
+      console.error('Error deleting photo:', error)
+      toast.error('Failed to delete photo')
     }
   }
 
@@ -706,154 +883,306 @@ export default function HowThingsWork() {
                   </div>
                 ) : (
                   <>
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-bold">
-                        {roomCategories.find(c => c.id === activeCategory)?.name || 'Items'}
-                      </h2>
-                      <button 
-                        onClick={() => {
-                          setIsAddingItem(true)
-                          setNewItemTitle('')
-                          setNewItemDescription('')
-                          setNewItemImage(null)
-                        }}
-                        className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md flex items-center"
-                      >
-                        <PlusIcon size={16} className="mr-1" /> Add Item
-                      </button>
-                    </div>
-                    
-                    {/* Form per l'aggiunta di un nuovo elemento */}
-                    {isAddingItem && (
-                      <div className="mb-6 p-4 bg-gray-50 rounded-md">
-                        <h3 className="font-medium mb-3">Add New Item</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Title *
-                            </label>
-                            <input
-                              type="text"
-                              value={newItemTitle}
-                              onChange={(e) => setNewItemTitle(e.target.value)}
-                              placeholder="e.g., TV Remote Control"
-                              className="w-full p-2 border border-gray-300 rounded-md"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Description
-                            </label>
-                            <textarea
-                              value={newItemDescription}
-                              onChange={(e) => setNewItemDescription(e.target.value)}
-                              placeholder="How to use this item..."
-                              className="w-full p-2 border border-gray-300 rounded-md"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                              Image *
-                            </label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => setNewItemImage(e.target.files?.[0] || null)}
-                              className="w-full p-2 border border-gray-300 rounded-md"
-                              required
-                            />
-                            <p className="text-xs text-gray-500 mt-1">
-                              Upload a clear image (max 5MB). Supported formats: JPG, PNG, WebP
-                            </p>
-                          </div>
-                          <div className="flex justify-end space-x-2">
+                    {selectedItem ? (
+                      /* Vista di dettaglio dell'item per aggiungere foto */
+                      <>
+                        <div className="flex justify-between items-center mb-6">
+                          <div className="flex items-center">
                             <button
-                              onClick={() => setIsAddingItem(false)}
-                              className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+                              onClick={() => setSelectedItem(null)}
+                              className="mr-2 text-indigo-600 hover:text-indigo-800"
                             >
-                              Cancel
+                              ← Back
                             </button>
-                            <button
-                              onClick={handleAddItem}
-                              disabled={uploadingImage}
-                              className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
-                            >
-                              {uploadingImage ? 'Uploading...' : 'Save Item'}
-                            </button>
+                            <h2 className="text-xl font-bold">
+                              {howThingsWorkItems[activeCategory]?.find(item => item.id === selectedItem)?.title}
+                            </h2>
                           </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Lista degli elementi */}
-                    <div className="space-y-4">
-                      {howThingsWorkItems[activeCategory]?.length ? (
-                        howThingsWorkItems[activeCategory].map((item) => (
-                          <div 
-                            key={item.id}
-                            className="p-4 border border-gray-200 rounded-lg"
+                          <button 
+                            onClick={() => {
+                              setIsAddingPhoto(true)
+                              setNewPhotoImage(null)
+                              setNewPhotoDescription('')
+                            }}
+                            className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md flex items-center"
                           >
-                            <div className="flex flex-col md:flex-row gap-4">
-                              <div className="md:w-1/3 flex-shrink-0">
-                                <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
-                                  <Image
-                                    src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/how-things-work-images/${item.image_path}`}
-                                    alt={item.title}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                </div>
+                            <PlusIcon size={16} className="mr-1" /> Add Photo
+                          </button>
+                        </div>
+                        
+                        {/* Form per l'aggiunta di una nuova foto */}
+                        {isAddingPhoto && (
+                          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                            <h3 className="font-medium mb-3">Add New Photo</h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Photo *
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setNewPhotoImage(e.target.files?.[0] || null)}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  required
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Upload a clear image (max 5MB). Supported formats: JPG, PNG, WebP
+                                </p>
                               </div>
-                              <div className="md:w-2/3">
-                                <div className="flex justify-between items-start">
-                                  <h3 className="text-lg font-semibold">{item.title}</h3>
-                                  <div className="flex space-x-1">
-                                    <button
-                                      onClick={() => handleMoveItem(item.id, 'up')}
-                                      className="p-1 text-gray-600 hover:text-gray-800"
-                                      title="Move up"
-                                      disabled={howThingsWorkItems[activeCategory].indexOf(item) === 0}
-                                    >
-                                      <ArrowUpIcon size={16} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleMoveItem(item.id, 'down')}
-                                      className="p-1 text-gray-600 hover:text-gray-800"
-                                      title="Move down"
-                                      disabled={
-                                        howThingsWorkItems[activeCategory].indexOf(item) === 
-                                        howThingsWorkItems[activeCategory].length - 1
-                                      }
-                                    >
-                                      <ArrowDownIcon size={16} />
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteItem(item.id, item.image_path)}
-                                      className="p-1 text-red-600 hover:text-red-800"
-                                      title="Delete"
-                                    >
-                                      <Trash2Icon size={16} />
-                                    </button>
-                                  </div>
-                                </div>
-                                {item.description && (
-                                  <p className="mt-2 text-gray-600">{item.description}</p>
-                                )}
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Description
+                                </label>
+                                <textarea
+                                  value={newPhotoDescription}
+                                  onChange={(e) => setNewPhotoDescription(e.target.value)}
+                                  placeholder="Explain what this photo shows or how to use this feature..."
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => setIsAddingPhoto(false)}
+                                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleAddPhoto}
+                                  disabled={uploadingPhoto}
+                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
+                                >
+                                  {uploadingPhoto ? 'Uploading...' : 'Save Photo'}
+                                </button>
                               </div>
                             </div>
                           </div>
-                        ))
-                      ) : (
-                        <div className="text-center py-8">
-                          <p className="text-gray-500">No items in this category yet.</p>
-                          <p className="text-gray-500 text-sm mt-1">
-                            Click "Add Item" to add your first item.
-                          </p>
+                        )}
+                        
+                        {/* Lista delle foto per questo elemento */}
+                        <div className="mt-4">
+                          <h3 className="font-medium mb-3">Item Photos</h3>
+                          
+                          {/* Immagine principale */}
+                          <div className="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Main Image</h4>
+                            <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden mb-2">
+                              <Image
+                                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/how-things-work-images/${howThingsWorkItems[activeCategory]?.find(item => item.id === selectedItem)?.image_path}`}
+                                alt="Main image"
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* Foto aggiuntive */}
+                          <div className="space-y-4">
+                            {itemPhotos[selectedItem]?.length ? (
+                              itemPhotos[selectedItem].map((photo) => (
+                                <div 
+                                  key={photo.id}
+                                  className="p-4 border border-gray-200 rounded-lg"
+                                >
+                                  <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="md:w-1/3 flex-shrink-0">
+                                      <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+                                        <Image
+                                          src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/item-photos/${photo.photo_path}`}
+                                          alt="Item detail"
+                                          fill
+                                          className="object-cover"
+                                        />
+                                      </div>
+                                    </div>
+                                    <div className="md:w-2/3">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          {photo.description && (
+                                            <p className="text-gray-700">{photo.description}</p>
+                                          )}
+                                          {!photo.description && (
+                                            <p className="text-gray-500 italic">No description provided</p>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() => handleDeletePhoto(photo.id, photo.photo_path)}
+                                          className="p-1 text-red-600 hover:text-red-800"
+                                          title="Delete"
+                                        >
+                                          <Trash2Icon size={16} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-8">
+                                <p className="text-gray-500">No additional photos for this item yet.</p>
+                                <p className="text-gray-500 text-sm mt-1">
+                                  Click "Add Photo" to add photos explaining how this item works.
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
+                      </>
+                    ) : (
+                      /* Lista degli elementi della categoria */
+                      <>
+                        <div className="flex justify-between items-center mb-6">
+                          <h2 className="text-xl font-bold">
+                            {roomCategories.find(c => c.id === activeCategory)?.name || 'Items'}
+                          </h2>
+                          <button 
+                            onClick={() => {
+                              setIsAddingItem(true)
+                              setNewItemTitle('')
+                              setNewItemImage(null)
+                            }}
+                            className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md flex items-center"
+                          >
+                            <PlusIcon size={16} className="mr-1" /> Add Item
+                          </button>
+                        </div>
+                        
+                        {/* Form per l'aggiunta di un nuovo elemento */}
+                        {isAddingItem && (
+                          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                            <h3 className="font-medium mb-3">Add New Item</h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Title *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={newItemTitle}
+                                  onChange={(e) => setNewItemTitle(e.target.value)}
+                                  placeholder="e.g., TV Remote Control"
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Image *
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setNewItemImage(e.target.files?.[0] || null)}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  required
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Upload a clear image (max 5MB). Supported formats: JPG, PNG, WebP
+                                </p>
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => setIsAddingItem(false)}
+                                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleAddItem}
+                                  disabled={uploadingImage}
+                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
+                                >
+                                  {uploadingImage ? 'Uploading...' : 'Save Item'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Lista degli elementi */}
+                        <div className="space-y-4">
+                          {howThingsWorkItems[activeCategory]?.length ? (
+                            howThingsWorkItems[activeCategory].map((item) => (
+                              <div 
+                                key={item.id}
+                                className="p-4 border border-gray-200 rounded-lg hover:border-indigo-300 transition-colors"
+                              >
+                                <div className="flex flex-col md:flex-row gap-4">
+                                  <div className="md:w-1/3 flex-shrink-0">
+                                    <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+                                      <Image
+                                        src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/how-things-work-images/${item.image_path}`}
+                                        alt={item.title}
+                                        fill
+                                        className="object-cover"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="md:w-2/3">
+                                    <div className="flex justify-between items-start">
+                                      <h3 className="text-lg font-semibold">{item.title}</h3>
+                                      <div className="flex space-x-1">
+                                        <button
+                                          onClick={() => handleMoveItem(item.id, 'up')}
+                                          className="p-1 text-gray-600 hover:text-gray-800"
+                                          title="Move up"
+                                          disabled={howThingsWorkItems[activeCategory].indexOf(item) === 0}
+                                        >
+                                          <ArrowUpIcon size={16} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleMoveItem(item.id, 'down')}
+                                          className="p-1 text-gray-600 hover:text-gray-800"
+                                          title="Move down"
+                                          disabled={
+                                            howThingsWorkItems[activeCategory].indexOf(item) === 
+                                            howThingsWorkItems[activeCategory].length - 1
+                                          }
+                                        >
+                                          <ArrowDownIcon size={16} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteItem(item.id, item.image_path)}
+                                          className="p-1 text-red-600 hover:text-red-800"
+                                          title="Delete"
+                                        >
+                                          <Trash2Icon size={16} />
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="mt-2 flex justify-between items-center">
+                                      <div className="flex items-center text-sm text-gray-600">
+                                        <ImageIcon size={16} className="mr-1" />
+                                        <span>
+                                          {(itemPhotos[item.id]?.length || 0)} additional photo{(itemPhotos[item.id]?.length || 0) !== 1 ? 's' : ''}
+                                        </span>
+                                      </div>
+                                      
+                                      <button 
+                                        onClick={() => setSelectedItem(item.id)}
+                                        className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md"
+                                      >
+                                        Manage Photos
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-8">
+                              <p className="text-gray-500">No items in this category yet.</p>
+                              <p className="text-gray-500 text-sm mt-1">
+                                Click "Add Item" to add your first item.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
