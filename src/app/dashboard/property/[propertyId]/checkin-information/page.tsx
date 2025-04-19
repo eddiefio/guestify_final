@@ -325,7 +325,6 @@ export default function CheckinInformation() {
             property_id: propertyId,
             section_type: sectionType,
             content: sectionContent,
-            host_id: user?.id
           })
           .select()
         
