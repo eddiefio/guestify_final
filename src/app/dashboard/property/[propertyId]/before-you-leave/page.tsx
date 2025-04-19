@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import ProvidedItemsSection from '@/components/ProvidedItemsSection'
 
 interface Property {
   id: string
@@ -188,15 +189,7 @@ export default function BeforeYouLeave() {
                     <p className="text-gray-600 mb-6">
                       Gestione delle categorie e degli articoli forniti nella tua proprietà.
                     </p>
-                    <div className="text-center p-12 bg-gray-50 rounded-lg">
-                      <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                      </svg>
-                      <p className="text-gray-500 mb-4">
-                        Qui verrà implementato il componente per la gestione degli articoli forniti, 
-                        con categorie come camera da letto, cucina, bagno, ecc.
-                      </p>
-                    </div>
+                    <ProvidedItemsSection propertyId={propertyId as string} />
                   </div>
                 )}
 
