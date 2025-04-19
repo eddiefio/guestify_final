@@ -324,7 +324,8 @@ export default function CheckinInformation() {
           .insert({
             property_id: propertyId,
             section_type: sectionType,
-            content: sectionContent
+            content: sectionContent,
+            host_id: user?.id
           })
           .select()
         
