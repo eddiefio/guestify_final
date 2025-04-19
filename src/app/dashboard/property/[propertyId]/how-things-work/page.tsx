@@ -374,6 +374,11 @@ export default function HowThingsWork() {
       return
     }
     
+    if (!user) {
+      toast.error('You must be logged in to add items')
+      return
+    }
+    
     try {
       setUploadingImage(true)
       
