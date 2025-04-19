@@ -762,7 +762,7 @@ export default function CheckinInformation() {
             </div>
           ) : (
             <div>
-              {/* Schede in stile griglia, simili alla pagina Before You Leave */}
+              {/* Schede in stile griglia, simili alla pagina Before You Leave Home */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div 
                   className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'access_and_keys' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}

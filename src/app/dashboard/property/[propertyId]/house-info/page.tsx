@@ -453,7 +453,7 @@ export default function HouseInfo() {
     },
     {
       id: 'before-you-leave',
-      title: 'Before You Leave',
+      title: 'Before You Leave Home',
       description: 'Pre-departure instructions for guests',
       icon: (
         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

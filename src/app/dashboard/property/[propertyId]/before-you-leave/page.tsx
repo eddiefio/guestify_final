@@ -107,7 +107,7 @@ export default function BeforeYouLeave() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`Before You Leave - ${property?.name || 'Property'}`}>
+      <Layout title={`Before You Leave Home - ${property?.name || 'Property'}`}>
         <div className="container mx-auto px-4 py-6 font-spartan">
           {/* Header con breadcrumb e nome proprietà */}
           <div className="mb-6">
@@ -124,10 +124,10 @@ export default function BeforeYouLeave() {
               <svg className="w-3 h-3 mx-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd"></path>
               </svg>
-              <span className="font-medium">Before You Leave</span>
+              <span className="font-medium">Before You Leave Home</span>
             </div>
             <h1 className="text-2xl font-bold text-gray-800 mb-2">
-              Before You Leave - {property?.name || 'Loading...'}
+              Before You Leave Home - {property?.name || 'Loading...'}
             </h1>
             <p className="text-gray-600">
               Provide useful information for your guests before they leave, including what's provided at your property, information you need to know, and directions.
