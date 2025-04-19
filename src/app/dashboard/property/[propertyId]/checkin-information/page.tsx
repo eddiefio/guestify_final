@@ -93,16 +93,33 @@ export default function CheckinInformation() {
           .from('house_info')
           .select('*')
           .eq('property_id', propertyId)
-          .in('section_type', ['access_and_keys', 'checkin_time', 'parking_info'])
+          .eq('section_type', 'checkin_information')
         
         if (checkinError && checkinError.code !== 'PGRST116') throw checkinError
         
         const infoMap: {[key in SectionType]?: HouseInfoItem} = {}
         
-        if (checkinData) {
+        if (checkinData && checkinData.length > 0) {
           checkinData.forEach((item: HouseInfoItem) => {
-            infoMap[item.section_type as SectionType] = item
-          })
+            try {
+              // Prova a fare il parsing del campo content come JSON
+              const parsedContent = JSON.parse(item.content);
+              if (parsedContent && parsedContent.subtype && parsedContent.content) {
+                const subtype = parsedContent.subtype as SectionType;
+                
+                // Crea un nuovo oggetto mantenendo l'ID originale ma aggiornando il content
+                infoMap[subtype] = {
+                  ...item,
+                  section_type: subtype,
+                  content: parsedContent.content
+                };
+              }
+            } catch (e) {
+              // Se non è in formato JSON, potrebbe essere un record salvato con il vecchio formato
+              // In questo caso lo ignoriamo
+              console.warn('Failed to parse content as JSON', e);
+            }
+          });
         }
         
         setCheckinInfo(infoMap)
@@ -308,32 +325,59 @@ export default function CheckinInformation() {
       
       if (checkinInfo[sectionType]) {
         // Aggiorna le informazioni esistenti
+        // Prepara il contenuto in formato JSON
+        const contentWithMetadata = JSON.stringify({
+          subtype: sectionType,
+          content: sectionContent
+        });
+        
         const { error } = await supabase
           .from('house_info')
           .update({ 
-            content: sectionContent,
+            content: contentWithMetadata,
             updated_at: new Date().toISOString()
           })
           .eq('id', checkinInfo[sectionType]!.id)
         
         if (error) throw error
+        
+        // Aggiorna lo state locale
+        setCheckinInfo(prev => ({
+          ...prev,
+          [sectionType]: {
+            ...prev[sectionType]!,
+            content: sectionContent
+          }
+        }));
       } else {
         // Crea nuove informazioni
+        // Usiamo 'checkin_information' come section_type per rispettare il vincolo della tabella
+        // e salviamo il sottotipo specifico come parte del contenuto in formato JSON
+        const contentWithMetadata = JSON.stringify({
+          subtype: sectionType,
+          content: sectionContent
+        });
+        
         const { data, error } = await supabase
           .from('house_info')
           .insert({
             property_id: propertyId,
-            section_type: sectionType,
-            content: sectionContent,
+            section_type: 'checkin_information',
+            content: contentWithMetadata
           })
           .select()
         
         if (error) throw error
         
         if (data && data.length > 0) {
+          // Salviamo nei dati locali con l'adattamento del tipo per l'interfaccia utente
           setCheckinInfo(prev => ({
             ...prev,
-            [sectionType]: data[0]
+            [sectionType]: {
+              ...data[0],
+              section_type: sectionType,
+              content: sectionContent
+            }
           }))
         }
       }
