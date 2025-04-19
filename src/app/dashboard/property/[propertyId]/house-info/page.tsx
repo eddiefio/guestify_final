@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { PenLine } from 'lucide-react'
 
 // Tipi per le diverse sezioni
 interface HouseRule {
@@ -365,6 +366,30 @@ export default function HouseInfo() {
                   {paragraph}
                 </p>
               ))}
+              
+              {sectionType === 'checkout_information' && (
+                <Link
+                  href={`/dashboard/property/${propertyId}/checkout-information`}
+                  className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 mt-4"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  Edit detailed checkout information
+                </Link>
+              )}
+              
+              {sectionType === 'checkin_information' && (
+                <Link
+                  href={`/dashboard/property/${propertyId}/checkin-information`}
+                  className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-800 mt-4"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                  Edit detailed check-in information
+                </Link>
+              )}
             </div>
           </div>
         )}
