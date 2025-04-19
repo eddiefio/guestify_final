@@ -135,12 +135,40 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
     if (!confirm('Sei sicuro di voler eliminare questa foto?')) return
     
     try {
+      // Troviamo prima la foto da eliminare per ottenere l'URL
+      const photos = activeTab === 'driving' ? drivingPhotos : trainPhotos
+      const photoToDelete = photos.find(p => p.id === photoId)
+      
+      if (!photoToDelete) return
+      
+      // Eliminiamo prima il record dal database
       const { error } = await supabase
         .from('directions_photos')
         .delete()
         .eq('id', photoId)
       
       if (error) throw error
+      
+      // Estraiamo il percorso dell'immagine dall'URL
+      // L'URL è del tipo: https://fqjjivwdubseuwjonufk.supabase.co/storage/v1/object/public/property-photos/directions/FILE_NAME
+      const photoUrl = photoToDelete.photo_url
+      const filePathMatch = photoUrl.match(/\/property-photos\/(.+)$/)
+      
+      if (filePathMatch && filePathMatch[1]) {
+        // Eliminiamo l'immagine dallo storage
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('property-photos')
+            .remove([filePathMatch[1]])
+          
+          if (storageError) {
+            console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
+          }
+        } catch (storageError) {
+          console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
+          // Non interrumpiamo il flusso se l'eliminazione dallo storage fallisce
+        }
+      }
       
       toast.success('Foto eliminata con successo')
       loadDirectionsPhotos()

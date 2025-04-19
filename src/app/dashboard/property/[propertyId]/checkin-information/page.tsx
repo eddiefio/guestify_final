@@ -209,11 +209,7 @@ export default function CheckinInformation() {
       
       if (!photoToDelete) return
       
-      // Elimina la foto dal storage di Supabase
-      const photoUrl = photoToDelete.photo_url
-      const storagePath = photoUrl.split('/').slice(-2).join('/')
-      
-      // Elimina il record dal database
+      // Elimina prima il record dal database
       const { error } = await supabase
         .from('checkin_photos')
         .delete()
@@ -227,13 +223,26 @@ export default function CheckinInformation() {
         [sectionType]: prev[sectionType].filter(p => p.id !== photoId)
       }))
       
-      // Prova ad eliminare anche dal storage (può fallire se il percorso è errato, ma non è bloccante)
-      try {
-        await supabase.storage
-          .from('property_media')
-          .remove([storagePath])
-      } catch (storageError) {
-        console.warn('Could not delete file from storage:', storageError)
+      // Estrai il percorso dell'immagine dall'URL
+      // L'URL è del tipo: https://fqjjivwdubseuwjonufk.supabase.co/storage/v1/object/public/property_media/PATH
+      const photoUrl = photoToDelete.photo_url
+      const filePathMatch = photoUrl.match(/\/property_media\/(.+)$/)
+      
+      if (filePathMatch && filePathMatch[1]) {
+        // Elimina l'immagine dallo storage
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('property_media')
+            .remove([filePathMatch[1]])
+          
+          if (storageError) {
+            console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
+          }
+        } catch (storageError) {
+          console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
+        }
+      } else {
+        console.warn('Impossibile estrarre il percorso dell\'immagine dall\'URL:', photoUrl)
       }
       
       toast.success('Photo deleted successfully')
