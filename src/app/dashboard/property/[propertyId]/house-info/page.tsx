@@ -7,8 +7,11 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import dynamic from 'next/dynamic'
 import { PenLine, ArrowLeftIcon } from 'lucide-react'
+
+// Importazione dinamica di ProtectedRoute senza SSR
+const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
 
 // Tipi per le diverse sezioni
 interface HouseRule {

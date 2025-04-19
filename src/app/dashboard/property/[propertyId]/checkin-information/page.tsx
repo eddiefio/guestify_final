@@ -8,8 +8,11 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import dynamic from 'next/dynamic'
 import { ArrowUp, ArrowDown, Trash2, PenLine, Upload, MapPin, X, PlusCircle, ArrowLeftIcon } from 'lucide-react'
+
+// Importazione dinamica di ProtectedRoute senza SSR
+const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
 
 interface HouseInfoItem {
   id: string

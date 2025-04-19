@@ -6,10 +6,13 @@ import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import dynamic from 'next/dynamic'
 import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon, ImageIcon, ArrowLeftIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+
+// Importazione dinamica di ProtectedRoute senza SSR
+const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
 
 // Tipi per le categorie e gli elementi
 interface RoomCategory {
