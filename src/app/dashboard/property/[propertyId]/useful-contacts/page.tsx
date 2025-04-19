@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { Phone, Mail, PenLine, FirstAid } from 'lucide-react'
+import { Phone, Mail, PenLine, Stethoscope } from 'lucide-react'
 
 interface Property {
   id: string
@@ -290,7 +290,7 @@ export default function UsefulContacts() {
                     <div>
                       <label htmlFor="medicalInfo" className="block text-sm font-medium text-gray-700 mb-1">
                         <div className="flex items-center">
-                          <FirstAid className="h-5 w-5 text-red-500 mr-2" />
+                          <Stethoscope className="h-5 w-5 text-red-500 mr-2" />
                           <span>Need to See a Doctor?</span>
                         </div>
                       </label>
@@ -379,7 +379,7 @@ export default function UsefulContacts() {
                       {formData.medicalInfo && (
                         <div className="mt-8">
                           <div className="flex items-center mb-4">
-                            <FirstAid className="h-6 w-6 text-red-500 mr-2" />
+                            <Stethoscope className="h-6 w-6 text-red-500 mr-2" />
                             <h3 className="text-lg font-bold text-gray-800">Need to See a Doctor?</h3>
                           </div>
                           <div className="bg-red-50 p-6 rounded-lg">
