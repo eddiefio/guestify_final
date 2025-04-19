@@ -87,6 +87,12 @@ export default function HowThingsWork() {
   const [newPhotoImage, setNewPhotoImage] = useState<File | null>(null)
   const [newPhotoDescription, setNewPhotoDescription] = useState('')
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  
+  // Stati per la modifica degli elementi
+  const [isEditingItem, setIsEditingItem] = useState(false)
+  const [editItemId, setEditItemId] = useState<string | null>(null)
+  const [editItemTitle, setEditItemTitle] = useState('')
+  const [editItemImage, setEditItemImage] = useState<File | null>(null)
 
   // Carica i dati della proprietà e le categorie
   useEffect(() => {
@@ -708,6 +714,89 @@ export default function HowThingsWork() {
     }
   }
 
+  // Gestione della modifica di un elemento
+  const handleEditItem = async () => {
+    if (!editItemId || !activeCategory) {
+      toast.error('Invalid item selection')
+      return
+    }
+    
+    if (!editItemTitle.trim()) {
+      toast.error('Please enter a title')
+      return
+    }
+    
+    if (!user) {
+      toast.error('You must be logged in to edit items')
+      return
+    }
+    
+    try {
+      let updatedImagePath = howThingsWorkItems[activeCategory]?.find(item => item.id === editItemId)?.image_path || '';
+      
+      // Se c'è una nuova immagine, caricarla e aggiornare il percorso
+      if (editItemImage) {
+        setUploadingImage(true)
+        
+        // Carica la nuova immagine
+        const fileName = `${user.id}/${Date.now()}_${editItemImage.name}`
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('how-things-work-images')
+          .upload(fileName, editItemImage)
+        
+        if (uploadError) throw uploadError
+        
+        // Elimina la vecchia immagine se presente
+        if (updatedImagePath) {
+          await supabase.storage
+            .from('how-things-work-images')
+            .remove([updatedImagePath])
+        }
+        
+        updatedImagePath = fileName
+      }
+      
+      // Aggiorna l'elemento
+      const { error } = await supabase
+        .from('how_things_work_items')
+        .update({
+          title: editItemTitle,
+          image_path: updatedImagePath
+        })
+        .eq('id', editItemId)
+      
+      if (error) throw error
+      
+      toast.success('Item updated successfully')
+      
+      // Aggiorna gli elementi
+      const { data: updatedItems, error: fetchError } = await supabase
+        .from('how_things_work_items')
+        .select('*')
+        .eq('category_id', activeCategory)
+        .order('display_order', { ascending: true })
+      
+      if (fetchError) throw fetchError
+      
+      setHowThingsWorkItems({
+        ...howThingsWorkItems,
+        [activeCategory]: updatedItems || []
+      })
+      
+      // Reimposta i campi del form
+      setIsEditingItem(false)
+      setEditItemId(null)
+      setEditItemTitle('')
+      setEditItemImage(null)
+      
+    } catch (error) {
+      console.error('Error updating item:', error)
+      toast.error('Failed to update item')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
   // Rendering UI
   return (
     <ProtectedRoute>
@@ -906,14 +995,14 @@ export default function HowThingsWork() {
                             }}
                             className="text-sm bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md flex items-center"
                           >
-                            <PlusIcon size={16} className="mr-1" /> Add Photo
+                            <PlusIcon size={16} className="mr-1" /> Add Instruction
                           </button>
                         </div>
                         
                         {/* Form per l'aggiunta di una nuova foto */}
                         {isAddingPhoto && (
                           <div className="mb-6 p-4 bg-gray-50 rounded-md">
-                            <h3 className="font-medium mb-3">Add New Photo</h3>
+                            <h3 className="font-medium mb-3">Add New Instruction</h3>
                             <div className="space-y-4">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -954,7 +1043,7 @@ export default function HowThingsWork() {
                                   disabled={uploadingPhoto}
                                   className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
                                 >
-                                  {uploadingPhoto ? 'Uploading...' : 'Save Photo'}
+                                  {uploadingPhoto ? 'Uploading...' : 'Save Instruction'}
                                 </button>
                               </div>
                             </div>
@@ -963,20 +1052,7 @@ export default function HowThingsWork() {
                         
                         {/* Lista delle foto per questo elemento */}
                         <div className="mt-4">
-                          <h3 className="font-medium mb-3">Item Photos</h3>
-                          
-                          {/* Immagine principale */}
-                          <div className="mb-6 p-4 border border-gray-300 rounded-md bg-gray-50">
-                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Main Image</h4>
-                            <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden mb-2">
-                              <Image
-                                src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/how-things-work-images/${howThingsWorkItems[activeCategory]?.find(item => item.id === selectedItem)?.image_path}`}
-                                alt="Main image"
-                                fill
-                                className="object-cover"
-                              />
-                            </div>
-                          </div>
+                          <h3 className="font-medium mb-3">Item Instructions</h3>
                           
                           {/* Foto aggiuntive */}
                           <div className="space-y-4">
@@ -1021,9 +1097,9 @@ export default function HowThingsWork() {
                               ))
                             ) : (
                               <div className="text-center py-8">
-                                <p className="text-gray-500">No additional photos for this item yet.</p>
+                                <p className="text-gray-500">No instructions for this item yet.</p>
                                 <p className="text-gray-500 text-sm mt-1">
-                                  Click "Add Photo" to add photos explaining how this item works.
+                                  Click "Add Instruction" to add photos explaining how this item works.
                                 </p>
                               </div>
                             )}
@@ -1101,6 +1177,62 @@ export default function HowThingsWork() {
                           </div>
                         )}
                         
+                        {/* Form per la modifica di un elemento esistente */}
+                        {isEditingItem && (
+                          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                            <h3 className="font-medium mb-3">Edit Item</h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Title *
+                                </label>
+                                <input
+                                  type="text"
+                                  value={editItemTitle}
+                                  onChange={(e) => setEditItemTitle(e.target.value)}
+                                  placeholder="e.g., TV Remote Control"
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  New Image (optional)
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setEditItemImage(e.target.files?.[0] || null)}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Leave empty to keep the current image
+                                </p>
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setIsEditingItem(false)
+                                    setEditItemId(null)
+                                    setEditItemTitle('')
+                                    setEditItemImage(null)
+                                  }}
+                                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleEditItem}
+                                  disabled={uploadingImage}
+                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
+                                >
+                                  {uploadingImage ? 'Updating...' : 'Update Item'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Lista degli elementi */}
                         <div className="space-y-4">
                           {howThingsWorkItems[activeCategory]?.length ? (
@@ -1111,7 +1243,10 @@ export default function HowThingsWork() {
                               >
                                 <div className="flex flex-col md:flex-row gap-4">
                                   <div className="md:w-1/3 flex-shrink-0">
-                                    <div className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden">
+                                    <div 
+                                      className="relative w-full h-48 bg-gray-100 rounded-md overflow-hidden cursor-pointer"
+                                      onClick={() => setSelectedItem(item.id)}
+                                    >
                                       <Image
                                         src={`${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/how-things-work-images/${item.image_path}`}
                                         alt={item.title}
@@ -1144,6 +1279,18 @@ export default function HowThingsWork() {
                                           <ArrowDownIcon size={16} />
                                         </button>
                                         <button
+                                          onClick={() => {
+                                            setIsEditingItem(true)
+                                            setEditItemId(item.id)
+                                            setEditItemTitle(item.title)
+                                            setEditItemImage(null)
+                                          }}
+                                          className="p-1 text-blue-600 hover:text-blue-800"
+                                          title="Edit"
+                                        >
+                                          <PenIcon size={16} />
+                                        </button>
+                                        <button
                                           onClick={() => handleDeleteItem(item.id, item.image_path)}
                                           className="p-1 text-red-600 hover:text-red-800"
                                           title="Delete"
@@ -1157,7 +1304,7 @@ export default function HowThingsWork() {
                                       <div className="flex items-center text-sm text-gray-600">
                                         <ImageIcon size={16} className="mr-1" />
                                         <span>
-                                          {(itemPhotos[item.id]?.length || 0)} additional photo{(itemPhotos[item.id]?.length || 0) !== 1 ? 's' : ''}
+                                          {(itemPhotos[item.id]?.length || 0)} additional instruction{(itemPhotos[item.id]?.length || 0) !== 1 ? 's' : ''}
                                         </span>
                                       </div>
                                       
@@ -1165,7 +1312,7 @@ export default function HowThingsWork() {
                                         onClick={() => setSelectedItem(item.id)}
                                         className="px-3 py-1 text-sm bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md"
                                       >
-                                        Manage Photos
+                                        Manage Instructions
                                       </button>
                                     </div>
                                   </div>
