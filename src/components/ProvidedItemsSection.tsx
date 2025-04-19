@@ -62,7 +62,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
 
         // Per ogni categoria, carica gli articoli
         const categoriesWithItems = await Promise.all(
-          (categoriesData || []).map(async (category) => {
+          (categoriesData || []).map(async (category: any) => {
             const { data: itemsData, error: itemsError } = await supabase
               .from('provided_items')
               .select('*')
