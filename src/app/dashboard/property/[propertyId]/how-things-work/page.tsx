@@ -93,6 +93,12 @@ export default function HowThingsWork() {
   const [editItemId, setEditItemId] = useState<string | null>(null)
   const [editItemTitle, setEditItemTitle] = useState('')
   const [editItemImage, setEditItemImage] = useState<File | null>(null)
+  
+  // Stati per la modifica delle istruzioni
+  const [isEditingPhoto, setIsEditingPhoto] = useState(false)
+  const [editPhotoId, setEditPhotoId] = useState<string | null>(null)
+  const [editPhotoDescription, setEditPhotoDescription] = useState('')
+  const [editPhotoImage, setEditPhotoImage] = useState<File | null>(null)
 
   // Carica i dati della proprietà e le categorie
   useEffect(() => {
@@ -846,6 +852,84 @@ export default function HowThingsWork() {
     }
   }
 
+  // Gestione della modifica di una foto/istruzione
+  const handleEditPhoto = async () => {
+    if (!selectedItem || !editPhotoId) {
+      toast.error('Invalid photo selection')
+      return
+    }
+    
+    if (!user) {
+      toast.error('You must be logged in to edit instructions')
+      return
+    }
+    
+    try {
+      let updatedPhotoPath = itemPhotos[selectedItem]?.find(photo => photo.id === editPhotoId)?.photo_path || '';
+      
+      // Se c'è una nuova immagine, caricarla e aggiornare il percorso
+      if (editPhotoImage) {
+        setUploadingPhoto(true)
+        
+        // Carica la nuova immagine
+        const fileName = `${user.id}/${Date.now()}_${editPhotoImage.name}`
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('item-photos')
+          .upload(fileName, editPhotoImage)
+        
+        if (uploadError) throw uploadError
+        
+        // Elimina la vecchia immagine se presente
+        if (updatedPhotoPath) {
+          await supabase.storage
+            .from('item-photos')
+            .remove([updatedPhotoPath])
+        }
+        
+        updatedPhotoPath = fileName
+      }
+      
+      // Aggiorna la foto/istruzione
+      const { error } = await supabase
+        .from('how_things_work_item_photos')
+        .update({
+          description: editPhotoDescription,
+          photo_path: updatedPhotoPath
+        })
+        .eq('id', editPhotoId)
+      
+      if (error) throw error
+      
+      toast.success('Instruction updated successfully')
+      
+      // Aggiorna le foto
+      const { data: updatedPhotos, error: fetchError } = await supabase
+        .from('how_things_work_item_photos')
+        .select('*')
+        .eq('item_id', selectedItem)
+        .order('display_order', { ascending: true })
+      
+      if (fetchError) throw fetchError
+      
+      setItemPhotos({
+        ...itemPhotos,
+        [selectedItem]: updatedPhotos || []
+      })
+      
+      // Reimposta i campi del form
+      setIsEditingPhoto(false)
+      setEditPhotoId(null)
+      setEditPhotoDescription('')
+      setEditPhotoImage(null)
+      
+    } catch (error) {
+      console.error('Error updating instruction:', error)
+      toast.error('Failed to update instruction')
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
   // Rendering UI
   return (
     <ProtectedRoute>
@@ -1099,6 +1183,61 @@ export default function HowThingsWork() {
                           </div>
                         )}
                         
+                        {/* Form per la modifica di una foto/istruzione esistente */}
+                        {isEditingPhoto && (
+                          <div className="mb-6 p-4 bg-gray-50 rounded-md">
+                            <h3 className="font-medium mb-3">Edit Instruction</h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  New Image (optional)
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setEditPhotoImage(e.target.files?.[0] || null)}
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Leave empty to keep the current image
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Description
+                                </label>
+                                <textarea
+                                  value={editPhotoDescription}
+                                  onChange={(e) => setEditPhotoDescription(e.target.value)}
+                                  placeholder="Explain what this photo shows or how to use this feature..."
+                                  className="w-full p-2 border border-gray-300 rounded-md"
+                                  rows={3}
+                                />
+                              </div>
+                              <div className="flex justify-end space-x-2">
+                                <button
+                                  onClick={() => {
+                                    setIsEditingPhoto(false)
+                                    setEditPhotoId(null)
+                                    setEditPhotoDescription('')
+                                    setEditPhotoImage(null)
+                                  }}
+                                  className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded-md text-sm"
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={handleEditPhoto}
+                                  disabled={uploadingPhoto}
+                                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm disabled:opacity-70"
+                                >
+                                  {uploadingPhoto ? 'Updating...' : 'Update Instruction'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         {/* Lista delle foto per questo elemento */}
                         <div className="mt-4">
                           <h3 className="font-medium mb-3">Item Instructions</h3>
@@ -1151,6 +1290,18 @@ export default function HowThingsWork() {
                                             }
                                           >
                                             <ArrowDownIcon size={16} />
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              setIsEditingPhoto(true)
+                                              setEditPhotoId(photo.id)
+                                              setEditPhotoDescription(photo.description || '')
+                                              setEditPhotoImage(null)
+                                            }}
+                                            className="p-1 text-blue-600 hover:text-blue-800"
+                                            title="Edit"
+                                          >
+                                            <PenIcon size={16} />
                                           </button>
                                           <button
                                             onClick={() => handleDeletePhoto(photo.id, photo.photo_path)}
