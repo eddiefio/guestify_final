@@ -57,8 +57,8 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       
       if (error) throw error
       
-      const driving = data?.filter(photo => photo.direction_type === 'driving') || []
-      const train = data?.filter(photo => photo.direction_type === 'train') || []
+      const driving = data?.filter((photo: DirectionsPhotoType) => photo.direction_type === 'driving') || []
+      const train = data?.filter((photo: DirectionsPhotoType) => photo.direction_type === 'train') || []
       
       setDrivingPhotos(driving)
       setTrainPhotos(train)
