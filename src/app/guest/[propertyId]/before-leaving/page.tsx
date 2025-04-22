@@ -39,14 +39,14 @@ export default function BeforeLeavingPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="text-xl font-bold text-gray-800">Before You Leave</h1>
+          <h1 className="text-xl font-bold text-gray-800">Before You Leave home</h1>
         </div>
       </header>
 
       <main className="flex-grow w-full px-4 py-6">
         <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
           <h2 className="text-lg font-bold text-gray-800 mb-3">Checkout Checklist</h2>
-          <p className="text-sm text-gray-600 mb-4">Please check each item before you leave the apartment.</p>
+          <p className="text-sm text-gray-600 mb-4">Please check each item before you leave your home.</p>
           
           <div className="space-y-3">
             <div 
