@@ -45,7 +45,7 @@ export default function GuestHomePage() {
       id: 'wifi',
       name: 'Wifi',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.246-3.905 14.15 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
         </svg>
       ),
@@ -55,7 +55,7 @@ export default function GuestHomePage() {
       id: 'checkin',
       name: 'Checkin',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
         </svg>
       ),
@@ -65,7 +65,7 @@ export default function GuestHomePage() {
       id: 'checkout',
       name: 'Checkout',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
         </svg>
       ),
@@ -75,7 +75,7 @@ export default function GuestHomePage() {
       id: 'house-rules',
       name: 'House Rules',
       icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
         </svg>
       ),
@@ -214,9 +214,9 @@ export default function GuestHomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex items-center justify-between">
-          <div className="relative h-20 w-20">
+      <header className="bg-white shadow-sm py-1.5">
+        <div className="w-full px-4 flex items-center justify-between">
+          <div className="relative h-16 w-16">
             <Image 
               src="/images/logo_guest.png"
               alt="Guestify Logo"
@@ -228,7 +228,7 @@ export default function GuestHomePage() {
         </div>
       </header>
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 py-4 sm:px-6">
+      <main className="flex-grow w-full px-4 py-3 flex flex-col justify-between">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
@@ -239,14 +239,14 @@ export default function GuestHomePage() {
             {error}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="w-full flex flex-col space-y-3 pb-14">
             {/* Barra di ricerca */}
-            <div className="relative">
+            <div className="relative w-full">
               <form onSubmit={handleSearch} className="w-full">
                 <input
                   type="text"
                   placeholder="Cerca informazioni..."
-                  className="w-full p-3 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] text-sm"
+                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -260,26 +260,26 @@ export default function GuestHomePage() {
 
             {/* Sezione Essentials */}
             <div>
-              <h2 className="text-lg font-bold text-[#5E2BFF] mb-2">Essentials</h2>
-              <div className="grid grid-cols-4 gap-3">
+              <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Essentials</h2>
+              <div className="grid grid-cols-4 gap-2">
                 {essentials.map((item) => (
                   <Link href={item.path} key={item.id} className="text-center">
-                    <div className="w-14 h-14 mx-auto mb-1 bg-white rounded-full flex items-center justify-center shadow-md">
+                    <div className="w-12 h-12 mx-auto mb-1 bg-white rounded-full flex items-center justify-center shadow-sm">
                       {item.icon}
                     </div>
-                    <span className="text-xs text-gray-700 block font-bold">{item.name}</span>
+                    <span className="text-xs text-gray-700 block font-medium">{item.name}</span>
                   </Link>
                 ))}
               </div>
             </div>
 
             {/* Sezione Servizi Extra */}
-            <div>
+            <div className="w-full">
               <Link href={`/guest/${propertyId}/extra-services`}>
-                <div className="bg-[#5E2BFF] text-white rounded-xl p-4 shadow-sm">
+                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm w-full">
                   <div className="flex items-center">
-                    <div className="text-2xl mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                       </svg>
                     </div>
@@ -298,11 +298,11 @@ export default function GuestHomePage() {
             </div>
 
             {/* House Info e Host Guides */}
-            <div className="grid grid-cols-2 gap-3">
-              <Link href={`/guest/${propertyId}/house-info`}>
-                <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border-2 border-blue-200">
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <Link href={`/guest/${propertyId}/house-info`} className="w-full">
+                <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border border-blue-200 w-full">
                   <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                     </svg>
                   </div>
@@ -310,10 +310,10 @@ export default function GuestHomePage() {
                   <p className="text-xs text-gray-600">Informazioni sulla casa</p>
                 </div>
               </Link>
-              <Link href={`/guest/${propertyId}/city-guide`}>
-                <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border-2 border-yellow-300">
+              <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
+                <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border border-yellow-300 w-full">
                   <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </div>
@@ -325,20 +325,20 @@ export default function GuestHomePage() {
 
             {/* Weather Information */}
             {weatherData && (
-              <div>
-                <h2 className="text-lg font-bold text-[#5E2BFF] mb-2">Meteo a {weatherData.city}</h2>
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-lg">
+              <div className="w-full">
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Meteo a {weatherData.city}</h2>
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
                   <div className="p-3">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-base font-bold">{weatherData.date}</h3>
+                        <h3 className="text-sm font-bold">martedì 22 aprile</h3>
                         <p className="text-xs opacity-90">{weatherData.city}</p>
                       </div>
-                      <div className="text-3xl">{weatherData.icon}</div>
+                      <div className="text-3xl">☀️</div>
                     </div>
-                    <div className="mt-2 flex items-end">
+                    <div className="mt-1 flex items-end">
                       <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
-                      <span className="ml-2 text-sm opacity-90">{weatherData.condition}</span>
+                      <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
                     </div>
                   </div>
                   
@@ -361,7 +361,7 @@ export default function GuestHomePage() {
       </main>
 
       {/* Barra di navigazione */}
-      <nav className="bg-white border-t shadow-lg mt-auto">
+      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
         <div className="flex justify-around items-center h-14">
           <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
             <div className="text-[#5E2BFF]">
