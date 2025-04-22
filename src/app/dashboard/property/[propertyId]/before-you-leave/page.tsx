@@ -142,44 +142,41 @@ export default function BeforeYouLeave() {
           ) : (
             <div>
               {/* Schede in stile griglia, simili all'immagine di riferimento */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="flex flex-nowrap overflow-x-auto md:grid md:grid-cols-3 gap-6 mb-8 hide-scrollbar">
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'whats-provided' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'whats-provided' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}
                   onClick={() => setActiveTab('whats-provided')}
                 >
-                  <div className="text-blue-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-blue-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">What's Provided</h2>
-                  <p className="text-gray-600 text-center text-sm">Manage the items provided in your property</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">What's Provided</h2>
                 </div>
 
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'info-needed' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'info-needed' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
                   onClick={() => setActiveTab('info-needed')}
                 >
-                  <div className="text-yellow-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-yellow-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">Information We Need</h2>
-                  <p className="text-gray-600 text-center text-sm">What guests should tell you before arrival</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">Info We Need</h2>
                 </div>
 
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'how-to-get' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'how-to-get' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
                   onClick={() => setActiveTab('how-to-get')}
                 >
-                  <div className="text-green-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-green-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">How To Get There</h2>
-                  <p className="text-gray-600 text-center text-sm">Directions for reaching your property</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">How To Get There</h2>
                 </div>
               </div>
 

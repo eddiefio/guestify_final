@@ -763,44 +763,41 @@ export default function CheckinInformation() {
           ) : (
             <div>
               {/* Schede in stile griglia, simili alla pagina Before You Leave Home */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="flex flex-nowrap overflow-x-auto md:grid md:grid-cols-3 gap-6 mb-8 hide-scrollbar">
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'access_and_keys' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'access_and_keys' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}
                   onClick={() => setActiveTab('access_and_keys')}
                 >
-                  <div className="text-blue-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-blue-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">Access & Keys</h2>
-                  <p className="text-gray-600 text-center text-sm">Instructions for property access</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">Access & Keys</h2>
                 </div>
 
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'checkin_time' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'checkin_time' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
                   onClick={() => setActiveTab('checkin_time')}
                 >
-                  <div className="text-yellow-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-yellow-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">Check-in Time</h2>
-                  <p className="text-gray-600 text-center text-sm">Arrival and check-in details</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">Check-in Time</h2>
                 </div>
 
                 <div 
-                  className={`rounded-xl shadow hover:shadow-md transition p-6 cursor-pointer h-full flex flex-col items-center ${activeTab === 'parking_info' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
+                  className={`rounded-xl shadow hover:shadow-md transition p-4 md:p-6 cursor-pointer h-full flex-shrink-0 flex flex-col items-center justify-center w-1/3 min-w-[120px] md:w-auto ${activeTab === 'parking_info' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
                   onClick={() => setActiveTab('parking_info')}
                 >
-                  <div className="text-green-500 mb-4">
-                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <div className="text-green-500 mb-2">
+                    <svg className="w-8 h-8 md:w-12 md:h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
                     </svg>
                   </div>
-                  <h2 className="text-xl font-bold text-gray-800 text-center mb-2">Parking Information</h2>
-                  <p className="text-gray-600 text-center text-sm">Details about parking options</p>
+                  <h2 className="text-base md:text-xl font-bold text-gray-800 text-center">Parking Info</h2>
                 </div>
               </div>
 

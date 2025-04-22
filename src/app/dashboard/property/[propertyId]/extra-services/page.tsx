@@ -114,7 +114,7 @@ export default function ExtraServices() {
 
         // Fetch photos for each service
         if (data && data.length > 0) {
-          const photoPromises = data.map(async (service) => {
+          const photoPromises = data.map(async (service: ExtraService) => {
             const { data: photos, error: photosError } = await supabase
               .from('extra_service_photos')
               .select('*')
