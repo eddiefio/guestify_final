@@ -86,20 +86,20 @@ export default function GuestHomePage() {
   // List of main categories
   const [categories, setCategories] = useState<Category[]>([
     {
-      id: 'house-info',
-      name: 'House Info',
-      icon: '🏠',
-      path: `/guest/${propertyId}/house-info`,
-      color: 'bg-blue-100',
-      available: false
+      id: 'how-things-work',
+      name: 'How Things Work',
+      icon: '⚙️',
+      path: `/guest/${propertyId}/how-things-work`,
+      color: 'bg-purple-100',
+      available: true
     },
     {
-      id: 'extra-services',
-      name: 'Extra Services',
-      icon: '🛎️',
-      path: `/guest/${propertyId}/extra-services`,
-      color: 'bg-green-100',
-      available: false
+      id: 'before-leaving',
+      name: 'Before You Leave Home',
+      icon: '🏠',
+      path: `/guest/${propertyId}/before-leaving`,
+      color: 'bg-pink-100',
+      available: true
     },
     {
       id: 'host-guides',
@@ -108,6 +108,14 @@ export default function GuestHomePage() {
       path: `/guest/${propertyId}/city-guide`,
       color: 'bg-yellow-100',
       available: false
+    },
+    {
+      id: 'book-again',
+      name: 'Book Again',
+      icon: '📅',
+      path: `/guest/${propertyId}/book-again`,
+      color: 'bg-green-100',
+      available: true
     }
   ])
 
@@ -166,28 +174,6 @@ export default function GuestHomePage() {
 
         // Check which sections are available for this property
         const updatedCategories = [...categories]
-
-        // Check house_info
-        const { count: houseInfoCount } = await supabase
-          .from('house_info')
-          .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
-        
-        if (houseInfoCount && houseInfoCount > 0) {
-          const index = updatedCategories.findIndex(cat => cat.id === 'house-info')
-          if (index >= 0) updatedCategories[index].available = true
-        }
-
-        // Check extra_services
-        const { count: extraServicesCount } = await supabase
-          .from('extra_services')
-          .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
-        
-        if (extraServicesCount && extraServicesCount > 0) {
-          const index = updatedCategories.findIndex(cat => cat.id === 'extra-services')
-          if (index >= 0) updatedCategories[index].available = true
-        }
 
         // Check city_guides
         const { count: cityGuideCount } = await supabase
@@ -297,17 +283,29 @@ export default function GuestHomePage() {
                 </div>
               </Link>
 
-              {/* House Info and Host Guides */}
+              {/* Four center buttons */}
               <div className="grid grid-cols-2 gap-3 w-full">
-                <Link href={`/guest/${propertyId}/house-info`} className="w-full">
-                  <div className="bg-blue-100 rounded-xl p-4 shadow-sm border border-blue-200 w-full h-full">
+                <Link href={`/guest/${propertyId}/how-things-work`} className="w-full">
+                  <div className="bg-purple-100 rounded-xl p-4 shadow-sm border border-purple-200 w-full h-full">
                     <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                     </div>
-                    <h2 className="text-sm font-bold text-gray-800">House Info</h2>
-                    <p className="text-xs text-gray-600">Information about the house</p>
+                    <h2 className="text-sm font-bold text-gray-800">How Things Work</h2>
+                    <p className="text-xs text-gray-600">Help with appliances</p>
+                  </div>
+                </Link>
+                <Link href={`/guest/${propertyId}/before-leaving`} className="w-full">
+                  <div className="bg-pink-100 rounded-xl p-4 shadow-sm border border-pink-200 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">Before You Leave</h2>
+                    <p className="text-xs text-gray-600">Checkout checklist</p>
                   </div>
                 </Link>
                 <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
@@ -319,6 +317,17 @@ export default function GuestHomePage() {
                     </div>
                     <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
                     <p className="text-xs text-gray-600">Guides and recommendations</p>
+                  </div>
+                </Link>
+                <Link href={`/guest/${propertyId}/book-again`} className="w-full">
+                  <div className="bg-green-100 rounded-xl p-4 shadow-sm border border-green-200 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">Book Again</h2>
+                    <p className="text-xs text-gray-600">Reserve your next stay</p>
                   </div>
                 </Link>
               </div>
