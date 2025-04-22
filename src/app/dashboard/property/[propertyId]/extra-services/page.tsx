@@ -8,6 +8,7 @@ import Layout from '@/components/layout/Layout'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import Image from 'next/image'
 
 type ExtraService = {
   id: string
@@ -26,6 +27,13 @@ type SuggestedService = {
   price: number
 }
 
+type ServicePhoto = {
+  id: string
+  photo_path: string
+  description?: string
+  display_order: number
+}
+
 export default function ExtraServices() {
   const { propertyId } = useParams()
   const { user } = useAuth()
@@ -34,6 +42,7 @@ export default function ExtraServices() {
   const [loading, setLoading] = useState(true)
   const [services, setServices] = useState<ExtraService[]>([])
   const [propertyName, setPropertyName] = useState('')
+  const [servicePhotos, setServicePhotos] = useState<Record<string, ServicePhoto[]>>({})
   
   // Servizi suggeriti comuni
   const suggestedServices: SuggestedService[] = [
@@ -102,6 +111,33 @@ export default function ExtraServices() {
         
         if (error) throw error
         setServices(data || [])
+
+        // Fetch photos for each service
+        if (data && data.length > 0) {
+          const photoPromises = data.map(async (service) => {
+            const { data: photos, error: photosError } = await supabase
+              .from('extra_service_photos')
+              .select('*')
+              .eq('service_id', service.id)
+              .order('display_order', { ascending: true })
+              
+            if (photosError) {
+              console.error('Error fetching photos for service:', service.id, photosError)
+              return { serviceId: service.id, photos: [] }
+            }
+            
+            return { serviceId: service.id, photos: photos || [] }
+          })
+          
+          const photosResults = await Promise.all(photoPromises)
+          const photosMap: Record<string, ServicePhoto[]> = {}
+          
+          photosResults.forEach(result => {
+            photosMap[result.serviceId] = result.photos
+          })
+          
+          setServicePhotos(photosMap)
+        }
         
       } catch (error) {
         console.error('Error fetching extra services:', error)
@@ -235,6 +271,33 @@ export default function ExtraServices() {
                             {formatPrice(service.price)}
                           </span>
                         </div>
+                        
+                        {/* Service Photos Carousel (if available) */}
+                        {servicePhotos[service.id] && servicePhotos[service.id].length > 0 && (
+                          <div className="mt-3 mb-2 relative h-40 overflow-hidden rounded-lg">
+                            <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar h-full">
+                              {servicePhotos[service.id].map((photo, index) => (
+                                <div key={photo.id} className="w-full h-full flex-shrink-0 snap-center relative">
+                                  <Image
+                                    src={photo.photo_path}
+                                    alt={photo.description || `Photo ${index + 1} of ${service.title}`}
+                                    fill
+                                    sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 33vw"
+                                    style={{ objectFit: 'cover' }}
+                                    className="rounded-lg"
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {/* Photo count indicator */}
+                            {servicePhotos[service.id].length > 1 && (
+                              <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 rounded-full px-2 py-1 text-xs text-white">
+                                {servicePhotos[service.id].length} photos
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         {service.description && (
                           <p className="text-gray-600 text-sm mt-2 mb-3 line-clamp-2">{service.description}</p>
