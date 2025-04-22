@@ -39,7 +39,7 @@ export default function GuestHomePage() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Lista delle categorie essenziali con icone SVG
+  // List of essential categories with SVG icons
   const essentials = [
     {
       id: 'wifi',
@@ -83,7 +83,7 @@ export default function GuestHomePage() {
     },
   ]
 
-  // Lista delle categorie principali
+  // List of main categories
   const [categories, setCategories] = useState<Category[]>([
     {
       id: 'house-info',
@@ -111,22 +111,22 @@ export default function GuestHomePage() {
     }
   ])
 
-  // Funzione per ottenere dati meteo simulati
+  // Function to get simulated weather data
   const fetchWeatherData = async (city: string) => {
-    // In un'app reale, qui chiameresti un'API meteo
-    // Per ora creiamo dati simulati
+    // In a real app, you would call a weather API
+    // For now we create simulated data
     const mockWeatherData: WeatherData = {
       temperature: 23,
-      condition: 'Soleggiato',
+      condition: 'Sunny',
       icon: '☀️',
       city: city,
-      date: new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }),
+      date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
       forecast: [
-        { day: 'Mar', temperature: 25, icon: '☀️' },
-        { day: 'Mer', temperature: 22, icon: '⛅' },
-        { day: 'Gio', temperature: 20, icon: '🌧️' },
-        { day: 'Ven', temperature: 18, icon: '🌧️' },
-        { day: 'Sab', temperature: 21, icon: '⛅' },
+        { day: 'Tue', temperature: 25, icon: '☀️' },
+        { day: 'Wed', temperature: 22, icon: '⛅' },
+        { day: 'Thu', temperature: 20, icon: '🌧️' },
+        { day: 'Fri', temperature: 18, icon: '🌧️' },
+        { day: 'Sat', temperature: 21, icon: '⛅' },
       ]
     }
     
@@ -135,8 +135,8 @@ export default function GuestHomePage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Implementare la funzionalità di ricerca qui
-    console.log('Cercando:', searchQuery)
+    // Implement search functionality here
+    console.log('Searching:', searchQuery)
   }
 
   useEffect(() => {
@@ -159,15 +159,15 @@ export default function GuestHomePage() {
         if (property.city) {
           setPropertyCity(property.city)
           
-          // Ottieni dati meteo per la città della proprietà
+          // Get weather data for the property's city
           const weather = await fetchWeatherData(property.city)
           setWeatherData(weather)
         }
 
-        // Verificare quali sezioni sono disponibili per questa proprietà
+        // Check which sections are available for this property
         const updatedCategories = [...categories]
 
-        // Verifica house_info
+        // Check house_info
         const { count: houseInfoCount } = await supabase
           .from('house_info')
           .select('id', { count: 'exact', head: true })
@@ -178,7 +178,7 @@ export default function GuestHomePage() {
           if (index >= 0) updatedCategories[index].available = true
         }
 
-        // Verifica extra_services
+        // Check extra_services
         const { count: extraServicesCount } = await supabase
           .from('extra_services')
           .select('id', { count: 'exact', head: true })
@@ -189,7 +189,7 @@ export default function GuestHomePage() {
           if (index >= 0) updatedCategories[index].available = true
         }
 
-        // Verifica city_guides
+        // Check city_guides
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
           .select('id', { count: 'exact', head: true })
@@ -216,36 +216,36 @@ export default function GuestHomePage() {
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
       <header className="bg-white shadow-sm py-1.5">
         <div className="w-full px-4 flex items-center justify-between">
-          <div className="relative h-16 w-16">
+          <div className="relative h-12 w-28">
             <Image 
               src="/images/logo_guest.png"
               alt="Guestify Logo"
               fill
-              className="object-contain"
+              className="object-contain object-left"
             />
           </div>
           <div className="text-gray-700">{propertyName}</div>
         </div>
       </header>
 
-      <main className="flex-grow w-full px-4 py-3 flex flex-col justify-between">
+      <main className="flex-grow w-full px-4 pt-3 pb-14 flex flex-col justify-between">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Caricamento informazioni...</p>
+            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
           </div>
         ) : error ? (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
             {error}
           </div>
         ) : (
-          <div className="w-full flex flex-col space-y-3 pb-14">
-            {/* Barra di ricerca */}
+          <div className="w-full flex flex-col space-y-3 flex-grow">
+            {/* Search bar */}
             <div className="relative w-full">
               <form onSubmit={handleSearch} className="w-full">
                 <input
                   type="text"
-                  placeholder="Cerca informazioni..."
+                  placeholder="Search information..."
                   className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -258,7 +258,7 @@ export default function GuestHomePage() {
               </form>
             </div>
 
-            {/* Sezione Essentials */}
+            {/* Essentials section */}
             <div>
               <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Essentials</h2>
               <div className="grid grid-cols-4 gap-2">
@@ -273,11 +273,12 @@ export default function GuestHomePage() {
               </div>
             </div>
 
-            {/* Sezione Servizi Extra */}
-            <div className="w-full">
-              <Link href={`/guest/${propertyId}/extra-services`}>
-                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm w-full">
-                  <div className="flex items-center">
+            {/* Main sections */}
+            <div className="grid grid-rows-3 gap-3 w-full flex-grow">
+              {/* Extra Services */}
+              <Link href={`/guest/${propertyId}/extra-services`} className="w-full">
+                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm h-full w-full">
+                  <div className="flex items-center h-full">
                     <div className="mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -285,7 +286,7 @@ export default function GuestHomePage() {
                     </div>
                     <div>
                       <h2 className="text-base font-bold">Extra Services</h2>
-                      <p className="text-xs text-white opacity-80">Scopri i servizi aggiuntivi disponibili</p>
+                      <p className="text-xs text-white opacity-80">Discover available additional services</p>
                     </div>
                     <div className="ml-auto">
                       <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -295,72 +296,72 @@ export default function GuestHomePage() {
                   </div>
                 </div>
               </Link>
-            </div>
 
-            {/* House Info e Host Guides */}
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <Link href={`/guest/${propertyId}/house-info`} className="w-full">
-                <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border border-blue-200 w-full">
-                  <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
-                  </div>
-                  <h2 className="text-sm font-bold text-gray-800">House Info</h2>
-                  <p className="text-xs text-gray-600">Informazioni sulla casa</p>
-                </div>
-              </Link>
-              <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
-                <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border border-yellow-300 w-full">
-                  <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
-                  <p className="text-xs text-gray-600">Guide e suggerimenti</p>
-                </div>
-              </Link>
-            </div>
-
-            {/* Weather Information */}
-            {weatherData && (
-              <div className="w-full">
-                <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Meteo a {weatherData.city}</h2>
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
-                  <div className="p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-sm font-bold">martedì 22 aprile</h3>
-                        <p className="text-xs opacity-90">{weatherData.city}</p>
-                      </div>
-                      <div className="text-3xl">☀️</div>
+              {/* House Info and Host Guides */}
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Link href={`/guest/${propertyId}/house-info`} className="w-full">
+                  <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border border-blue-200 w-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
                     </div>
-                    <div className="mt-1 flex items-end">
-                      <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
-                      <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
-                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">House Info</h2>
+                    <p className="text-xs text-gray-600">Information about the house</p>
                   </div>
-                  
-                  <div className="bg-white/20 p-2">
-                    <div className="flex justify-between">
-                      {weatherData.forecast.map((day, index) => (
-                        <div key={index} className="text-center">
-                          <div className="text-xs font-bold">{day.day}</div>
-                          <div className="text-lg my-1">{day.icon}</div>
-                          <div className="text-xs">{day.temperature}°</div>
-                        </div>
-                      ))}
+                </Link>
+                <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
+                  <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border border-yellow-300 w-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
                     </div>
+                    <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
+                    <p className="text-xs text-gray-600">Guides and recommendations</p>
                   </div>
-                </div>
+                </Link>
               </div>
-            )}
+
+              {/* Weather Information */}
+              {weatherData && (
+                <div className="w-full">
+                  <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Weather in {weatherData.city}</h2>
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full h-full">
+                    <div className="p-3">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-sm font-bold">Tuesday 22 April</h3>
+                          <p className="text-xs opacity-90">{weatherData.city}</p>
+                        </div>
+                        <div className="text-3xl">☀️</div>
+                      </div>
+                      <div className="mt-1 flex items-end">
+                        <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
+                        <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white/20 p-2">
+                      <div className="flex justify-between">
+                        {weatherData.forecast.map((day, index) => (
+                          <div key={index} className="text-center">
+                            <div className="text-xs font-bold">{day.day}</div>
+                            <div className="text-lg my-1">{day.icon}</div>
+                            <div className="text-xs">{day.temperature}°</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </main>
 
-      {/* Barra di navigazione */}
+      {/* Navigation bar */}
       <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
         <div className="flex justify-around items-center h-14">
           <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
