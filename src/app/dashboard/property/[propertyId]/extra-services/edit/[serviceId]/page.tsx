@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -9,11 +9,21 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import Image from 'next/image'
 
 type FormValues = {
   title: string
   description: string
   price: number
+  active: boolean
+}
+
+type ServicePhoto = {
+  id: string
+  service_id: string
+  photo_path: string
+  description: string | null
+  display_order: number
 }
 
 export default function EditExtraService() {
@@ -23,6 +33,12 @@ export default function EditExtraService() {
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [existingPhotos, setExistingPhotos] = useState<ServicePhoto[]>([])
+  const [photosToDelete, setPhotosToDelete] = useState<string[]>([])
+  const [uploadedPhotos, setUploadedPhotos] = useState<
+    { file: File; preview: string; uploading?: boolean }[]
+  >([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<FormValues>()
   
@@ -69,6 +85,18 @@ export default function EditExtraService() {
         setValue('title', data.title)
         setValue('description', data.description || '')
         setValue('price', data.price)
+        setValue('active', data.active)
+        
+        // Fetch service photos
+        const { data: photos, error: photosError } = await supabase
+          .from('extra_service_photos')
+          .select('*')
+          .eq('service_id', serviceId)
+          .order('display_order', { ascending: true })
+          
+        if (photosError) throw photosError
+        
+        setExistingPhotos(photos || [])
         
       } catch (error) {
         console.error('Error fetching service details:', error)
@@ -81,6 +109,81 @@ export default function EditExtraService() {
     
     fetchServiceDetails()
   }, [user, propertyId, serviceId, router, setValue])
+
+  // Gestione caricamento foto
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return
+
+    const newPhotos = Array.from(e.target.files).map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }))
+
+    setUploadedPhotos([...uploadedPhotos, ...newPhotos])
+  }
+
+  // Rimuove una foto caricata ma non ancora salvata
+  const removeUploadedPhoto = (index: number) => {
+    const newPhotos = [...uploadedPhotos]
+    // Revoke object URL to avoid memory leaks
+    URL.revokeObjectURL(newPhotos[index].preview)
+    newPhotos.splice(index, 1)
+    setUploadedPhotos(newPhotos)
+  }
+  
+  // Aggiunge/rimuove una foto esistente dall'elenco di quelle da eliminare
+  const toggleExistingPhotoDelete = (photoId: string) => {
+    if (photosToDelete.includes(photoId)) {
+      setPhotosToDelete(photosToDelete.filter(id => id !== photoId))
+    } else {
+      setPhotosToDelete([...photosToDelete, photoId])
+    }
+  }
+
+  // Aggiorna l'ordine di visualizzazione delle foto
+  const movePhotoOrder = async (photoId: string, direction: 'up' | 'down') => {
+    const photoIndex = existingPhotos.findIndex(p => p.id === photoId)
+    
+    if (photoIndex === -1) return
+    
+    const newIndex = direction === 'up' 
+      ? Math.max(0, photoIndex - 1) 
+      : Math.min(existingPhotos.length - 1, photoIndex + 1)
+      
+    if (newIndex === photoIndex) return
+    
+    // Creare una copia dell'array per manipolarla
+    const updatedPhotos = [...existingPhotos]
+    
+    // Eseguire lo scambio
+    const temp = updatedPhotos[newIndex]
+    updatedPhotos[newIndex] = updatedPhotos[photoIndex]
+    updatedPhotos[photoIndex] = temp
+    
+    // Aggiornare i display_order
+    updatedPhotos.forEach((photo, idx) => {
+      photo.display_order = idx
+    })
+    
+    try {
+      // Aggiornare nel database
+      for (const photo of updatedPhotos) {
+        const { error } = await supabase
+          .from('extra_service_photos')
+          .update({ display_order: photo.display_order })
+          .eq('id', photo.id)
+          
+        if (error) throw error
+      }
+      
+      // Aggiornare lo stato locale
+      setExistingPhotos(updatedPhotos)
+      
+    } catch (error) {
+      console.error('Error updating photo order:', error)
+      toast.error('Failed to update photo order')
+    }
+  }
   
   const onSubmit = async (data: FormValues) => {
     if (!user || !propertyId || !serviceId) return
@@ -94,12 +197,85 @@ export default function EditExtraService() {
         .update({
           title: data.title,
           description: data.description,
-          price: data.price
+          price: data.price,
+          active: data.active
         })
         .eq('id', serviceId)
         .eq('property_id', propertyId)
       
       if (error) throw error
+      
+      // Delete marked photos from database and storage
+      if (photosToDelete.length > 0) {
+        for (const photoId of photosToDelete) {
+          // Trova la foto da eliminare
+          const photoToDelete = existingPhotos.find(p => p.id === photoId)
+          
+          if (photoToDelete) {
+            // Elimina la foto dal database
+            const { error: dbError } = await supabase
+              .from('extra_service_photos')
+              .delete()
+              .eq('id', photoId)
+              
+            if (dbError) throw dbError
+            
+            // Estrapola il percorso del file dal public URL
+            const photoUrl = photoToDelete.photo_path
+            const storagePathMatch = photoUrl.match(/\/extra-service-photos\/(.+)$/)
+            
+            if (storagePathMatch && storagePathMatch[1]) {
+              // Elimina il file dallo storage
+              const { error: storageError } = await supabase.storage
+                .from('extra-service-photos')
+                .remove([storagePathMatch[1]])
+                
+              if (storageError) {
+                console.error('Error deleting photo from storage:', storageError)
+              }
+            }
+          }
+        }
+      }
+      
+      // Upload new photos
+      if (uploadedPhotos.length > 0) {
+        // Upload each photo and create database entries
+        for (let i = 0; i < uploadedPhotos.length; i++) {
+          const photo = uploadedPhotos[i]
+          
+          try {
+            // Create a unique file name for the photo
+            const fileExt = photo.file.name.split('.').pop()
+            const fileName = `${serviceId}/${Date.now()}_${i}.${fileExt}`
+            
+            // Upload to storage
+            const { error: uploadError } = await supabase.storage
+              .from('extra-service-photos')
+              .upload(fileName, photo.file)
+              
+            if (uploadError) throw uploadError
+            
+            // Get public URL
+            const { data: publicUrlData } = supabase.storage
+              .from('extra-service-photos')
+              .getPublicUrl(fileName)
+              
+            // Create database entry
+            const { error: dbError } = await supabase
+              .from('extra_service_photos')
+              .insert([{
+                service_id: serviceId as string,
+                photo_path: publicUrlData.publicUrl,
+                display_order: existingPhotos.length + i - photosToDelete.length,
+              }])
+              
+            if (dbError) throw dbError
+          } catch (err) {
+            console.error('Error uploading photo:', err)
+          }
+        }
+      }
       
       toast.success('Extra service updated successfully')
       
@@ -200,6 +376,169 @@ export default function EditExtraService() {
                     <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
                   )}
                   <p className="mt-1 text-sm text-gray-500">Remember: Guestify takes a 12% commission on all extra service bookings.</p>
+                </div>
+                
+                <div className="flex items-center">
+                  <input
+                    id="active"
+                    type="checkbox"
+                    {...register('active')}
+                    className="h-4 w-4 text-[#5E2BFF] focus:ring-[#5E2BFF] border-gray-300 rounded"
+                  />
+                  <label htmlFor="active" className="ml-2 block text-sm text-gray-700">
+                    Active (available for booking)
+                  </label>
+                </div>
+                
+                {/* Existing Photos */}
+                {existingPhotos.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Current Photos
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {existingPhotos.map((photo, index) => (
+                        <div 
+                          key={photo.id} 
+                          className={`relative rounded-lg overflow-hidden border ${
+                            photosToDelete.includes(photo.id) ? 'opacity-50 border-red-300' : 'border-gray-200'
+                          }`}
+                        >
+                          <div className="relative aspect-[4/3] w-full">
+                            <Image
+                              src={photo.photo_path}
+                              alt={photo.description || `Photo of service`}
+                              fill
+                              style={{ objectFit: 'cover' }}
+                              className="rounded-lg"
+                            />
+                          </div>
+                          
+                          <div className="absolute top-2 right-2 flex space-x-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleExistingPhotoDelete(photo.id)}
+                              className={`p-1 rounded-full shadow-md ${
+                                photosToDelete.includes(photo.id) 
+                                  ? 'bg-green-500 hover:bg-green-600 text-white' 
+                                  : 'bg-white hover:bg-red-100 text-red-500'
+                              }`}
+                              title={photosToDelete.includes(photo.id) ? "Restore photo" : "Delete photo"}
+                              disabled={saving}
+                            >
+                              {photosToDelete.includes(photo.id) ? (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                              )}
+                            </button>
+                          </div>
+                          
+                          <div className="p-2 bg-gray-50">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-500">Photo {index + 1}</span>
+                              <div className="flex space-x-1">
+                                <button 
+                                  type="button"
+                                  onClick={() => movePhotoOrder(photo.id, 'up')}
+                                  disabled={index === 0 || saving}
+                                  className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
+                                  title="Move up"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"></path>
+                                  </svg>
+                                </button>
+                                <button 
+                                  type="button"
+                                  onClick={() => movePhotoOrder(photo.id, 'down')}
+                                  disabled={index === existingPhotos.length - 1 || saving}
+                                  className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
+                                  title="Move down"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {photosToDelete.length > 0 && (
+                      <p className="text-sm text-red-600 mt-2">
+                        {photosToDelete.length} photo(s) marked for deletion. Changes will apply when you save.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Photo Upload Section */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Add New Photos
+                  </label>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Upload additional photos for this service.
+                  </p>
+                  
+                  <div className="flex items-center justify-center w-full">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:bg-gray-50 hover:border-[#5E2BFF] transition w-full flex flex-col items-center justify-center"
+                    >
+                      <svg className="w-8 h-8 mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                      </svg>
+                      <span>Click to upload photos</span>
+                      <span className="text-xs mt-1">JPG, PNG, WebP up to 5MB</span>
+                    </button>
+                  </div>
+                  
+                  {uploadedPhotos.length > 0 && (
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {uploadedPhotos.map((photo, index) => (
+                        <div key={index} className="relative rounded-lg overflow-hidden border border-gray-200">
+                          <div className="relative aspect-[4/3] w-full">
+                            <Image
+                              src={photo.preview}
+                              alt={`Preview ${index + 1}`}
+                              fill
+                              style={{ objectFit: 'cover' }}
+                              className="rounded-lg"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeUploadedPhoto(index)}
+                            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-md hover:bg-red-100"
+                            disabled={saving}
+                          >
+                            <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                          </button>
+                          <div className="p-2 bg-gray-50">
+                            <span className="text-xs text-gray-500">New photo {index + 1}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex items-center justify-end space-x-4 pt-4">

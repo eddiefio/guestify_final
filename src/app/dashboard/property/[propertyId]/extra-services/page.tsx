@@ -152,12 +152,47 @@ export default function ExtraServices() {
   
   const handleDeleteService = async (serviceId: string) => {
     try {
+      // Prima recupero le foto associate al servizio
+      const { data: photos, error: photosError } = await supabase
+        .from('extra_service_photos')
+        .select('*')
+        .eq('service_id', serviceId)
+      
+      if (photosError) throw photosError
+      
+      // Elimino il servizio dal database
       const { error } = await supabase
         .from('extra_services')
         .delete()
         .eq('id', serviceId)
       
       if (error) throw error
+      
+      // Se ci sono foto associate, elimino ogni file dal bucket di storage
+      if (photos && photos.length > 0) {
+        for (const photo of photos) {
+          try {
+            // Estrapolo il percorso del file dal public URL
+            const photoUrl = photo.photo_path;
+            const storagePathMatch = photoUrl.match(/\/extra-service-photos\/(.+)$/);
+            
+            if (storagePathMatch && storagePathMatch[1]) {
+              const filePath = storagePathMatch[1];
+              
+              // Elimino il file dallo storage
+              const { error: storageError } = await supabase.storage
+                .from('extra-service-photos')
+                .remove([filePath]);
+                
+              if (storageError) {
+                console.error('Error deleting photo from storage:', storageError);
+              }
+            }
+          } catch (photoError) {
+            console.error('Error processing photo deletion:', photoError);
+          }
+        }
+      }
       
       setServices(services.filter(service => service.id !== serviceId))
       toast.success('Service deleted successfully')
