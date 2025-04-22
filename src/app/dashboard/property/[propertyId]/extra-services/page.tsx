@@ -160,49 +160,59 @@ export default function ExtraServices() {
       
       if (photosError) throw photosError
       
-      // Elimino il servizio dal database
-      const { error } = await supabase
-        .from('extra_services')
-        .delete()
-        .eq('id', serviceId)
-      
-      if (error) throw error
+      // Log di debug - numero di foto trovate
+      console.log(`Found ${photos?.length || 0} photos to delete for service ${serviceId}`);
       
       // Se ci sono foto associate, elimino ogni file dal bucket di storage
       if (photos && photos.length > 0) {
         for (const photo of photos) {
           try {
-            // Estraggo direttamente il nome del file dallo storage path
-            const photoPath = photo.photo_path;
+            const photoUrl = photo.photo_path;
+            console.log('Attempting to delete photo with URL:', photoUrl);
             
-            // Debug - visualizza l'URL completo per verificare il formato
-            console.log('Processing photo URL:', photoPath);
+            // Metodo 1: Cerca la posizione della parte finale dell'URL
+            let filePathToDelete = null;
             
-            if (photoPath) {
-              // Se l'URL contiene il percorso pubblico, estrai il percorso del file
-              if (photoPath.includes('/storage/v1/object/public/extra-service-photos/')) {
-                const filePath = photoPath.split('/extra-service-photos/')[1];
-                console.log('Extracted file path:', filePath);
-                
-                if (filePath) {
-                  // Elimino il file dallo storage
-                  const { error: storageError, data: deleteData } = await supabase.storage
-                    .from('extra-service-photos')
-                    .remove([filePath]);
-                    
-                  if (storageError) {
-                    console.error('Error deleting photo from storage:', storageError);
-                  } else {
-                    console.log('Successfully deleted photo from storage:', deleteData);
-                  }
-                }
+            if (photoUrl.includes('extra-service-photos')) {
+              // Trova l'indice dove inizia "extra-service-photos/" nell'URL
+              const bucketPosition = photoUrl.indexOf('extra-service-photos/');
+              
+              if (bucketPosition !== -1) {
+                // Prendi tutto ciò che segue "extra-service-photos/"
+                filePathToDelete = photoUrl.substring(bucketPosition + 'extra-service-photos/'.length);
+                console.log('Method 1 - Extracted path:', filePathToDelete);
               }
+            }
+            
+            if (!filePathToDelete) {
+              console.error('Could not extract file path from URL:', photoUrl);
+              continue;
+            }
+            
+            // Elimina il file dallo storage
+            console.log('Attempting to delete file:', filePathToDelete);
+            const { error: storageError, data: deleteData } = await supabase.storage
+              .from('extra-service-photos')
+              .remove([filePathToDelete]);
+              
+            if (storageError) {
+              console.error('Error deleting photo from storage:', storageError);
+            } else {
+              console.log('Successfully deleted photo from storage:', deleteData);
             }
           } catch (photoError) {
             console.error('Error processing photo deletion:', photoError);
           }
         }
       }
+      
+      // Ora elimino il servizio dal database (dopo aver eliminato le foto)
+      const { error } = await supabase
+        .from('extra_services')
+        .delete()
+        .eq('id', serviceId)
+      
+      if (error) throw error
       
       setServices(services.filter(service => service.id !== serviceId))
       toast.success('Service deleted successfully')

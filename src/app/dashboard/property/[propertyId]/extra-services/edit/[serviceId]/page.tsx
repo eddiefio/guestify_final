@@ -220,27 +220,33 @@ export default function EditExtraService() {
               
             if (dbError) throw dbError
             
-            // Estrapola il percorso del file dal public URL
-            const photoUrl = photoToDelete.photo_path
+            // Estrai il percorso del file dall'URL
+            const photoUrl = photoToDelete.photo_path;
+            console.log('Attempting to delete photo with URL:', photoUrl);
             
-            // Debug - visualizza l'URL completo per verificare il formato
-            console.log('Processing photo URL for deletion:', photoUrl);
+            // Metodo 1: Cerca la posizione della parte finale dell'URL
+            let filePathToDelete = null;
             
-            // Regex migliorata per estrarre il percorso relativo dal bucket
-            // Corrisponde a qualsiasi cosa dopo "extra-service-photos/"
-            const storagePathMatch = photoUrl.match(/\/storage\/v1\/object\/public\/extra-service-photos\/(.+)$/);
-            
-            if (storagePathMatch && storagePathMatch[1]) {
-              const filePath = storagePathMatch[1];
-              console.log('Extracted file path for deletion:', filePath);
+            if (photoUrl.includes('extra-service-photos')) {
+              // Trova l'indice dove inizia "extra-service-photos/" nell'URL
+              const bucketPosition = photoUrl.indexOf('extra-service-photos/');
               
+              if (bucketPosition !== -1) {
+                // Prendi tutto ciò che segue "extra-service-photos/"
+                filePathToDelete = photoUrl.substring(bucketPosition + 'extra-service-photos/'.length);
+                console.log('Method 1 - Extracted path:', filePathToDelete);
+              }
+            }
+            
+            if (filePathToDelete) {
               // Elimina il file dallo storage
+              console.log('Attempting to delete file:', filePathToDelete);
               const { error: storageError, data: deleteData } = await supabase.storage
                 .from('extra-service-photos')
-                .remove([filePath])
+                .remove([filePathToDelete]);
                 
               if (storageError) {
-                console.error('Error deleting photo from storage:', storageError)
+                console.error('Error deleting photo from storage:', storageError);
               } else {
                 console.log('Successfully deleted photo from storage:', deleteData);
               }
