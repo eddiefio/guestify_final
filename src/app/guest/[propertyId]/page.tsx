@@ -214,7 +214,7 @@ export default function GuestHomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-1.5">
+      <header className="bg-white shadow-sm py-3">
         <div className="w-full px-4 flex items-center justify-between">
           <div className="relative h-12 w-28">
             <Image 
@@ -228,7 +228,7 @@ export default function GuestHomePage() {
         </div>
       </header>
 
-      <main className="flex-grow w-full px-4 pt-3 pb-14 flex flex-col">
+      <main className="flex-grow w-full px-4 pt-4 pb-14 flex flex-col">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
@@ -239,7 +239,7 @@ export default function GuestHomePage() {
             {error}
           </div>
         ) : (
-          <div className="w-full flex flex-col space-y-4 flex-grow">
+          <div className="w-full flex flex-col space-y-5 flex-grow">
             {/* Search bar */}
             <div className="relative w-full">
               <form onSubmit={handleSearch} className="w-full">
@@ -260,7 +260,7 @@ export default function GuestHomePage() {
 
             {/* Essentials section */}
             <div>
-              <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Essentials</h2>
+              <h2 className="text-base font-bold text-[#5E2BFF] mb-3">Essentials</h2>
               <div className="grid grid-cols-4 gap-2">
                 {essentials.map((item) => (
                   <Link href={item.path} key={item.id} className="text-center">
@@ -273,10 +273,11 @@ export default function GuestHomePage() {
               </div>
             </div>
 
-            {/* Extra Services */}
-            <div className="w-full">
-              <Link href={`/guest/${propertyId}/extra-services`}>
-                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm w-full">
+            {/* Main section with all buttons */}
+            <div className="flex flex-col space-y-3 w-full">
+              {/* Extra Services */}
+              <Link href={`/guest/${propertyId}/extra-services`} className="block w-full">
+                <div className="bg-[#5E2BFF] text-white rounded-xl p-4 shadow-sm w-full">
                   <div className="flex items-center">
                     <div className="mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -295,38 +296,38 @@ export default function GuestHomePage() {
                   </div>
                 </div>
               </Link>
-            </div>
 
-            {/* House Info and Host Guides */}
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <Link href={`/guest/${propertyId}/house-info`} className="w-full">
-                <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border border-blue-200 w-full">
-                  <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                    </svg>
+              {/* House Info and Host Guides */}
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Link href={`/guest/${propertyId}/house-info`} className="w-full">
+                  <div className="bg-blue-100 rounded-xl p-4 shadow-sm border border-blue-200 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">House Info</h2>
+                    <p className="text-xs text-gray-600">Information about the house</p>
                   </div>
-                  <h2 className="text-sm font-bold text-gray-800">House Info</h2>
-                  <p className="text-xs text-gray-600">Information about the house</p>
-                </div>
-              </Link>
-              <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
-                <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border border-yellow-300 w-full">
-                  <div className="mb-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
+                </Link>
+                <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
+                  <div className="bg-[#ffde59] rounded-xl p-4 shadow-sm border border-yellow-300 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
+                    <p className="text-xs text-gray-600">Guides and recommendations</p>
                   </div>
-                  <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
-                  <p className="text-xs text-gray-600">Guides and recommendations</p>
-                </div>
-              </Link>
+                </Link>
+              </div>
             </div>
 
             {/* Weather Information */}
             {weatherData && (
               <div className="w-full mt-auto">
-                <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Weather in {weatherData.city}</h2>
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Weather in {weatherData.city}</h2>
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
                   <div className="p-3">
                     <div className="flex justify-between items-center">
