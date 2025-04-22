@@ -23,46 +23,58 @@ export default function GuestHomePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Lista delle categorie predefinite
+  // Lista delle categorie essenziali
+  const essentials = [
+    {
+      id: 'wifi',
+      name: 'Wifi',
+      icon: '📶',
+      path: `/guest/${propertyId}/wifi-connection`,
+    },
+    {
+      id: 'checkin',
+      name: 'Checkin',
+      icon: '🔑',
+      path: `/guest/${propertyId}/house-info`,
+    },
+    {
+      id: 'checkout',
+      name: 'Checkout',
+      icon: '📤',
+      path: `/guest/${propertyId}/house-info`,
+    },
+    {
+      id: 'house-rules',
+      name: 'House Rules',
+      icon: '📋',
+      path: `/guest/${propertyId}/house-rules`,
+    },
+  ]
+
+  // Lista delle categorie principali
   const [categories, setCategories] = useState<Category[]>([
     {
       id: 'house-info',
-      name: 'Informazioni sulla Casa',
-      icon: '/icons/house-info.svg',
+      name: 'House Info',
+      icon: '🏠',
       path: `/guest/${propertyId}/house-info`,
-      color: 'bg-blue-50 hover:bg-blue-100',
+      color: 'bg-blue-100',
       available: false
     },
     {
       id: 'extra-services',
-      name: 'Servizi Extra',
-      icon: '/icons/extra-services.svg',
+      name: 'Extra Services',
+      icon: '🛎️',
       path: `/guest/${propertyId}/extra-services`,
-      color: 'bg-green-50 hover:bg-green-100',
+      color: 'bg-green-100',
       available: false
     },
     {
-      id: 'house-rules',
-      name: 'Regole della Casa',
-      icon: '/icons/house-rules.svg',
-      path: `/guest/${propertyId}/house-rules`,
-      color: 'bg-red-50 hover:bg-red-100',
-      available: false
-    },
-    {
-      id: 'wifi-connection',
-      name: 'Connessione WiFi',
-      icon: '/icons/wifi.svg',
-      path: `/guest/${propertyId}/wifi-connection`,
-      color: 'bg-purple-50 hover:bg-purple-100',
-      available: false
-    },
-    {
-      id: 'city-guide',
-      name: 'Guida della Città',
-      icon: '/icons/city-guide.svg',
+      id: 'host-guides',
+      name: 'Host Guides',
+      icon: '📚',
       path: `/guest/${propertyId}/city-guide`,
-      color: 'bg-yellow-50 hover:bg-yellow-100',
+      color: 'bg-yellow-100',
       available: false
     }
   ])
@@ -109,28 +121,6 @@ export default function GuestHomePage() {
           if (index >= 0) updatedCategories[index].available = true
         }
 
-        // Verifica house_rules
-        const { count: houseRulesCount } = await supabase
-          .from('house_rules')
-          .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
-        
-        if (houseRulesCount && houseRulesCount > 0) {
-          const index = updatedCategories.findIndex(cat => cat.id === 'house-rules')
-          if (index >= 0) updatedCategories[index].available = true
-        }
-
-        // Verifica wifi_credentials
-        const { count: wifiCount } = await supabase
-          .from('wifi_credentials')
-          .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
-        
-        if (wifiCount && wifiCount > 0) {
-          const index = updatedCategories.findIndex(cat => cat.id === 'wifi-connection')
-          if (index >= 0) updatedCategories[index].available = true
-        }
-
         // Verifica city_guides
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
@@ -138,7 +128,7 @@ export default function GuestHomePage() {
           .eq('property_id', propertyId)
         
         if (cityGuideCount && cityGuideCount > 0) {
-          const index = updatedCategories.findIndex(cat => cat.id === 'city-guide')
+          const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
           if (index >= 0) updatedCategories[index].available = true
         }
 
@@ -154,19 +144,8 @@ export default function GuestHomePage() {
     fetchPropertyData()
   }, [propertyId])
 
-  // Filtra solo le categorie disponibili
-  const availableCategories = categories.filter(cat => cat.available)
-
-  // Se house-info è disponibile, reindirizza direttamente a quella pagina
-  useEffect(() => {
-    const houseInfoCategory = categories.find(cat => cat.id === 'house-info')
-    if (!loading && houseInfoCategory?.available && router) {
-      router.push(houseInfoCategory.path)
-    }
-  }, [categories, loading, router])
-
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan">
+    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 flex items-center justify-between">
           <h1 className="text-xl font-bold text-[#5E2BFF]">Guestify</h1>
@@ -174,7 +153,7 @@ export default function GuestHomePage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6">
+      <main className="flex-grow max-w-7xl mx-auto px-4 py-6 sm:px-6">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
@@ -184,33 +163,32 @@ export default function GuestHomePage() {
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
             {error}
           </div>
-        ) : availableCategories.length === 0 ? (
-          <div className="text-center py-10">
-            <div className="text-gray-500 mb-4">
-              <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"></path>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">Nessuna informazione disponibile</h2>
-            <p className="text-gray-600">L'host non ha ancora aggiunto informazioni per questa proprietà.</p>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {availableCategories.map((category) => (
-              <Link href={category.path} key={category.id}>
-                <div className={`p-6 rounded-xl shadow-sm ${category.color} transition duration-200 cursor-pointer`}>
-                  <div className="flex items-center">
-                    <div className="flex-shrink-0 mr-4">
-                      {/* Placeholder per icona */}
-                      <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center">
-                        <svg className="w-6 h-6 text-[#5E2BFF]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                      </div>
+          <div className="space-y-8">
+            {/* Sezione Essentials */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-800 mb-4">Essentials</h2>
+              <div className="grid grid-cols-4 gap-4">
+                {essentials.map((item) => (
+                  <Link href={item.path} key={item.id} className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-2 bg-white rounded-full flex items-center justify-center shadow-md text-2xl">
+                      {item.icon}
                     </div>
+                    <span className="text-sm text-gray-700 block">{item.name}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+
+            {/* Sezione Servizi Extra */}
+            <div>
+              <Link href={`/guest/${propertyId}/extra-services`}>
+                <div className="bg-green-100 rounded-xl p-6 shadow-sm">
+                  <div className="flex items-center">
+                    <div className="text-2xl mr-3">🛎️</div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-800">{category.name}</h2>
-                      <p className="text-sm text-gray-600">Scopri di più</p>
+                      <h2 className="text-lg font-semibold text-gray-800">Extra Services</h2>
+                      <p className="text-sm text-gray-600">Scopri i servizi aggiuntivi disponibili</p>
                     </div>
                     <div className="ml-auto">
                       <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -220,16 +198,56 @@ export default function GuestHomePage() {
                   </div>
                 </div>
               </Link>
-            ))}
+            </div>
+
+            {/* House Info e Host Guides */}
+            <div className="grid grid-cols-2 gap-4">
+              <Link href={`/guest/${propertyId}/house-info`}>
+                <div className="bg-blue-100 rounded-xl p-4 shadow-sm h-full">
+                  <div className="text-2xl mb-2">🏠</div>
+                  <h2 className="text-base font-semibold text-gray-800">House Info</h2>
+                  <p className="text-xs text-gray-600">Informazioni sulla casa</p>
+                </div>
+              </Link>
+              <Link href={`/guest/${propertyId}/city-guide`}>
+                <div className="bg-yellow-100 rounded-xl p-4 shadow-sm h-full">
+                  <div className="text-2xl mb-2">📚</div>
+                  <h2 className="text-base font-semibold text-gray-800">Host Guides</h2>
+                  <p className="text-xs text-gray-600">Guide e suggerimenti</p>
+                </div>
+              </Link>
+            </div>
+
+            {/* Hot Information */}
+            <div>
+              <h2 className="text-lg font-bold text-gray-800 mb-4">Hot Information</h2>
+              <div className="space-y-3">
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <h3 className="text-base font-medium">Quali cibi sono sconsigliati per il gatto</h3>
+                </div>
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <h3 className="text-base font-medium">Perché le zanzare amano il sangue</h3>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </main>
 
-      <footer className="bg-white border-t mt-10 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 text-center text-gray-500 text-sm">
-          <p>Powered by Guestify</p>
+      {/* Barra di navigazione */}
+      <nav className="bg-white border-t shadow-lg mt-auto">
+        <div className="flex justify-around items-center h-16">
+          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
+            <div className="text-2xl">📞</div>
+          </Link>
+          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
+            <div className="text-2xl">🏠</div>
+          </Link>
+          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
+            <div className="text-2xl">🗺️</div>
+          </Link>
         </div>
-      </footer>
+      </nav>
     </div>
   )
 } 
