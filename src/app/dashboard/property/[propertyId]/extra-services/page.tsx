@@ -151,6 +151,11 @@ export default function ExtraServices() {
   }, [user, propertyId, router])
   
   const handleDeleteService = async (serviceId: string) => {
+    // Chiedi conferma all'utente prima di procedere
+    if (!confirm('Sei sicuro di voler eliminare questo servizio extra? Questa azione è irreversibile.')) {
+      return;
+    }
+    
     try {
       // Prima recupero le foto associate al servizio
       const { data: photos, error: photosError } = await supabase
@@ -168,20 +173,23 @@ export default function ExtraServices() {
         for (const photo of photos) {
           try {
             const photoUrl = photo.photo_path;
-            console.log('Attempting to delete photo with URL:', photoUrl);
+            console.log('Photo URL from database:', photoUrl);
             
-            // Metodo 1: Cerca la posizione della parte finale dell'URL
+            // Per estrarre il percorso del file, consideriamo le diverse possibilità:
             let filePathToDelete = null;
             
-            if (photoUrl.includes('extra-service-photos')) {
-              // Trova l'indice dove inizia "extra-service-photos/" nell'URL
-              const bucketPosition = photoUrl.indexOf('extra-service-photos/');
-              
-              if (bucketPosition !== -1) {
-                // Prendi tutto ciò che segue "extra-service-photos/"
-                filePathToDelete = photoUrl.substring(bucketPosition + 'extra-service-photos/'.length);
-                console.log('Method 1 - Extracted path:', filePathToDelete);
+            // Caso 1: Se l'URL è completo (contiene il bucket)
+            if (photoUrl.includes('/storage/v1/object/public/extra-service-photos/')) {
+              const parts = photoUrl.split('/extra-service-photos/');
+              if (parts.length > 1) {
+                filePathToDelete = parts[1];
+                console.log('Extracted path from URL:', filePathToDelete);
               }
+            } 
+            // Caso 2: Se è già un percorso relativo (come nella pagina how-things-work)
+            else if (!photoUrl.startsWith('http')) {
+              filePathToDelete = photoUrl;
+              console.log('Using direct path:', filePathToDelete);
             }
             
             if (!filePathToDelete) {
@@ -199,6 +207,15 @@ export default function ExtraServices() {
               console.error('Error deleting photo from storage:', storageError);
             } else {
               console.log('Successfully deleted photo from storage:', deleteData);
+              // Elimina il record della foto dal database
+              const { error: deletePhotoError } = await supabase
+                .from('extra_service_photos')
+                .delete()
+                .eq('id', photo.id);
+                
+              if (deletePhotoError) {
+                console.error('Error deleting photo record:', deletePhotoError);
+              }
             }
           } catch (photoError) {
             console.error('Error processing photo deletion:', photoError);
@@ -206,7 +223,7 @@ export default function ExtraServices() {
         }
       }
       
-      // Ora elimino il servizio dal database (dopo aver eliminato le foto)
+      // Ora elimino il servizio dal database
       const { error } = await supabase
         .from('extra_services')
         .delete()
@@ -215,10 +232,10 @@ export default function ExtraServices() {
       if (error) throw error
       
       setServices(services.filter(service => service.id !== serviceId))
-      toast.success('Service deleted successfully')
+      toast.success('Servizio eliminato con successo')
     } catch (error) {
       console.error('Error deleting service:', error)
-      toast.error('Failed to delete service')
+      toast.error('Impossibile eliminare il servizio')
     }
   }
   
