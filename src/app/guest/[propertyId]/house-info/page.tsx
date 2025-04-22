@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import React from 'react'
 
 interface HouseInfoItem {
   id: string
@@ -17,7 +18,7 @@ interface HouseInfoItem {
 interface SectionInfo {
   title: string
   description: string
-  icon: JSX.Element
+  icon: React.ReactNode
 }
 
 export default function GuestHouseInfo() {
