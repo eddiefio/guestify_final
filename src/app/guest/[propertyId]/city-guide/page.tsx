@@ -63,11 +63,9 @@ export default function CityGuidePage() {
     if (!cityGuide || !cityGuide.file_path) return null;
     
     try {
-      const { data, error } = await supabase.storage
+      const { data } = await supabase.storage
         .from('city_guides')
         .getPublicUrl(cityGuide.file_path);
-        
-      if (error) throw error;
       
       return data.publicUrl;
     } catch (err) {
