@@ -174,19 +174,30 @@ export default function ExtraServices() {
           try {
             // Estrapolo il percorso del file dal public URL
             const photoUrl = photo.photo_path;
-            const storagePathMatch = photoUrl.match(/\/extra-service-photos\/(.+)$/);
+            
+            // Debug - visualizza l'URL completo per verificare il formato
+            console.log('Processing photo URL:', photoUrl);
+            
+            // Regex migliorata per estrarre il percorso relativo dal bucket
+            // Corrisponde a qualsiasi cosa dopo "extra-service-photos/"
+            const storagePathMatch = photoUrl.match(/\/storage\/v1\/object\/public\/extra-service-photos\/(.+)$/);
             
             if (storagePathMatch && storagePathMatch[1]) {
               const filePath = storagePathMatch[1];
+              console.log('Extracted file path:', filePath);
               
               // Elimino il file dallo storage
-              const { error: storageError } = await supabase.storage
+              const { error: storageError, data: deleteData } = await supabase.storage
                 .from('extra-service-photos')
                 .remove([filePath]);
                 
               if (storageError) {
                 console.error('Error deleting photo from storage:', storageError);
+              } else {
+                console.log('Successfully deleted photo from storage:', deleteData);
               }
+            } else {
+              console.error('Could not extract file path from URL:', photoUrl);
             }
           } catch (photoError) {
             console.error('Error processing photo deletion:', photoError);

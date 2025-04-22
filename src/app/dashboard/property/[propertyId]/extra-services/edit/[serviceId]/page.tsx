@@ -222,17 +222,30 @@ export default function EditExtraService() {
             
             // Estrapola il percorso del file dal public URL
             const photoUrl = photoToDelete.photo_path
-            const storagePathMatch = photoUrl.match(/\/extra-service-photos\/(.+)$/)
+            
+            // Debug - visualizza l'URL completo per verificare il formato
+            console.log('Processing photo URL for deletion:', photoUrl);
+            
+            // Regex migliorata per estrarre il percorso relativo dal bucket
+            // Corrisponde a qualsiasi cosa dopo "extra-service-photos/"
+            const storagePathMatch = photoUrl.match(/\/storage\/v1\/object\/public\/extra-service-photos\/(.+)$/);
             
             if (storagePathMatch && storagePathMatch[1]) {
+              const filePath = storagePathMatch[1];
+              console.log('Extracted file path for deletion:', filePath);
+              
               // Elimina il file dallo storage
-              const { error: storageError } = await supabase.storage
+              const { error: storageError, data: deleteData } = await supabase.storage
                 .from('extra-service-photos')
-                .remove([storagePathMatch[1]])
+                .remove([filePath])
                 
               if (storageError) {
                 console.error('Error deleting photo from storage:', storageError)
+              } else {
+                console.log('Successfully deleted photo from storage:', deleteData);
               }
+            } else {
+              console.error('Could not extract file path from URL:', photoUrl);
             }
           }
         }
