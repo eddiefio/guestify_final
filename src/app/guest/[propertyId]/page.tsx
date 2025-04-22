@@ -228,7 +228,7 @@ export default function GuestHomePage() {
         </div>
       </header>
 
-      <main className="flex-grow w-full px-4 pt-3 pb-14 flex flex-col justify-between">
+      <main className="flex-grow w-full px-4 pt-3 pb-16 flex flex-col">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
@@ -239,7 +239,7 @@ export default function GuestHomePage() {
             {error}
           </div>
         ) : (
-          <div className="w-full flex flex-col space-y-3 flex-grow">
+          <div className="w-full flex flex-col space-y-4 h-full">
             {/* Search bar */}
             <div className="relative w-full">
               <form onSubmit={handleSearch} className="w-full">
@@ -273,11 +273,10 @@ export default function GuestHomePage() {
               </div>
             </div>
 
-            {/* Main sections */}
-            <div className="grid grid-rows-3 gap-3 w-full flex-grow">
-              {/* Extra Services */}
-              <Link href={`/guest/${propertyId}/extra-services`} className="w-full">
-                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm h-full w-full">
+            {/* Extra Services */}
+            <div className="w-full">
+              <Link href={`/guest/${propertyId}/extra-services`}>
+                <div className="bg-[#5E2BFF] text-white rounded-xl p-3 shadow-sm h-16 w-full">
                   <div className="flex items-center h-full">
                     <div className="mr-3">
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,67 +295,67 @@ export default function GuestHomePage() {
                   </div>
                 </div>
               </Link>
+            </div>
 
-              {/* House Info and Host Guides */}
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Link href={`/guest/${propertyId}/house-info`} className="w-full">
-                  <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-full border border-blue-200 w-full">
-                    <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-800">House Info</h2>
-                    <p className="text-xs text-gray-600">Information about the house</p>
+            {/* House Info and Host Guides */}
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <Link href={`/guest/${propertyId}/house-info`} className="w-full">
+                <div className="bg-blue-100 rounded-xl p-3 shadow-sm h-16 border border-blue-200 w-full">
+                  <div className="mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
                   </div>
-                </Link>
-                <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
-                  <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-full border border-yellow-300 w-full">
-                    <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
-                    <p className="text-xs text-gray-600">Guides and recommendations</p>
+                  <h2 className="text-sm font-bold text-gray-800">House Info</h2>
+                  <p className="text-xs text-gray-600">Information about the house</p>
+                </div>
+              </Link>
+              <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
+                <div className="bg-[#ffde59] rounded-xl p-3 shadow-sm h-16 border border-yellow-300 w-full">
+                  <div className="mb-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
                   </div>
-                </Link>
-              </div>
+                  <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
+                  <p className="text-xs text-gray-600">Guides and recommendations</p>
+                </div>
+              </Link>
+            </div>
 
-              {/* Weather Information */}
-              {weatherData && (
-                <div className="w-full">
-                  <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Weather in {weatherData.city}</h2>
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full h-full">
-                    <div className="p-3">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <h3 className="text-sm font-bold">Tuesday 22 April</h3>
-                          <p className="text-xs opacity-90">{weatherData.city}</p>
+            {/* Weather Information */}
+            {weatherData && (
+              <div className="w-full mt-auto">
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-1.5">Weather in {weatherData.city}</h2>
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
+                  <div className="p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-sm font-bold">Tuesday 22 April</h3>
+                        <p className="text-xs opacity-90">{weatherData.city}</p>
+                      </div>
+                      <div className="text-3xl">☀️</div>
+                    </div>
+                    <div className="mt-1 flex items-end">
+                      <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
+                      <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/20 p-2">
+                    <div className="flex justify-between">
+                      {weatherData.forecast.map((day, index) => (
+                        <div key={index} className="text-center">
+                          <div className="text-xs font-bold">{day.day}</div>
+                          <div className="text-lg my-1">{day.icon}</div>
+                          <div className="text-xs">{day.temperature}°</div>
                         </div>
-                        <div className="text-3xl">☀️</div>
-                      </div>
-                      <div className="mt-1 flex items-end">
-                        <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
-                        <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="bg-white/20 p-2">
-                      <div className="flex justify-between">
-                        {weatherData.forecast.map((day, index) => (
-                          <div key={index} className="text-center">
-                            <div className="text-xs font-bold">{day.day}</div>
-                            <div className="text-lg my-1">{day.icon}</div>
-                            <div className="text-xs">{day.temperature}°</div>
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
       </main>
