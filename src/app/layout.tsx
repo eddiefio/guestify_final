@@ -28,8 +28,10 @@ export default function RootLayout({
         </Providers>
         {/* Font Awesome */}
         <Script
-          src="https://kit.fontawesome.com/a076d05399.js"
+          src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"
+          integrity="sha512-yFjZbTYRCJodnuyGlsKamNE/LlEaEAxSUDe5+u61mV8zzqJVFOH7TnULE2/PP/l5vKWpUNnF4VGVkXh3MjgLsg=="
           crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
         />
       </body>
     </html>

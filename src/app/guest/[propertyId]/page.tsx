@@ -153,30 +153,89 @@ export default function GuestHomePage() {
     const fetchPropertyData = async () => {
       try {
         setLoading(true)
+        
+        // Debug: mostra l'ID della proprietà
+        console.log('Tentativo di caricare proprietà con ID:', propertyId);
+        console.log('Tipo di propertyId:', typeof propertyId);
+        
+        if (!propertyId) {
+          throw new Error('ID della proprietà mancante');
+        }
+        
+        // Normalizza l'ID (rimuovi spazi, converti in minuscolo)
+        const normalizedId = propertyId.toString().trim();
+        console.log('ID normalizzato:', normalizedId);
 
         // Fetch property details - modifica per evitare errori con .single()
         const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, city')
-          .eq('id', propertyId)
+          .eq('id', normalizedId)
         
-        if (propError) throw propError
+        // Debug: log della risposta
+        console.log('Risposta Supabase:', { data: properties, error: propError });
+        
+        if (propError) {
+          console.error('Errore Supabase:', propError);
+          throw propError;
+        }
 
-        // Se non ci sono proprietà, mostra un errore
+        // Se non ci sono proprietà, prova a cercare con ID diversi (maiuscole/minuscole)
         if (!properties || properties.length === 0) {
-          throw new Error('Property not found')
+          console.log('Proprietà non trovata, tentativo con ricerca più ampia...');
+          
+          // Prova una query ilike (case insensitive)
+          const { data: propertiesAlt, error: errorAlt } = await supabase
+            .from('properties')
+            .select('name, city')
+            .ilike('id', `%${normalizedId}%`)
+            .limit(1);
+          
+          console.log('Risultato ricerca alternativa:', { data: propertiesAlt, error: errorAlt });
+          
+          if (propertiesAlt && propertiesAlt.length > 0) {
+            const property = propertiesAlt[0];
+            setPropertyName(property.name);
+            
+            if (property.city) {
+              setPropertyCity(property.city);
+              const weather = await fetchWeatherData(property.city);
+              setWeatherData(weather);
+            }
+            
+            // Continua con il resto del codice...
+            const updatedCategories = [...categories];
+            
+            // Check city_guides
+            const { count: cityGuideCount } = await supabase
+              .from('city_guides')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id) // Usa l'ID corretto
+            
+            if (cityGuideCount && cityGuideCount > 0) {
+              const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
+              if (index >= 0) updatedCategories[index].available = true
+            }
+            
+            setCategories(updatedCategories);
+            setLoading(false);
+            return;
+          }
+          
+          // Se ancora non abbiamo trovato la proprietà
+          throw new Error('Proprietà non trovata. Verifica l\'ID o scansiona nuovamente il QR code.');
         }
 
         // Se ci sono più proprietà, usa la prima
-        const property = properties[0]
-        setPropertyName(property.name)
+        const property = properties[0];
+        setPropertyName(property.name);
         
         if (property.city) {
-          setPropertyCity(property.city)
+          setPropertyCity(property.city);
           
           // Get weather data for the property's city
-          const weather = await fetchWeatherData(property.city)
-          setWeatherData(weather)
+          const weather = await fetchWeatherData(property.city);
+          setWeatherData(weather);
         }
 
         // Check which sections are available for this property
@@ -186,7 +245,7 @@ export default function GuestHomePage() {
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
           .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
+          .eq('property_id', property.id)
         
         if (cityGuideCount && cityGuideCount > 0) {
           const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')

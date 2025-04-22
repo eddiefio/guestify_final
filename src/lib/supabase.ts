@@ -6,12 +6,33 @@ let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null
 export const getSupabase = () => {
   if (supabaseInstance) return supabaseInstance
 
-  supabaseInstance = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
-  return supabaseInstance
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    console.log('Inizializzazione del client Supabase');
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Variabili di ambiente Supabase mancanti:', { 
+        urlPresente: !!supabaseUrl, 
+        keyPresente: !!supabaseKey 
+      });
+      throw new Error('Configurazione Supabase incompleta');
+    }
+    
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey);
+    
+    console.log('Client Supabase inizializzato con successo');
+    return supabaseInstance;
+  } catch (error) {
+    console.error('Errore nell\'inizializzazione del client Supabase:', error);
+    // Fallback a un client base per evitare errori fatali
+    supabaseInstance = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co',
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+    );
+    return supabaseInstance;
+  }
 }
 
 // Client Supabase esportato come default

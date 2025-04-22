@@ -21,28 +21,64 @@ export default function MapPage() {
       try {
         setLoading(true)
 
+        // Debug: mostra l'ID della proprietà
+        console.log('Mappa - Tentativo di caricare proprietà con ID:', propertyId);
+        
+        if (!propertyId) {
+          throw new Error('ID della proprietà mancante');
+        }
+        
+        // Normalizza l'ID (rimuovi spazi, converti in minuscolo)
+        const normalizedId = propertyId.toString().trim();
+        console.log('ID normalizzato:', normalizedId);
+
         // Fetch property details
         const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, address')
-          .eq('id', propertyId)
+          .eq('id', normalizedId)
         
-        if (propError) throw propError
+        console.log('Risposta Supabase:', { data: properties, error: propError });
+        
+        if (propError) {
+          console.error('Errore Supabase:', propError);
+          throw propError;
+        }
 
-        // Se non ci sono proprietà, mostra un errore
+        // Se non ci sono proprietà, prova a cercare con ID diversi (maiuscole/minuscole)
         if (!properties || properties.length === 0) {
-          throw new Error('Property not found')
+          console.log('Proprietà non trovata, tentativo con ricerca più ampia...');
+          
+          // Prova una query ilike (case insensitive)
+          const { data: propertiesAlt, error: errorAlt } = await supabase
+            .from('properties')
+            .select('name, address')
+            .ilike('id', `%${normalizedId}%`)
+            .limit(1);
+          
+          console.log('Risultato ricerca alternativa:', { data: propertiesAlt, error: errorAlt });
+          
+          if (propertiesAlt && propertiesAlt.length > 0) {
+            const property = propertiesAlt[0];
+            setPropertyName(property.name);
+            setAddress(property.address || null);
+            setLoading(false);
+            return;
+          }
+          
+          // Se ancora non abbiamo trovato la proprietà
+          throw new Error('Proprietà non trovata. Verifica l\'ID o scansiona nuovamente il QR code.');
         }
 
         // Se ci sono più proprietà, usa la prima
-        const property = properties[0]
-        setPropertyName(property.name)
-        setAddress(property.address || null)
-        setLoading(false)
+        const property = properties[0];
+        setPropertyName(property.name);
+        setAddress(property.address || null);
+        setLoading(false);
       } catch (error: any) {
-        console.error('Error fetching property data:', error)
-        setError(error.message)
-        setLoading(false)
+        console.error('Error fetching property data:', error);
+        setError(error.message);
+        setLoading(false);
       }
     }
 
