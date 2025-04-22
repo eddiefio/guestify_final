@@ -154,19 +154,21 @@ export default function GuestHomePage() {
       try {
         setLoading(true)
 
-        // Fetch property details
-        const { data, error: propError } = await supabase
+        // Fetch property details - modifica per evitare errori con .single()
+        const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, city')
           .eq('id', propertyId)
         
         if (propError) throw propError
-        
-        if (!data || data.length === 0) {
+
+        // Se non ci sono proprietà, mostra un errore
+        if (!properties || properties.length === 0) {
           throw new Error('Property not found')
         }
-        
-        const property = data[0]
+
+        // Se ci sono più proprietà, usa la prima
+        const property = properties[0]
         setPropertyName(property.name)
         
         if (property.city) {

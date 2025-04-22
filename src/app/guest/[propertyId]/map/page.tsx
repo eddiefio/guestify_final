@@ -22,13 +22,20 @@ export default function MapPage() {
         setLoading(true)
 
         // Fetch property details
-        const { data: property, error: propError } = await supabase
+        const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, address')
           .eq('id', propertyId)
-          .single()
-
+        
         if (propError) throw propError
+
+        // Se non ci sono proprietà, mostra un errore
+        if (!properties || properties.length === 0) {
+          throw new Error('Property not found')
+        }
+
+        // Se ci sono più proprietà, usa la prima
+        const property = properties[0]
         setPropertyName(property.name)
         setAddress(property.address || null)
         setLoading(false)

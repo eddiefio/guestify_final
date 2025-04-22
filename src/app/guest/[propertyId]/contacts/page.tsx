@@ -31,14 +31,20 @@ export default function ContactsPage() {
         setLoading(true)
 
         // Fetch property details
-        const { data: property, error: propError } = await supabase
+        const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, host_name, host_phone, host_email, emergency_contact, property_manager, property_manager_phone')
           .eq('id', propertyId)
-          .single()
 
         if (propError) throw propError
         
+        // Se non ci sono proprietà, mostra un errore
+        if (!properties || properties.length === 0) {
+          throw new Error('Property not found')
+        }
+
+        // Se ci sono più proprietà, usa la prima
+        const property = properties[0]
         setPropertyName(property.name)
         setContactInfo({
           host_name: property.host_name || 'Non disponibile',
