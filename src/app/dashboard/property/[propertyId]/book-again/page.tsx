@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { Calendar, Image, Trash2, Upload, PenLine } from 'lucide-react'
+import { Calendar, Image, Trash2, Upload, PenLine, Link2 } from 'lucide-react'
 
 interface Property {
   id: string
@@ -28,6 +28,13 @@ interface BookAgainInfo {
   updated_at: string
 }
 
+interface PropertyLink {
+  id?: string
+  property_id?: string
+  title: string
+  url: string
+}
+
 export default function BookAgain() {
   const { propertyId } = useParams()
   const [property, setProperty] = useState<Property | null>(null)
@@ -38,6 +45,8 @@ export default function BookAgain() {
   const [image, setImage] = useState<File | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [propertyLinks, setPropertyLinks] = useState<PropertyLink[]>([])
+  const [newLink, setNewLink] = useState<PropertyLink>({ title: '', url: '' })
   const { user } = useAuth()
   const router = useRouter()
 
@@ -90,6 +99,21 @@ export default function BookAgain() {
             setContent('')
             setImageUrl(null)
           }
+        }
+
+        // Carica i link degli annunci della proprietà
+        const { data: linksData, error: linksError } = await supabase
+          .from('property_listing_links')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('created_at', { ascending: true })
+        
+        if (linksError) throw linksError
+        
+        if (linksData && linksData.length > 0) {
+          setPropertyLinks(linksData)
+        } else {
+          setPropertyLinks([])
         }
       } catch (error) {
         console.error('Error fetching data:', error)
@@ -194,6 +218,63 @@ export default function BookAgain() {
     }
   }
 
+  const handleAddLink = () => {
+    if (!newLink.title.trim() || !newLink.url.trim()) {
+      toast.error('Please enter both title and URL')
+      return
+    }
+
+    // Validazione semplice dell'URL
+    try {
+      new URL(newLink.url)
+    } catch (e) {
+      toast.error('Please enter a valid URL (e.g. https://example.com)')
+      return
+    }
+
+    setPropertyLinks([...propertyLinks, { ...newLink }])
+    setNewLink({ title: '', url: '' })
+  }
+
+  const handleRemoveLink = (index: number) => {
+    const updatedLinks = [...propertyLinks]
+    updatedLinks.splice(index, 1)
+    setPropertyLinks(updatedLinks)
+  }
+
+  const savePropertyLinks = async () => {
+    if (!propertyId) return
+
+    try {
+      // Elimina i link esistenti
+      const { error: deleteError } = await supabase
+        .from('property_listing_links')
+        .delete()
+        .eq('property_id', propertyId)
+
+      if (deleteError) throw deleteError
+
+      // Aggiungi i nuovi link
+      if (propertyLinks.length > 0) {
+        const linksWithPropertyId = propertyLinks.map(link => ({
+          ...link,
+          property_id: propertyId
+        }))
+
+        const { error: insertError } = await supabase
+          .from('property_listing_links')
+          .insert(linksWithPropertyId)
+
+        if (insertError) throw insertError
+      }
+
+      toast.success('Property links saved successfully')
+    } catch (error) {
+      console.error('Error saving property links:', error)
+      toast.error('Failed to save property links')
+    }
+  }
+
   const handleSave = async () => {
     try {
       let uploadedImageUrl = imageUrl
@@ -247,6 +328,9 @@ export default function BookAgain() {
         
         setBookAgainInfo(data)
       }
+
+      // Salva i link delle proprietà
+      await savePropertyLinks()
       
       setIsEditing(false)
       toast.success('Book again information saved successfully')
@@ -311,6 +395,80 @@ export default function BookAgain() {
                       className="w-full border border-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                       placeholder="Enter your booking information here... (How to book again, special offers for returning guests, etc.)"
                     />
+                  </div>
+                  
+                  <div>
+                    <h2 className="text-lg font-bold text-gray-800 mb-2">Property Listing Links</h2>
+                    <p className="text-gray-600 mb-4">Add links to your property listings on various platforms.</p>
+                    
+                    {propertyLinks.length > 0 && (
+                      <div className="mb-4 space-y-3">
+                        {propertyLinks.map((link, index) => (
+                          <div 
+                            key={index} 
+                            className="flex items-center gap-2 p-3 bg-violet-50 rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <p className="font-semibold text-gray-800">{link.title}</p>
+                              <a 
+                                href={link.url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-[#5E2BFF] text-sm hover:underline break-all"
+                              >
+                                {link.url}
+                              </a>
+                            </div>
+                            <button
+                              onClick={() => handleRemoveLink(index)}
+                              className="text-red-500 hover:text-red-700 p-1"
+                              title="Remove link"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="mt-4 p-4 border border-gray-300 rounded-lg">
+                      <h3 className="text-md font-bold text-gray-800 mb-3 flex items-center">
+                        <Link2 className="w-5 h-5 mr-2 text-violet-500" />
+                        Add New Link
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-gray-700 text-sm font-bold mb-2">
+                            Title
+                          </label>
+                          <input
+                            type="text"
+                            value={newLink.title}
+                            onChange={(e) => setNewLink({...newLink, title: e.target.value})}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                            placeholder="E.g. Airbnb Listing, Booking.com, etc."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-gray-700 text-sm font-bold mb-2">
+                            URL
+                          </label>
+                          <input
+                            type="url"
+                            value={newLink.url}
+                            onChange={(e) => setNewLink({...newLink, url: e.target.value})}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                            placeholder="https://example.com/your-listing"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleAddLink}
+                        className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-[#4a22cd] transition font-bold flex items-center"
+                      >
+                        Add Link
+                      </button>
+                    </div>
                   </div>
                   
                   <div>
@@ -431,6 +589,30 @@ export default function BookAgain() {
                           ))}
                         </div>
                       </div>
+
+                      {propertyLinks.length > 0 && (
+                        <div className="bg-violet-50 rounded-lg p-6">
+                          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
+                            <Link2 className="w-5 h-5 mr-2 text-violet-500" />
+                            Property Listing Links
+                          </h3>
+                          <div className="space-y-4">
+                            {propertyLinks.map((link, index) => (
+                              <div key={index} className="bg-white rounded-lg p-4 shadow-sm">
+                                <p className="font-semibold text-gray-800 mb-1">{link.title}</p>
+                                <a 
+                                  href={link.url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-[#5E2BFF] hover:underline break-all"
+                                >
+                                  {link.url}
+                                </a>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
