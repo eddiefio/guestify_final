@@ -270,7 +270,8 @@ export default function BeforeLeavingPage() {
                       }`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 6l12 0M9 18l12 0M4 6h1.5M4 18h1.5M8 6a2 2 0 100-4 2 2 0 000 4zM8 22a2 2 0 100-4 2 2 0 000 4zM13.5 12H18m-14.5 0h1.5m7-2a2 2 0 100-4 2 2 0 000 4z" />
+                        <path d="M8 10h8M7 14h1M16 14h1M6 7h12a1 1 0 0 1 1 1v7.59a1 1 0 0 1-.3.7L17 18H7l-1.7-1.71a1 1 0 0 1-.3-.7V8a1 1 0 0 1 1-1z"/>
+                        <path d="M5 18v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2" />
                       </svg>
                       <span className="font-medium">By Car</span>
                     </button>
@@ -283,8 +284,8 @@ export default function BeforeLeavingPage() {
                       }`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.5 4h5a2 2 0 012 2v3.8a2 2 0 01-.586 1.414l-1.914 1.914a2 2 0 00-.586 1.414v2.158a2 2 0 01-2 2h-.83a2 2 0 01-2-2v-2.158a2 2 0 00-.586-1.414l-1.914-1.914A2 2 0 016 9.8V6a2 2 0 012-2z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l2 2m4-2l-2 2" />
+                        <path d="M4 15.5h16M4 8.5h16M18 15.5v4.5M6 15.5v4.5M12 15.5v4.5M8.5 4v4.5M15.5 4v4.5" />
+                        <rect x="6" y="4" width="12" height="11.5" rx="1" />
                       </svg>
                       <span className="font-medium">By Train</span>
                     </button>
