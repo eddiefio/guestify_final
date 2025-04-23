@@ -15,6 +15,7 @@ type FormValues = {
   title: string
   description: string
   price: number
+  category: string
 }
 
 export default function AddExtraService() {
@@ -30,7 +31,8 @@ export default function AddExtraService() {
   
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     defaultValues: {
-      price: 0
+      price: 0,
+      category: 'comfort' // Default category
     }
   })
 
@@ -68,7 +70,8 @@ export default function AddExtraService() {
             title: data.title,
             description: data.description,
             price: data.price,
-            active: true
+            active: true,
+            category: data.category
           }
         ])
         .select()
@@ -223,6 +226,26 @@ export default function AddExtraService() {
                   <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
                 )}
                 <p className="mt-1 text-sm text-gray-500">Remember: Guestify takes a 12% commission on all extra service bookings.</p>
+              </div>
+
+              {/* Category Selector */}
+              <div>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="category"
+                  {...register('category', { required: 'Category is required' })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                >
+                  <option value="checkin-checkout">Check-in & Check-out</option>
+                  <option value="comfort">Comfort & Amenities</option>
+                  <option value="transport">Transportation</option>
+                  <option value="food">Food & Drinks</option>
+                </select>
+                {errors.category && (
+                  <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>
+                )}
               </div>
 
               {/* Photo Upload Section */}

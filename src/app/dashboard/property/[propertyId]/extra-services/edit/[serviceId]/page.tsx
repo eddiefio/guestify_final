@@ -16,6 +16,7 @@ type FormValues = {
   description: string
   price: number
   active: boolean
+  category: string
 }
 
 type ServicePhoto = {
@@ -86,6 +87,7 @@ export default function EditExtraService() {
         setValue('description', data.description || '')
         setValue('price', data.price)
         setValue('active', data.active)
+        setValue('category', data.category || 'comfort')
         
         // Fetch service photos
         const { data: photos, error: photosError } = await supabase
@@ -198,7 +200,8 @@ export default function EditExtraService() {
           title: data.title,
           description: data.description,
           price: data.price,
-          active: data.active
+          active: data.active,
+          category: data.category
         })
         .eq('id', serviceId)
         .eq('property_id', propertyId)
@@ -408,6 +411,26 @@ export default function EditExtraService() {
                     <p className="mt-1 text-sm text-red-500">{errors.price.message}</p>
                   )}
                   <p className="mt-1 text-sm text-gray-500">Remember: Guestify takes a 12% commission on all extra service bookings.</p>
+                </div>
+                
+                {/* Category Selector */}
+                <div className="mb-4">
+                  <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                    Category <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="category"
+                    {...register('category', { required: 'Category is required' })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                  >
+                    <option value="checkin-checkout">Check-in & Check-out</option>
+                    <option value="comfort">Comfort & Amenities</option>
+                    <option value="transport">Transportation</option>
+                    <option value="food">Food & Drinks</option>
+                  </select>
+                  {errors.category && (
+                    <p className="mt-1 text-sm text-red-500">{errors.category.message}</p>
+                  )}
                 </div>
                 
                 <div className="flex items-center">
