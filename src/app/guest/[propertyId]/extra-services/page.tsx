@@ -16,6 +16,7 @@ interface ExtraService {
   active: boolean
   property_id: string
   created_at: string
+  category?: string
 }
 
 interface ServicePhoto {
@@ -132,6 +133,12 @@ export default function ExtraServicesGuest() {
   
   // Categorize services (simplified version - in a real app you'd have a category field in the DB)
   const getCategoryForService = (service: ExtraService): string => {
+    // Se il servizio ha una categoria definita, usala
+    if (service.category) {
+      return service.category;
+    }
+    
+    // Fallback alla logica esistente basata sul titolo se la categoria non è definita
     const title = service.title.toLowerCase()
     
     if (title.includes('check-in') || title.includes('check-out') || title.includes('checkout') || title.includes('checkin') || title.includes('late') || title.includes('early')) {
