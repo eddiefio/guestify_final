@@ -2,93 +2,129 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import Image from 'next/image'
 
 interface CheckoutInfo {
   id: string
   property_id: string
-  checkout_time: string
-  checkout_instructions: string
-  key_return: string
-  cleaning_requirements: string
-  special_instructions: string
-  late_checkout_available: boolean
-  late_checkout_fee: number
+  section_type: string
+  content: string
+  created_at: string
+  updated_at: string
+}
+
+interface CheckoutPhoto {
+  id: string
+  property_id: string
+  section_type: string
+  photo_url: string
+  description: string | null
+  display_order: number
   created_at: string
 }
 
-export default function CheckoutInformationPage() {
+interface ParsedContent {
+  subtype: string
+  content: string
+}
+
+export default function CheckoutInformationGuest() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
-  const [checkoutInfo, setCheckoutInfo] = useState<CheckoutInfo | null>(null)
+  
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeStep, setActiveStep] = useState(0)
-  
-  const checkoutSteps = [
-    {
-      title: "Clean Up",
-      description: "Remove trash and leave the space tidy",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-      )
-    },
-    {
-      title: "Turn Off Appliances",
-      description: "Switch off lights, AC, and all electronics",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      )
-    },
-    {
-      title: "Close Windows",
-      description: "Ensure all windows and doors are properly closed",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-        </svg>
-      )
-    },
-    {
-      title: "Return Keys",
-      description: "Leave keys in the designated location",
-      icon: (
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-        </svg>
-      )
-    }
-  ]
+  const [propertyName, setPropertyName] = useState('')
+  const [checkoutInfo, setCheckoutInfo] = useState<{
+    checkout_time?: string
+    checkout_process?: string
+  }>({})
+  const [photos, setPhotos] = useState<{
+    checkout_time: CheckoutPhoto[]
+    checkout_process: CheckoutPhoto[]
+  }>({
+    checkout_time: [],
+    checkout_process: []
+  })
+  const [activeSection, setActiveSection] = useState<'checkout_time' | 'checkout_process'>('checkout_time')
 
   useEffect(() => {
+    if (!propertyId) return
+
     const fetchCheckoutInfo = async () => {
       try {
         setLoading(true)
         
-        // Recupera le informazioni sul checkout per la proprietà
-        const { data, error: checkoutError } = await supabase
-          .from('checkout_info')
-          .select('*')
-          .eq('property_id', propertyId)
+        // Fetch property details
+        const { data: propertyData, error: propertyError } = await supabase
+          .from('properties')
+          .select('name')
+          .eq('id', propertyId)
           .single()
         
-        if (checkoutError) {
-          console.error('Error fetching checkout information:', checkoutError)
-          throw new Error('Unable to load check-out information. Please try again later.')
+        if (propertyError) throw propertyError
+        
+        setPropertyName(propertyData.name)
+        
+        // Fetch checkout information
+        const { data: checkoutData, error: checkoutError } = await supabase
+          .from('house_info')
+          .select('*')
+          .eq('property_id', propertyId)
+          .eq('section_type', 'checkout_information')
+        
+        if (checkoutError && checkoutError.code !== 'PGRST116') throw checkoutError
+        
+        const infoMap: {[key: string]: string} = {}
+        
+        if (checkoutData && checkoutData.length > 0) {
+          checkoutData.forEach((item: CheckoutInfo) => {
+            try {
+              // Try to parse content as JSON
+              const parsedContent = JSON.parse(item.content) as ParsedContent
+              if (parsedContent && parsedContent.subtype && parsedContent.content) {
+                infoMap[parsedContent.subtype] = parsedContent.content
+              }
+            } catch (e) {
+              // If parsing fails, it might be in old format
+              console.warn('Failed to parse content as JSON', e)
+            }
+          })
         }
         
-        setCheckoutInfo(data)
-        setLoading(false)
-      } catch (error: any) {
-        console.error('Error in fetch checkout info:', error)
-        setError(error.message)
+        setCheckoutInfo(infoMap)
+        
+        // Fetch photos for each section
+        const { data: photosData, error: photosError } = await supabase
+          .from('checkout_photos')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('display_order', { ascending: true })
+        
+        if (photosError && photosError.code !== 'PGRST116') throw photosError
+        
+        const photosMap = {
+          checkout_time: [] as CheckoutPhoto[],
+          checkout_process: [] as CheckoutPhoto[]
+        }
+        
+        if (photosData) {
+          photosData.forEach((photo: CheckoutPhoto) => {
+            if (photo.section_type === 'checkout_time' || photo.section_type === 'checkout_process') {
+              photosMap[photo.section_type].push(photo)
+            }
+          })
+        }
+        
+        setPhotos(photosMap)
+        
+      } catch (error) {
+        console.error('Error fetching checkout information:', error)
+        setError('Could not load check-out information')
+      } finally {
         setLoading(false)
       }
     }
@@ -96,159 +132,138 @@ export default function CheckoutInformationPage() {
     fetchCheckoutInfo()
   }, [propertyId])
 
-  return (
-    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-3">
-        <div className="w-full px-4 flex items-center">
-          <button 
-            onClick={() => router.back()} 
-            className="mr-4 text-gray-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">Check-out Information</h1>
-        </div>
-      </header>
+  const getSectionTitle = (sectionType: string): string => {
+    switch (sectionType) {
+      case 'checkout_time':
+        return 'Check-out Time'
+      case 'checkout_process':
+        return 'Check-out Process'
+      default:
+        return sectionType
+    }
+  }
 
-      <main className="flex-grow w-full px-4 py-6">
+  return (
+    <div className="min-h-screen bg-gray-50 font-spartan">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center">
+            <button 
+              onClick={() => router.push(`/guest/${propertyId}`)}
+              className="p-2 mr-4 rounded-full hover:bg-gray-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold text-gray-800">Check-out Information</h1>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
         {loading ? (
-          <div className="flex justify-center items-center py-12">
+          <div className="flex flex-col items-center justify-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Loading check-out information...</p>
+            <p className="text-gray-600 font-medium">Loading check-out information...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-            {error}
-          </div>
-        ) : !checkoutInfo ? (
-          <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-6">
-            No check-out information has been provided for this property.
+          <div className="text-center py-12">
+            <div className="bg-red-50 rounded-xl p-8 mx-auto max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">Information Not Available</h2>
+              <p className="text-gray-600">{error}</p>
+              <button
+                onClick={() => router.push(`/guest/${propertyId}`)}
+                className="mt-6 bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-[#ffde59] rounded-xl p-5 shadow-sm">
-              <div className="mb-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h2 className="text-lg font-bold text-gray-800 mb-1">Check-out Time</h2>
-              <p className="text-xl font-bold text-gray-800">{checkoutInfo.checkout_time || '11:00 AM'}</p>
-              <p className="text-sm text-gray-700 mt-2">
-                Please respect the check-out time. Late check-out may result in additional fees.
-              </p>
-              
-              {checkoutInfo.late_checkout_available && (
-                <div className="mt-3 bg-white bg-opacity-50 p-3 rounded-lg">
-                  <p className="text-sm font-medium text-gray-800">
-                    Late check-out is available for an additional fee of ${checkoutInfo.late_checkout_fee}. 
-                    Please contact the host for arrangements.
-                  </p>
-                </div>
-              )}
+          <div className="max-w-3xl mx-auto">
+            {/* Property name */}
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Check-out at {propertyName}
+              </h2>
             </div>
-            
-            <div className="bg-white rounded-xl p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Check-out Procedure</h2>
-              
-              <div className="space-y-4">
-                {checkoutSteps.map((step, index) => (
-                  <div 
-                    key={index}
-                    className={`border rounded-lg p-4 flex items-start cursor-pointer ${
-                      activeStep === index ? 'bg-purple-50 border-purple-200' : 'border-gray-200'
-                    }`}
-                    onClick={() => setActiveStep(index)}
-                  >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mr-4 ${
-                      activeStep === index ? 'bg-[#5E2BFF] text-white' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {step.icon}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-gray-800">{step.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{step.description}</p>
-                    </div>
-                    <div className="ml-auto">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm ${
-                        activeStep === index ? 'bg-[#5E2BFF] text-white' : 'bg-gray-100 text-gray-500'
-                      }`}>
-                        {index + 1}
-                      </span>
-                    </div>
+
+            {/* Tab navigation */}
+            <div className="mb-6 flex overflow-x-auto scrollbar-hide border-b border-gray-200">
+              {(['checkout_time', 'checkout_process'] as const).map((section) => (
+                <button
+                  key={section}
+                  onClick={() => setActiveSection(section)}
+                  className={`flex-shrink-0 px-5 py-3 font-semibold text-sm rounded-t-lg mr-1 ${
+                    activeSection === section
+                      ? 'bg-[#5E2BFF] text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-100'
+                  }`}
+                >
+                  {getSectionTitle(section)}
+                </button>
+              ))}
+            </div>
+
+            {/* Section content */}
+            <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4">
+                  {getSectionTitle(activeSection)}
+                </h3>
+
+                {checkoutInfo[activeSection] ? (
+                  <div className="prose max-w-none mb-8">
+                    <p className="text-gray-700 whitespace-pre-wrap">
+                      {checkoutInfo[activeSection]}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Additional Instructions</h2>
-              
-              <div className="space-y-4">
-                <div className="border-b border-gray-100 pb-4">
-                  <label className="block text-sm font-medium text-[#5E2BFF] mb-1">Checkout Instructions</label>
-                  <p className="text-gray-700">{checkoutInfo.checkout_instructions}</p>
-                </div>
-                
-                <div className="border-b border-gray-100 pb-4">
-                  <label className="block text-sm font-medium text-[#5E2BFF] mb-1">Key Return</label>
-                  <p className="text-gray-700">{checkoutInfo.key_return}</p>
-                </div>
-                
-                <div className="border-b border-gray-100 pb-4">
-                  <label className="block text-sm font-medium text-[#5E2BFF] mb-1">Cleaning Requirements</label>
-                  <p className="text-gray-700">{checkoutInfo.cleaning_requirements}</p>
-                </div>
-                
-                {checkoutInfo.special_instructions && (
-                  <div>
-                    <label className="block text-sm font-medium text-[#5E2BFF] mb-1">Special Instructions</label>
-                    <p className="text-gray-700">{checkoutInfo.special_instructions}</p>
+                ) : (
+                  <div className="text-center py-4 mb-8">
+                    <p className="text-gray-500">No information available for this section.</p>
+                  </div>
+                )}
+
+                {/* Photos for this section */}
+                {photos[activeSection] && photos[activeSection].length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold text-gray-800 mb-4">Photos</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {photos[activeSection].map((photo) => (
+                        <div key={photo.id} className="bg-gray-50 rounded-lg overflow-hidden">
+                          <div className="aspect-w-16 aspect-h-9 relative">
+                            <img
+                              src={photo.photo_url}
+                              alt={photo.description || `${getSectionTitle(activeSection)} photo`}
+                              className="object-cover w-full h-full rounded-t-lg"
+                            />
+                          </div>
+                          {photo.description && (
+                            <div className="p-3">
+                              <p className="text-sm text-gray-700">{photo.description}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-            
-            <div className="bg-blue-100 rounded-xl p-5 shadow-sm border border-blue-200">
-              <h2 className="text-base font-bold text-blue-800 mb-2">Checkout Checklist</h2>
-              <p className="text-sm text-blue-700 mb-3">
-                Make your checkout smoother by using our checklist to ensure you've completed all necessary steps.
-              </p>
-              <Link href={`/guest/${propertyId}/before-leaving`} className="text-[#5E2BFF] font-medium text-sm hover:underline">
-                View Checkout Checklist →
+
+            <div className="text-center mt-4">
+              <Link href={`/guest/${propertyId}`} className="text-[#5E2BFF] hover:underline">
+                Back to All Services
               </Link>
             </div>
           </div>
         )}
-      </main>
-
-      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-14">
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-      </nav>
+      </div>
     </div>
   )
 } 

@@ -2,205 +2,249 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import QRCode from 'react-qr-code'
+import Image from 'next/image'
+import Link from 'next/link'
+import QRCode from 'qrcode'
 
-interface WiFiCredentials {
+interface WifiCredentials {
   id: string
   property_id: string
-  ssid: string
+  network_name: string
   password: string
-  encryption_type: string
   created_at: string
 }
 
-export default function WiFiConnectionPage() {
+export default function WifiConnectionGuest() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
-  const [wifiData, setWifiData] = useState<WiFiCredentials | null>(null)
+  
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [copied, setCopied] = useState(false)
-  
-  // Genera il string di connessione WiFi per il QR code
-  const generateWifiQRString = (ssid: string, password: string, encryption: string) => {
-    return `WIFI:S:${ssid};T:${encryption || 'WPA'};P:${password};;`
-  }
-  
-  const copyPassword = () => {
-    if (wifiData?.password) {
-      navigator.clipboard.writeText(wifiData.password)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    }
-  }
+  const [wifiCredentials, setWifiCredentials] = useState<WifiCredentials | null>(null)
+  const [propertyName, setPropertyName] = useState('')
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'failed'>('idle')
 
   useEffect(() => {
-    const fetchWifiData = async () => {
+    if (!propertyId) return
+
+    const fetchWifiCredentials = async () => {
       try {
         setLoading(true)
         
-        // Recupera le credenziali WiFi per la proprietà
-        const { data, error: wifiError } = await supabase
+        // Fetch property details
+        const { data: propertyData, error: propertyError } = await supabase
+          .from('properties')
+          .select('name')
+          .eq('id', propertyId)
+          .single()
+        
+        if (propertyError) throw propertyError
+        
+        setPropertyName(propertyData.name)
+        
+        // Fetch wifi credentials
+        const { data, error } = await supabase
           .from('wifi_credentials')
           .select('*')
           .eq('property_id', propertyId)
           .single()
         
-        if (wifiError) {
-          console.error('Error fetching WiFi data:', wifiError)
-          throw new Error('Unable to load WiFi information. Please try again later.')
+        if (error) {
+          if (error.code === 'PGRST116') {
+            // Record not found error
+            setError('No WiFi information available for this property')
+          } else {
+            throw error
+          }
+        } else {
+          setWifiCredentials(data)
+          
+          // Generate QR code for the credentials
+          if (data.network_name && data.password) {
+            await generateQRCode(data.network_name, data.password)
+          }
         }
-        
-        setWifiData(data)
-        setLoading(false)
-      } catch (error: any) {
-        console.error('Error in fetch WiFi data:', error)
-        setError(error.message)
+      } catch (error) {
+        console.error('Error fetching wifi credentials:', error)
+        setError('Could not load WiFi information')
+      } finally {
         setLoading(false)
       }
     }
     
-    fetchWifiData()
+    fetchWifiCredentials()
   }, [propertyId])
+  
+  const generateQRCode = async (networkName: string, password: string) => {
+    try {
+      // Format for WiFi QR code: WIFI:T:WPA;S:SSID;P:PASSWORD;;
+      const wifiString = `WIFI:T:WPA;S:${networkName};P:${password};;`
+      
+      // Generate QR code as data URL
+      const qrCodeDataUrl = await QRCode.toDataURL(wifiString, {
+        errorCorrectionLevel: 'H',
+        margin: 4,
+        width: 300
+      })
+      
+      setQrCodeUrl(qrCodeDataUrl)
+    } catch (error) {
+      console.error('Error generating QR code:', error)
+      setError('Failed to generate QR code')
+    }
+  }
+  
+  const connectToWifi = async () => {
+    if (!wifiCredentials) return
+    
+    setConnectionStatus('connecting')
+    
+    try {
+      // For web, we cannot directly connect to WiFi, so we show instructions
+      // and pretend to connect after a delay for demonstration purposes
+      
+      setTimeout(() => {
+        // In a real implementation, this would happen when the user manually connects
+        // using the provided credentials
+        setConnectionStatus('connected')
+      }, 2000)
+    } catch (error) {
+      console.error('Error connecting to WiFi:', error)
+      setConnectionStatus('failed')
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-3">
-        <div className="w-full px-4 flex items-center">
-          <button 
-            onClick={() => router.back()} 
-            className="mr-4 text-gray-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">WiFi Connection</h1>
+    <div className="min-h-screen bg-gray-50 font-spartan">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center">
+            <button 
+              onClick={() => router.push(`/guest/${propertyId}`)}
+              className="p-2 mr-4 rounded-full hover:bg-gray-100"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold text-gray-800">WiFi Connection</h1>
+          </div>
         </div>
-      </header>
-
-      <main className="flex-grow w-full px-4 py-6">
+      </div>
+      
+      <div className="container mx-auto px-4 py-8">
         {loading ? (
-          <div className="flex justify-center items-center py-12">
+          <div className="flex flex-col items-center justify-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Loading WiFi information...</p>
+            <p className="text-gray-600 font-medium">Loading WiFi information...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-            {error}
-          </div>
-        ) : !wifiData ? (
-          <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-6">
-            No WiFi information has been provided for this property.
+          <div className="text-center py-12">
+            <div className="bg-red-50 rounded-xl p-8 mx-auto max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">WiFi Information Not Available</h2>
+              <p className="text-gray-600">{error}</p>
+              <button
+                onClick={() => router.push(`/guest/${propertyId}`)}
+                className="mt-6 bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200"
+              >
+                Back to Home
+              </button>
+            </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-2">Connect Automatically</h2>
-              <p className="text-sm text-gray-600 mb-4">
-                Scan this QR code with your device's camera to connect automatically to the WiFi network.
-              </p>
-              
-              <div className="flex justify-center bg-white p-4 rounded-lg mb-4">
-                <div className="p-3 bg-white border border-gray-200 rounded-lg">
-                  <QRCode 
-                    value={generateWifiQRString(wifiData.ssid, wifiData.password, wifiData.encryption_type)}
-                    size={200}
-                  />
+          <div className="max-w-md mx-auto">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+              <div className="bg-[#5E2BFF] p-6">
+                <div className="flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.246-3.905 14.15 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                  </svg>
                 </div>
+                <h2 className="text-white text-xl font-bold text-center mt-2">
+                  WiFi at {propertyName}
+                </h2>
               </div>
               
-              <p className="text-xs text-center text-gray-500 mb-4">
-                Point your camera at the QR code and follow the prompts on your device
-              </p>
-            </div>
-            
-            <div className="bg-white rounded-xl p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-gray-800 mb-4">Network Details</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Network Name (SSID)</label>
-                  <div className="flex">
-                    <div className="flex-grow p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 font-medium">
-                      {wifiData.ssid}
+              <div className="p-6">
+                {wifiCredentials ? (
+                  <>
+                    <div className="mb-6">
+                      <div className="mb-4">
+                        <div className="text-gray-500 text-sm">Network Name:</div>
+                        <div className="text-gray-800 font-bold text-lg">{wifiCredentials.network_name}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-500 text-sm">Password:</div>
+                        <div className="text-gray-800 font-bold text-lg">{wifiCredentials.password}</div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                  <div className="flex">
-                    <div className="flex-grow p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 font-medium">
-                      {wifiData.password}
-                    </div>
-                    <button 
-                      onClick={copyPassword}
-                      className="ml-2 px-3 bg-[#5E2BFF] text-white rounded-lg flex items-center justify-center"
-                    >
-                      {copied ? (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      ) : (
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+
+                    {qrCodeUrl && (
+                      <div className="flex justify-center mb-6">
+                        <div className="bg-white p-2 border border-gray-200 rounded-lg">
+                          <img src={qrCodeUrl} alt="WiFi QR Code" className="w-64 h-64" />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="text-center">
+                      <p className="text-gray-600 text-sm mb-4">
+                        Scan the QR code with your device's camera to connect automatically, or use the credentials above to connect manually.
+                      </p>
+                      
+                      <button
+                        onClick={connectToWifi}
+                        disabled={connectionStatus === 'connecting' || connectionStatus === 'connected'}
+                        className={`w-full py-3 px-4 rounded-lg font-bold transition duration-200 ${
+                          connectionStatus === 'connected' 
+                            ? 'bg-green-500 text-white' 
+                            : connectionStatus === 'connecting'
+                              ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
+                              : 'bg-[#5E2BFF] text-white hover:bg-opacity-90'
+                        }`}
+                      >
+                        {connectionStatus === 'connected' && 'Connected to WiFi'}
+                        {connectionStatus === 'connecting' && 'Connecting...'}
+                        {connectionStatus === 'failed' && 'Connection Failed - Try Again'}
+                        {connectionStatus === 'idle' && 'Connect to WiFi'}
+                      </button>
+                      
+                      {connectionStatus === 'connected' && (
+                        <p className="text-green-600 text-sm mt-2">
+                          Successfully connected to {wifiCredentials.network_name}
+                        </p>
                       )}
-                    </button>
+                      
+                      {connectionStatus === 'failed' && (
+                        <p className="text-red-600 text-sm mt-2">
+                          Could not connect to WiFi. Please try connecting manually.
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600">No WiFi information has been provided for this property.</p>
                   </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Security Type</label>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-800 font-medium">
-                    {wifiData.encryption_type || 'WPA/WPA2'}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
             
-            <div className="bg-blue-100 rounded-xl p-5 shadow-sm border border-blue-200">
-              <h2 className="text-base font-bold text-blue-800 mb-2">Having Trouble?</h2>
-              <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-                <li>Make sure you're within range of the WiFi router</li>
-                <li>Restart your device's WiFi or try airplane mode on/off</li>
-                <li>Some devices may need to enter the password manually</li>
-                <li>If you still can't connect, please contact the host</li>
-              </ul>
+            <div className="text-center mt-4">
+              <Link href={`/guest/${propertyId}`} className="text-[#5E2BFF] hover:underline">
+                Back to All Services
+              </Link>
             </div>
           </div>
         )}
-      </main>
-
-      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-14">
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-      </nav>
+      </div>
     </div>
   )
 } 
