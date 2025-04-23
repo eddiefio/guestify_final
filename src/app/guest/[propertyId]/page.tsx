@@ -154,30 +154,88 @@ export default function GuestHomePage() {
       try {
         setLoading(true)
         
-        // Fetch property details
+        // Debug: mostra l'ID della proprietà
+        console.log('Tentativo di caricare proprietà con ID:', propertyId);
+        console.log('Tipo di propertyId:', typeof propertyId);
+        
+        if (!propertyId) {
+          throw new Error('ID della proprietà mancante');
+        }
+        
+        // Normalizza l'ID (rimuovi spazi, converti in minuscolo)
+        const normalizedId = propertyId.toString().trim();
+        console.log('ID normalizzato:', normalizedId);
+
+        // Fetch property details - modifica per evitare errori con .single()
         const { data: properties, error: propError } = await supabase
           .from('properties')
           .select('name, city')
-          .eq('id', propertyId)
+          .eq('id', normalizedId)
+        
+        // Debug: log della risposta
+        console.log('Risposta Supabase:', { data: properties, error: propError });
         
         if (propError) {
-          console.error('Error fetching property:', propError)
-          throw propError
+          console.error('Errore Supabase:', propError);
+          throw propError;
         }
 
+        // Se non ci sono proprietà, prova a cercare con ID diversi (maiuscole/minuscole)
         if (!properties || properties.length === 0) {
-          throw new Error('Property not found. Please check the QR code.')
+          console.log('Proprietà non trovata, tentativo con ricerca più ampia...');
+          
+          // Prova una query ilike (case insensitive)
+          const { data: propertiesAlt, error: errorAlt } = await supabase
+            .from('properties')
+            .select('name, city')
+            .ilike('id', `%${normalizedId}%`)
+            .limit(1);
+          
+          console.log('Risultato ricerca alternativa:', { data: propertiesAlt, error: errorAlt });
+          
+          if (propertiesAlt && propertiesAlt.length > 0) {
+            const property = propertiesAlt[0];
+            setPropertyName(property.name);
+            
+            if (property.city) {
+              setPropertyCity(property.city);
+              const weather = await fetchWeatherData(property.city);
+              setWeatherData(weather);
+            }
+            
+            // Continua con il resto del codice...
+            const updatedCategories = [...categories];
+            
+            // Check city_guides
+            const { count: cityGuideCount } = await supabase
+              .from('city_guides')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id) // Usa l'ID corretto
+            
+            if (cityGuideCount && cityGuideCount > 0) {
+              const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
+              if (index >= 0) updatedCategories[index].available = true
+            }
+            
+            setCategories(updatedCategories);
+            setLoading(false);
+            return;
+          }
+          
+          // Se ancora non abbiamo trovato la proprietà
+          throw new Error('Proprietà non trovata. Verifica l\'ID o scansiona nuovamente il QR code.');
         }
 
-        const property = properties[0]
-        setPropertyName(property.name)
+        // Se ci sono più proprietà, usa la prima
+        const property = properties[0];
+        setPropertyName(property.name);
         
         if (property.city) {
-          setPropertyCity(property.city)
+          setPropertyCity(property.city);
           
           // Get weather data for the property's city
-          const weather = await fetchWeatherData(property.city)
-          setWeatherData(weather)
+          const weather = await fetchWeatherData(property.city);
+          setWeatherData(weather);
         }
 
         // Check which sections are available for this property
@@ -187,19 +245,18 @@ export default function GuestHomePage() {
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
           .select('id', { count: 'exact', head: true })
-          .eq('property_id', propertyId)
+          .eq('property_id', property.id)
         
         if (cityGuideCount && cityGuideCount > 0) {
           const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
           if (index >= 0) updatedCategories[index].available = true
         }
-        
-        setCategories(updatedCategories)
 
-      } catch (error) {
-        console.error('Error loading property data:', error)
-        setError('Failed to load property data. Please try again or contact support.')
-      } finally {
+        setCategories(updatedCategories)
+        setLoading(false)
+      } catch (error: any) {
+        console.error('Error fetching property data:', error)
+        setError(error.message)
         setLoading(false)
       }
     }
@@ -207,193 +264,198 @@ export default function GuestHomePage() {
     fetchPropertyData()
   }, [propertyId])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-spartan">
-        <div className="w-16 h-16 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-        <p className="text-lg font-medium text-gray-600">Loading property information...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center font-spartan p-6 text-center">
-        <div className="p-3 rounded-full bg-red-100 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h1 className="text-xl font-bold text-gray-800 mb-2">Error Loading Property</h1>
-        <p className="text-gray-600 mb-6">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="bg-[#5E2BFF] text-white px-6 py-3 rounded-lg hover:bg-[#4a22cc] transition duration-200 font-bold shadow-sm"
-        >
-          Try Again
-        </button>
-      </div>
-    )
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan">
-      {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold text-[#5E2BFF]">Welcome to {propertyName}</h1>
-          {propertyCity && (
-            <p className="text-gray-600 mt-1 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              {propertyCity}
-            </p>
-          )}
+    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
+      <header className="bg-white shadow-sm py-3">
+        <div className="w-full px-4 flex items-center justify-between">
+          <div className="relative h-12 w-28">
+            <Image 
+              src="/images/logo_guest.png"
+              alt="Guestify Logo"
+              fill
+              className="object-contain object-left"
+            />
+          </div>
+          <div className="text-gray-700">{propertyName}</div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 pb-20">
-        {/* Weather Section */}
-        {weatherData && (
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 mb-6 text-white shadow-md">
-            <div className="flex justify-between items-center">
-              <div>
-                <p className="text-sm opacity-90">{weatherData.date}</p>
-                <div className="flex items-center mt-1">
-                  <span className="text-3xl mr-1">{weatherData.icon}</span>
-                  <span className="text-2xl font-bold">{weatherData.temperature}°C</span>
-                </div>
-                <p className="text-sm mt-1">{weatherData.condition} in {weatherData.city}</p>
-              </div>
-              <div className="flex space-x-3">
-                {weatherData.forecast.map((day, index) => (
-                  <div key={index} className="text-center">
-                    <p className="text-xs">{day.day}</p>
-                    <p className="text-xl my-1">{day.icon}</p>
-                    <p className="text-xs">{day.temperature}°</p>
-                  </div>
+      <main className="flex-grow w-full px-4 pt-4 pb-14 flex flex-col">
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
+            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
+            {error}
+          </div>
+        ) : (
+          <div className="w-full flex flex-col space-y-5 flex-grow">
+            {/* Search bar */}
+            <div className="relative w-full">
+              <form onSubmit={handleSearch} className="w-full">
+                <input
+                  type="text"
+                  placeholder="Search information..."
+                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit" className="absolute inset-y-0 left-0 pl-3 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </button>
+              </form>
+            </div>
+
+            {/* Essentials section */}
+            <div>
+              <h2 className="text-base font-bold text-[#5E2BFF] mb-3">Essentials</h2>
+              <div className="grid grid-cols-4 gap-2">
+                {essentials.map((item) => (
+                  <Link href={item.path} key={item.id} className="text-center">
+                    <div className="w-12 h-12 mx-auto mb-1 bg-white rounded-full flex items-center justify-center shadow-sm">
+                      {item.icon}
+                    </div>
+                    <span className="text-xs text-gray-700 block font-medium">{item.name}</span>
+                  </Link>
                 ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Search Bar */}
-        <form onSubmit={handleSearch} className="mb-6">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search anything..."
-              className="w-full px-4 py-3 pl-10 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] shadow-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-          </div>
-        </form>
-
-        {/* Essential Quick Links */}
-        <div className="mb-8">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Essential Information</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {essentials.map((item) => (
-              <Link 
-                href={item.path} 
-                key={item.id}
-                className="flex flex-col items-center p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition duration-200 border border-gray-100"
-              >
-                <div className="w-10 h-10 rounded-full bg-[#5E2BFF]/10 flex items-center justify-center mb-2">
-                  {item.icon}
+            {/* Main section with all buttons */}
+            <div className="flex flex-col space-y-3 w-full">
+              {/* Extra Services */}
+              <Link href={`/guest/${propertyId}/extra-services`} className="block w-full">
+                <div className="bg-[#5E2BFF] text-white rounded-xl p-4 shadow-sm w-full">
+                  <div className="flex items-center">
+                    <div className="mr-3">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h2 className="text-base font-bold">Extra Services</h2>
+                      <p className="text-xs text-white opacity-80">Discover available additional services</p>
+                    </div>
+                    <div className="ml-auto">
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                      </svg>
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-gray-700">{item.name}</span>
               </Link>
-            ))}
-          </div>
-        </div>
 
-        {/* Main Categories */}
-        <div>
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Property Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {categories.map((category) => (
-              <Link 
-                href={category.available ? category.path : '#'} 
-                key={category.id}
-                className={`flex items-center p-5 rounded-xl ${category.color} ${category.available ? 'hover:shadow-md cursor-pointer' : 'opacity-60 cursor-not-allowed'} transition duration-200`}
-              >
-                <div className="text-3xl mr-3">{category.icon}</div>
-                <div>
-                  <h3 className="font-bold text-gray-800">{category.name}</h3>
-                  {!category.available && <p className="text-xs text-gray-600">Not available</p>}
-                </div>
-                {category.available && (
-                  <svg className="w-5 h-5 ml-auto text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                )}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Extra Services Banner */}
-        <div className="mt-8">
-          <Link href={`/guest/${propertyId}/extra-services`}>
-            <div className="bg-gradient-to-r from-[#5E2BFF] to-[#7e58ff] rounded-xl p-5 text-white shadow-md hover:shadow-lg transition duration-200">
-              <div className="flex items-center">
-                <div className="p-3 bg-white/20 rounded-full mr-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">Extra Services</h3>
-                  <p className="text-sm text-white/80">Discover additional services for your stay</p>
-                </div>
-                <svg className="w-6 h-6 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                </svg>
+              {/* Four center buttons */}
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <Link href={`/guest/${propertyId}/how-things-work`} className="w-full">
+                  <div className="bg-purple-100 rounded-xl p-4 shadow-sm border border-purple-200 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">How Things Work</h2>
+                    <p className="text-xs text-gray-600">Help with appliances</p>
+                  </div>
+                </Link>
+                <Link href={`/guest/${propertyId}/before-leaving`} className="w-full">
+                  <div className="bg-pink-100 rounded-xl p-4 shadow-sm border border-pink-200 w-full h-full">
+                    <div className="flex flex-col items-center">
+                      <img src="/images/before-leaving.svg" alt="Before you leave" className="h-12 w-12 mb-2" />
+                      <h2 className="text-sm font-bold text-gray-800">Before You Leave Home</h2>
+                    </div>
+                  </div>
+                </Link>
+                <Link href={`/guest/${propertyId}/city-guide`} className="w-full">
+                  <div className="bg-[#ffde59] rounded-xl p-4 shadow-sm border border-yellow-300 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">Host Guides</h2>
+                    <p className="text-xs text-gray-600">Guides and recommendations</p>
+                  </div>
+                </Link>
+                <Link href={`/guest/${propertyId}/book-again`} className="w-full">
+                  <div className="bg-green-100 rounded-xl p-4 shadow-sm border border-green-200 w-full h-full">
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h2 className="text-sm font-bold text-gray-800">Book Again</h2>
+                    <p className="text-xs text-gray-600">Reserve your next stay</p>
+                  </div>
+                </Link>
               </div>
             </div>
-          </Link>
-        </div>
+
+            {/* Weather Information */}
+            {weatherData && (
+              <div className="w-full mt-auto">
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Weather in {weatherData.city}</h2>
+                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
+                  <div className="p-3">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-sm font-bold">Tuesday 22 April</h3>
+                        <p className="text-xs opacity-90">{weatherData.city}</p>
+                      </div>
+                      <div className="text-3xl">☀️</div>
+                    </div>
+                    <div className="mt-1 flex items-end">
+                      <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
+                      <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-white/20 p-2">
+                    <div className="flex justify-between">
+                      {weatherData.forecast.map((day, index) => (
+                        <div key={index} className="text-center">
+                          <div className="text-xs font-bold">{day.day}</div>
+                          <div className="text-lg my-1">{day.icon}</div>
+                          <div className="text-xs">{day.temperature}°</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Navigation bar */}
       <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-16">
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center text-[#5E2BFF]">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span className="text-xs mt-1">Home</span>
+        <div className="flex justify-around items-center h-14">
+          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
+            <div className="text-[#5E2BFF]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+            </div>
           </Link>
-          
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-            </svg>
-            <span className="text-xs mt-1">Map</span>
+          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
+            <div className="text-[#5E2BFF]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
           </Link>
-          
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <span className="text-xs mt-1">Contacts</span>
-          </Link>
-          
-          <Link href={`/guest/${propertyId}/extra-services`} className="flex flex-col items-center justify-center text-gray-500">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            <span className="text-xs mt-1">Services</span>
+          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
+            <div className="text-[#5E2BFF]">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              </svg>
+            </div>
           </Link>
         </div>
       </nav>
