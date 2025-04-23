@@ -30,9 +30,34 @@ interface ItemPhoto {
   display_order: number
 }
 
+// Funzione per formattare gli URL delle immagini
+const getImageUrl = (imagePath: string, isItemPhoto: boolean = false) => {
+  if (!imagePath) return '';
+  
+  // Se l'URL è già un URL completo (inizia con http/https), usalo così com'è
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Utilizza il bucket appropriato in base al tipo di immagine
+  const bucketName = isItemPhoto ? 'item-photos' : 'how-things-work-images';
+  
+  // Genera l'URL pubblico per Supabase Storage usando il bucket corretto
+  const { data } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(imagePath);
+    
+  return data?.publicUrl || '';
+};
+
 // Componente per l'immagine zoomabile
-const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
+const ZoomableImage = ({ src, alt, isItemPhoto = false }: { src: string; alt: string; isItemPhoto?: boolean }) => {
   const [zoomed, setZoomed] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+
+  useEffect(() => {
+    setImageUrl(getImageUrl(src, isItemPhoto));
+  }, [src, isItemPhoto]);
 
   const toggleZoom = () => {
     setZoomed(!zoomed);
@@ -53,7 +78,7 @@ const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
         onClick={toggleZoom}
       >
         <Image 
-          src={src}
+          src={imageUrl}
           alt={alt}
           fill
           className={`${zoomed ? 'object-contain' : 'object-cover'}`}
@@ -207,7 +232,7 @@ export default function HowThingsWorkPage() {
           // Visualizzazione dettaglio dell'elemento selezionato
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             {selectedItem.image_path ? (
-              <ZoomableImage src={selectedItem.image_path} alt={selectedItem.title} />
+              <ZoomableImage src={selectedItem.image_path} alt={selectedItem.title} isItemPhoto={false} />
             ) : (
               <ImageFallback className="w-full h-48" />
             )}
@@ -230,7 +255,7 @@ export default function HowThingsWorkPage() {
                           </div>
                           <span className="font-medium text-gray-800">Step {index + 1}</span>
                         </div>
-                        <ZoomableImage src={photo.photo_path} alt={`Step ${index + 1}`} />
+                        <ZoomableImage src={photo.photo_path} alt={`Step ${index + 1}`} isItemPhoto />
                         {photo.description && (
                           <p className="text-gray-600 mt-3 text-sm">{photo.description}</p>
                         )}
@@ -275,7 +300,7 @@ export default function HowThingsWorkPage() {
                   {item.image_path ? (
                     <div className="flex-shrink-0 relative w-16 h-16 rounded-md overflow-hidden mr-3">
                       <Image 
-                        src={item.image_path}
+                        src={getImageUrl(item.image_path, false)}
                         alt={item.title}
                         fill
                         className="object-cover"
