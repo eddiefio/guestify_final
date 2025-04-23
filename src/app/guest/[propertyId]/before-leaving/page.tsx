@@ -265,12 +265,12 @@ export default function BeforeLeavingPage() {
                       onClick={() => setTransportMethod('car')}
                       className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
                         transportMethod === 'car' 
-                          ? 'bg-green-500 text-white' 
+                          ? 'bg-[#5E2BFF] text-white' 
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 6l12 0M9 18l12 0M4 6h1.5M4 18h1.5M8 6a2 2 0 100-4 2 2 0 000 4zM8 22a2 2 0 100-4 2 2 0 000 4zM13.5 12H18m-14.5 0h1.5m7-2a2 2 0 100-4 2 2 0 000 4z" />
                       </svg>
                       <span className="font-medium">By Car</span>
                     </button>
@@ -278,12 +278,13 @@ export default function BeforeLeavingPage() {
                       onClick={() => setTransportMethod('train')}
                       className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
                         transportMethod === 'train' 
-                          ? 'bg-green-500 text-white' 
+                          ? 'bg-[#5E2BFF] text-white' 
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.5 4h5a2 2 0 012 2v3.8a2 2 0 01-.586 1.414l-1.914 1.914a2 2 0 00-.586 1.414v2.158a2 2 0 01-2 2h-.83a2 2 0 01-2-2v-2.158a2 2 0 00-.586-1.414l-1.914-1.914A2 2 0 016 9.8V6a2 2 0 012-2z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l2 2m4-2l-2 2" />
                       </svg>
                       <span className="font-medium">By Train</span>
                     </button>
