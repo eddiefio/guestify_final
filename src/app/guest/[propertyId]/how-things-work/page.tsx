@@ -1,132 +1,240 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
+
+interface HowThingsWorkItem {
+  id: string
+  title: string
+  description: string | null
+  image_path: string
+  display_order: number
+  photos?: {
+    id: string
+    photo_path: string
+    description: string | null
+  }[]
+}
+
+interface RoomCategory {
+  id: string
+  name: string
+  items: HowThingsWorkItem[]
+}
+
+interface RoomCategoryRecord {
+  id: string
+  name: string
+  property_id: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+interface HowThingsWorkItemRecord {
+  id: string
+  category_id: string
+  title: string
+  description: string | null
+  image_path: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
 
 export default function HowThingsWorkPage() {
   const params = useParams()
-  const router = useRouter()
   const propertyId = params.propertyId as string
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [categories, setCategories] = useState<RoomCategory[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchHowThingsWorkData = async () => {
+      try {
+        setLoading(true)
+        
+        // 1. Fetch room categories for this property
+        const { data: roomCategories, error: roomCategoriesError } = await supabase
+          .from('room_categories')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('display_order', { ascending: true })
+        
+        if (roomCategoriesError) throw roomCategoriesError
+
+        if (!roomCategories || roomCategories.length === 0) {
+          setCategories([])
+          setLoading(false)
+          return
+        }
+
+        // Set first category as selected by default
+        setSelectedCategory(roomCategories[0].id)
+        
+        // 2. For each category, fetch corresponding items
+        const categoriesWithItems = await Promise.all(
+          roomCategories.map(async (category: RoomCategoryRecord) => {
+            const { data: items, error: itemsError } = await supabase
+              .from('how_things_work_items')
+              .select('*')
+              .eq('category_id', category.id)
+              .order('display_order', { ascending: true })
+            
+            if (itemsError) throw itemsError
+
+            // 3. For each item, fetch its photos
+            const itemsWithPhotos = await Promise.all(
+              (items || []).map(async (item: HowThingsWorkItemRecord) => {
+                const { data: photos, error: photosError } = await supabase
+                  .from('how_things_work_item_photos')
+                  .select('*')
+                  .eq('item_id', item.id)
+                  .order('display_order', { ascending: true })
+                
+                if (photosError) throw photosError
+                
+                return {
+                  ...item,
+                  photos: photos || []
+                }
+              })
+            )
+            
+            return {
+              id: category.id,
+              name: category.name,
+              items: itemsWithPhotos
+            }
+          })
+        )
+        
+        setCategories(categoriesWithItems)
+        setLoading(false)
+      } catch (error: any) {
+        console.error('Error fetching how things work data:', error)
+        setError(error.message)
+        setLoading(false)
+      }
+    }
+
+    if (propertyId) {
+      fetchHowThingsWorkData()
+    }
+  }, [propertyId])
+
+  const getImageUrl = (path: string) => {
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/images/${path}`
+  }
+
+  const selectedCategoryData = categories.find(cat => cat.id === selectedCategory)
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
       <header className="bg-white shadow-sm py-3">
-        <div className="w-full px-4 flex items-center">
-          <button 
-            onClick={() => router.back()} 
-            className="mr-4 text-gray-700"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="px-4 flex items-center justify-between">
+          <Link href={`/guest/${propertyId}`} className="flex items-center text-gray-800">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-          </button>
-          <h1 className="text-xl font-bold text-gray-800">How Things Work</h1>
+            Back
+          </Link>
+          <h1 className="text-lg font-bold text-center text-[#5E2BFF]">How Things Work</h1>
+          <div className="w-8"></div> {/* Spacer for centering */}
         </div>
       </header>
 
-      <main className="flex-grow w-full px-4 py-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Kitchen Appliances</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Coffee Machine</h3>
-              <p className="text-sm text-gray-600">
-                1. Fill the water tank at the back<br/>
-                2. Add coffee to the filter<br/>
-                3. Press the top button to start brewing
-              </p>
-            </div>
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Dishwasher</h3>
-              <p className="text-sm text-gray-600">
-                1. Load dishes in the racks<br/>
-                2. Add detergent to the dispenser<br/>
-                3. Select program and press start button
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Oven</h3>
-              <p className="text-sm text-gray-600">
-                1. Select temperature using left knob<br/>
-                2. Choose program with right knob<br/>
-                3. The light will turn off when preheated
-              </p>
-            </div>
+      <main className="flex-grow w-full p-4 pb-16">
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
+            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
           </div>
-        </div>
+        ) : error ? (
+          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
+            {error}
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h2 className="text-lg font-bold text-gray-700 mb-2">No information available</h2>
+            <p className="text-gray-500">The host hasn't added any guide on how things work yet.</p>
+          </div>
+        ) : (
+          <div className="flex flex-col space-y-6">
+            {/* Categories tabs */}
+            <div className="flex overflow-x-auto pb-2 -mx-1 hide-scrollbar">
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`flex-shrink-0 whitespace-nowrap px-4 py-2 mx-1 rounded-full text-sm font-medium ${
+                    selectedCategory === category.id
+                      ? 'bg-[#5E2BFF] text-white'
+                      : 'bg-white text-gray-700 border border-gray-300'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
+            </div>
 
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Entertainment</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">TV Remote</h3>
-              <p className="text-sm text-gray-600">
-                1. Use the red power button to turn on/off<br/>
-                2. Source button to switch between HDMI inputs<br/>
-                3. Netflix button for direct access
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Bluetooth Speaker</h3>
-              <p className="text-sm text-gray-600">
-                1. Hold power button for 3 seconds<br/>
-                2. Select "Guest Speaker" on your device<br/>
-                3. Default pairing code is 0000
-              </p>
-            </div>
+            {/* Items in selected category */}
+            {selectedCategoryData && selectedCategoryData.items.length > 0 ? (
+              <div className="space-y-4">
+                {selectedCategoryData.items.map(item => (
+                  <div key={item.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={getImageUrl(item.image_path)}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">{item.title}</h3>
+                      {item.description && (
+                        <p className="text-gray-600 mb-3">{item.description}</p>
+                      )}
+                      
+                      {/* Additional photos if available */}
+                      {item.photos && item.photos.length > 0 && (
+                        <div className="mt-3">
+                          <h4 className="font-medium text-gray-700 mb-2">Additional photos:</h4>
+                          <div className="flex overflow-x-auto space-x-3 pb-2 -mx-4 px-4 hide-scrollbar">
+                            {item.photos.map(photo => (
+                              <div key={photo.id} className="flex-shrink-0 w-32 h-32 relative rounded-lg overflow-hidden">
+                                <Image
+                                  src={getImageUrl(photo.photo_path)}
+                                  alt={photo.description || item.title}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : selectedCategoryData ? (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No items in this category.</p>
+              </div>
+            ) : null}
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Heating & Cooling</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Air Conditioning</h3>
-              <p className="text-sm text-gray-600">
-                1. Press power button on remote<br/>
-                2. Set desired temperature with up/down arrows<br/>
-                3. Choose mode: cool, heat, or fan
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Floor Heating</h3>
-              <p className="text-sm text-gray-600">
-                1. Use the thermostat on the wall in the hallway<br/>
-                2. Set temperature between 20-23°C for comfort<br/>
-                3. Takes about 30 minutes to warm up
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
-
-      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-14">
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-          </Link>
-        </div>
-      </nav>
     </div>
   )
 } 
