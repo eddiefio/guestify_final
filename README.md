@@ -32,7 +32,7 @@ a quadrato : QR code, Extra Services, House Rules, Host City Guide.
 
 ## MODALITÀ DI GUADAGNO
 
-Guestify guadagna il 12% su ogni di Extra Services da parte degli ospiti 
+
 Gli host guadagnano il prezzo che hanno messo per gli Extra Services
 
 ## BRAND IDENTITY e STILE APP
