@@ -64,6 +64,19 @@ export default function GuestCityGuides() {
     fetchCityGuides()
   }, [propertyId])
 
+  // Funzione per ottenere l'URL pubblico del file
+  const getFileUrl = (filePath: string) => {
+    return supabase.storage.from('city-guides').getPublicUrl(filePath.replace('city-guides/', '')).data.publicUrl
+  }
+
+  // Funzione per verificare se un file è un'immagine
+  const isImageFile = (filePath: string) => {
+    const lowerPath = filePath.toLowerCase()
+    return lowerPath.endsWith('.jpg') || lowerPath.endsWith('.jpeg') || 
+           lowerPath.endsWith('.png') || lowerPath.endsWith('.gif') || 
+           lowerPath.endsWith('.webp')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-spartan">
       {/* Header */}
@@ -128,42 +141,61 @@ export default function GuestCityGuides() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {guides.map((guide) => (
                   <div key={guide.id} className="bg-white rounded-xl shadow-md overflow-hidden">
                     <div className="p-6">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div className="flex items-start mb-4 md:mb-0">
-                          <div className="mr-4 text-[#5E2BFF] flex-shrink-0">
-                            {guide.file_path.endsWith('.pdf') ? (
-                              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                              </svg>
+                      <div className="flex flex-col space-y-4">
+                        {/* Titolo e data */}
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-bold text-gray-800">{guide.title}</h3>
+                          <p className="text-sm text-gray-500">
+                            {new Date(guide.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        
+                        {/* Anteprima e pulsante */}
+                        <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-6">
+                          {/* Anteprima */}
+                          <div className="flex-shrink-0 w-full md:w-1/3 h-48 relative overflow-hidden rounded-lg border border-gray-200">
+                            {isImageFile(guide.file_path) ? (
+                              <Image 
+                                src={getFileUrl(guide.file_path)} 
+                                alt={guide.title}
+                                fill
+                                className="object-cover"
+                              />
                             ) : (
-                              <svg className="w-10 h-10" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                              </svg>
+                              <div className="bg-gray-50 w-full h-full flex flex-col items-center justify-center p-4">
+                                <svg className="w-20 h-20 text-[#5E2BFF]" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M9 2a2 2 0 00-2 2v8a2 2 0 002 2h6a2 2 0 002-2V6.414A2 2 0 0016.414 5L14 2.586A2 2 0 0012.586 2H9z" />
+                                  <path d="M3 8a2 2 0 012-2h2a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+                                </svg>
+                                <p className="mt-2 text-sm text-center text-gray-600">PDF Document</p>
+                                <p className="text-xs text-center text-gray-500">Click View to open</p>
+                              </div>
                             )}
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-1">{guide.title}</h3>
-                            <p className="text-sm text-gray-500">
-                              Added on {new Date(guide.created_at).toLocaleDateString()}
-                            </p>
+                          
+                          {/* Descrizione e pulsante */}
+                          <div className="flex-1 flex flex-col space-y-4">
+                            <div className="text-gray-600 flex-grow">
+                              <p>This guide provides valuable information about {propertyName} and surroundings.</p>
+                            </div>
+                            <a 
+                              href={getFileUrl(guide.file_path)} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="bg-[#5E2BFF] text-white px-6 py-3 rounded-lg hover:bg-opacity-90 transition duration-200 inline-flex items-center justify-center md:self-start"
+                            >
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                              </svg>
+                              View Guide
+                            </a>
                           </div>
                         </div>
-                        <a 
-                          href={supabase.storage.from('city-guides').getPublicUrl(guide.file_path.replace('city-guides/', '')).data.publicUrl} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200 inline-flex items-center"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
-                          View Guide
-                        </a>
                       </div>
                     </div>
                   </div>

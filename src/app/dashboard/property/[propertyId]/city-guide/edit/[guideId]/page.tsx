@@ -313,7 +313,7 @@ export default function EditCityGuide() {
                             <p className="pl-1">or drag and drop</p>
                           </div>
                           <p className="text-xs text-gray-500">
-                            PDF, PNG, JPG, JPEG up to 10MB
+                            PDF up to 10MB
                           </p>
                         </>
                       )}
