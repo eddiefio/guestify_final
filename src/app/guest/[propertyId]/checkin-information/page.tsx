@@ -109,15 +109,17 @@ export default function CheckinInformationGuest() {
         
         if (photosError && photosError.code !== 'PGRST116') throw photosError
         
-        const photosMap: {[key: string]: CheckinPhoto[]} = {
-          access_and_keys: [],
-          checkin_time: [],
-          parking_info: []
+        const photosMap = {
+          access_and_keys: [] as CheckinPhoto[],
+          checkin_time: [] as CheckinPhoto[],
+          parking_info: [] as CheckinPhoto[]
         }
         
         if (photosData) {
           photosData.forEach((photo: CheckinPhoto) => {
-            if (photo.section_type in photosMap) {
+            if (photo.section_type === 'access_and_keys' || 
+                photo.section_type === 'checkin_time' || 
+                photo.section_type === 'parking_info') {
               photosMap[photo.section_type].push(photo)
             }
           })
