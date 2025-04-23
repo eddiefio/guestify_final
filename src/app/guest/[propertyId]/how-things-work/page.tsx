@@ -30,13 +30,46 @@ interface ItemPhoto {
   display_order: number
 }
 
+// Funzione per formattare gli URL delle immagini
+const getImageUrl = (imagePath: string, isItemPhoto: boolean = false) => {
+  if (!imagePath) return '';
+  
+  // Se l'URL è già un URL completo (inizia con http/https), usalo così com'è
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Utilizza il bucket appropriato in base al tipo di immagine
+  const bucketName = isItemPhoto ? 'Item Photos' : 'How Things Work Images';
+  
+  // Genera l'URL pubblico per Supabase Storage usando il bucket corretto
+  const { data: publicURL } = supabase.storage
+    .from(bucketName)
+    .getPublicUrl(imagePath);
+    
+  return publicURL?.publicUrl || '';
+};
+
 // Componente per l'immagine zoomabile
-const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
+const ZoomableImage = ({ src, alt, isItemPhoto = false }: { src: string; alt: string; isItemPhoto?: boolean }) => {
   const [zoomed, setZoomed] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+
+  useEffect(() => {
+    setImageUrl(getImageUrl(src, isItemPhoto));
+  }, [src, isItemPhoto]);
 
   const toggleZoom = () => {
     setZoomed(!zoomed);
   };
+
+  if (!imageUrl) {
+    return (
+      <div className="relative w-full h-48 bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-400">Image not available</p>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -45,10 +78,11 @@ const ZoomableImage = ({ src, alt }: { src: string; alt: string }) => {
         onClick={toggleZoom}
       >
         <Image 
-          src={src}
+          src={imageUrl}
           alt={alt}
           fill
           className={`${zoomed ? 'object-contain' : 'object-cover'}`}
+          unoptimized  // Disabilita l'ottimizzazione di Next.js per evitare problemi con URL esterni
         />
         {zoomed && (
           <button 
@@ -157,6 +191,15 @@ export default function HowThingsWorkPage() {
     setItemPhotos([])
   }
 
+  // Piccolo componente per generare il fallback dell'immagine
+  const ImageFallback = ({ className }: { className?: string }) => (
+    <div className={`bg-gray-100 flex items-center justify-center ${className || "w-16 h-16"}`}>
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col pb-14">
       <header className="bg-white shadow-sm py-3 sticky top-0 z-10">
@@ -188,8 +231,10 @@ export default function HowThingsWorkPage() {
         ) : selectedItem ? (
           // Visualizzazione dettaglio dell'elemento selezionato
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-            {selectedItem.image_path && (
-              <ZoomableImage src={selectedItem.image_path} alt={selectedItem.title} />
+            {selectedItem.image_path ? (
+              <ZoomableImage src={selectedItem.image_path} alt={selectedItem.title} isItemPhoto={false} />
+            ) : (
+              <ImageFallback className="w-full h-48" />
             )}
             <div className="p-4">
               <h2 className="text-xl font-bold text-gray-800 mb-2">{selectedItem.title}</h2>
@@ -210,7 +255,7 @@ export default function HowThingsWorkPage() {
                           </div>
                           <span className="font-medium text-gray-800">Step {index + 1}</span>
                         </div>
-                        <ZoomableImage src={photo.photo_path} alt={`Step ${index + 1}`} />
+                        <ZoomableImage src={photo.photo_path} alt={`Step ${index + 1}`} isItemPhoto={true} />
                         {photo.description && (
                           <p className="text-gray-600 mt-3 text-sm">{photo.description}</p>
                         )}
@@ -252,15 +297,18 @@ export default function HowThingsWorkPage() {
                   className="bg-white rounded-xl p-4 shadow-sm flex items-center active:bg-gray-50"
                   onClick={() => handleSelectItem(item)}
                 >
-                  {item.image_path && (
+                  {item.image_path ? (
                     <div className="flex-shrink-0 relative w-16 h-16 rounded-md overflow-hidden mr-3">
                       <Image 
-                        src={item.image_path}
+                        src={getImageUrl(item.image_path, false)}
                         alt={item.title}
                         fill
                         className="object-cover"
+                        unoptimized
                       />
                     </div>
+                  ) : (
+                    <ImageFallback />
                   )}
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-800">{item.title}</h3>
