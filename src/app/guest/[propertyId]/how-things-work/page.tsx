@@ -1,21 +1,138 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+
+interface RoomCategory {
+  id: string
+  property_id: string
+  name: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+interface HowThingsWorkItem {
+  id: string
+  category_id: string
+  title: string
+  description?: string
+  image_path: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
+
+interface ItemPhoto {
+  id: string
+  item_id: string
+  photo_path: string
+  description?: string
+  display_order: number
+  created_at: string
+  updated_at: string
+}
 
 export default function HowThingsWorkPage() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
+  
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [propertyName, setPropertyName] = useState('')
+  const [categories, setCategories] = useState<RoomCategory[]>([])
+  const [items, setItems] = useState<{[key: string]: HowThingsWorkItem[]}>({})
+  const [photos, setPhotos] = useState<{[key: string]: ItemPhoto[]}>({})
+  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!propertyId) return
+
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch property details
+        const { data: propertyData, error: propertyError } = await supabase
+          .from('properties')
+          .select('name')
+          .eq('id', propertyId)
+          .single()
+        
+        if (propertyError) throw propertyError
+        
+        setPropertyName(propertyData.name)
+        
+        // Fetch room categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('room_categories')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('display_order', { ascending: true })
+        
+        if (categoriesError) throw categoriesError
+        
+        setCategories(categoriesData || [])
+        
+        if (categoriesData && categoriesData.length > 0) {
+          // Set first category as active
+          setActiveCategory(categoriesData[0].id)
+          
+          // Fetch items for each category
+          const itemsMap: {[key: string]: HowThingsWorkItem[]} = {}
+          const photosMap: {[key: string]: ItemPhoto[]} = {}
+          
+          for (const category of categoriesData) {
+            const { data: itemsData, error: itemsError } = await supabase
+              .from('how_things_work_items')
+              .select('*')
+              .eq('category_id', category.id)
+              .order('display_order', { ascending: true })
+            
+            if (itemsError) throw itemsError
+            
+            itemsMap[category.id] = itemsData || []
+            
+            // Fetch photos for each item
+            if (itemsData && itemsData.length > 0) {
+              for (const item of itemsData) {
+                const { data: photosData, error: photosError } = await supabase
+                  .from('how_things_work_item_photos')
+                  .select('*')
+                  .eq('item_id', item.id)
+                  .order('display_order', { ascending: true })
+                
+                if (photosError) throw photosError
+                
+                photosMap[item.id] = photosData || []
+              }
+            }
+          }
+          
+          setItems(itemsMap)
+          setPhotos(photosMap)
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+        setError('Could not load appliance information')
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [propertyId])
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
       <header className="bg-white shadow-sm py-3">
         <div className="w-full px-4 flex items-center">
           <button 
-            onClick={() => router.back()} 
+            onClick={() => router.push(`/guest/${propertyId}`)} 
             className="mr-4 text-gray-700"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -27,79 +144,120 @@ export default function HowThingsWorkPage() {
       </header>
 
       <main className="flex-grow w-full px-4 py-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Kitchen Appliances</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Coffee Machine</h3>
-              <p className="text-sm text-gray-600">
-                1. Fill the water tank at the back<br/>
-                2. Add coffee to the filter<br/>
-                3. Press the top button to start brewing
-              </p>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600 font-medium">Loading appliance information...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="bg-red-50 rounded-xl p-8 mx-auto max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">Information Not Available</h2>
+              <p className="text-gray-600">{error}</p>
+              <button
+                onClick={() => router.push(`/guest/${propertyId}`)}
+                className="mt-6 bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200"
+              >
+                Back to Home
+              </button>
             </div>
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Dishwasher</h3>
-              <p className="text-sm text-gray-600">
-                1. Load dishes in the racks<br/>
-                2. Add detergent to the dispenser<br/>
-                3. Select program and press start button
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Oven</h3>
-              <p className="text-sm text-gray-600">
-                1. Select temperature using left knob<br/>
-                2. Choose program with right knob<br/>
-                3. The light will turn off when preheated
+          </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-xl p-8 mx-auto max-w-md">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <h3 className="text-lg font-bold text-gray-700 mb-2">No Instructions Available</h3>
+              <p className="text-gray-600">
+                No appliance instructions have been added to this property yet.
               </p>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Entertainment</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">TV Remote</h3>
-              <p className="text-sm text-gray-600">
-                1. Use the red power button to turn on/off<br/>
-                2. Source button to switch between HDMI inputs<br/>
-                3. Netflix button for direct access
-              </p>
+        ) : (
+          <div>
+            {/* Category tabs */}
+            <div className="flex overflow-x-auto scrollbar-hide space-x-2 mb-4 pb-2">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium ${
+                    activeCategory === category.id
+                      ? 'bg-[#5E2BFF] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category.name}
+                </button>
+              ))}
             </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Bluetooth Speaker</h3>
-              <p className="text-sm text-gray-600">
-                1. Hold power button for 3 seconds<br/>
-                2. Select "Guest Speaker" on your device<br/>
-                3. Default pairing code is 0000
-              </p>
-            </div>
+            
+            {/* Items for active category */}
+            {activeCategory && items[activeCategory] && (
+              <div className="space-y-4">
+                {items[activeCategory].length === 0 ? (
+                  <div className="bg-white rounded-xl p-8 text-center">
+                    <p className="text-gray-600">No items in this category</p>
+                  </div>
+                ) : (
+                  items[activeCategory].map((item) => (
+                    <div key={item.id} className="bg-white rounded-xl p-5 shadow-sm">
+                      <h2 className="text-lg font-bold text-gray-800 mb-3">
+                        {item.title}
+                      </h2>
+                      
+                      {/* Item image */}
+                      {item.image_path && (
+                        <div className="mb-4 rounded-lg overflow-hidden">
+                          <img 
+                            src={item.image_path} 
+                            alt={item.title} 
+                            className="w-full h-48 object-cover"
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Item description */}
+                      {item.description && (
+                        <div className="text-sm text-gray-600 mb-4 whitespace-pre-wrap">
+                          {item.description}
+                        </div>
+                      )}
+                      
+                      {/* Additional photos */}
+                      {photos[item.id] && photos[item.id].length > 0 && (
+                        <div className="mt-4">
+                          <h3 className="font-medium text-gray-800 mb-2">Additional Photos</h3>
+                          <div className="grid grid-cols-2 gap-2">
+                            {photos[item.id].map((photo) => (
+                              <div key={photo.id} className="rounded-lg overflow-hidden">
+                                <img
+                                  src={photo.photo_path}
+                                  alt={photo.description || item.title}
+                                  className="w-full h-32 object-cover"
+                                />
+                                {photo.description && (
+                                  <div className="p-2 bg-gray-100">
+                                    <p className="text-xs text-gray-700">{photo.description}</p>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 shadow-sm">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Heating & Cooling</h2>
-          <div className="space-y-4">
-            <div className="border-b pb-3">
-              <h3 className="font-medium text-gray-800 mb-1">Air Conditioning</h3>
-              <p className="text-sm text-gray-600">
-                1. Press power button on remote<br/>
-                2. Set desired temperature with up/down arrows<br/>
-                3. Choose mode: cool, heat, or fan
-              </p>
-            </div>
-            <div>
-              <h3 className="font-medium text-gray-800 mb-1">Floor Heating</h3>
-              <p className="text-sm text-gray-600">
-                1. Use the thermostat on the wall in the hallway<br/>
-                2. Set temperature between 20-23°C for comfort<br/>
-                3. Takes about 30 minutes to warm up
-              </p>
-            </div>
-          </div>
-        </div>
+        )}
       </main>
 
       <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
