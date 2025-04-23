@@ -47,10 +47,10 @@ export default function ContactsPage() {
       try {
         setLoading(true)
 
-        // Fetch property details
+        // Fetch property details - solo le colonne che esistono nella tabella
         const { data: properties, error: propError } = await supabase
           .from('properties')
-          .select('name, host_name, host_phone, host_email, emergency_contact, property_manager, property_manager_phone')
+          .select('name')
           .eq('id', propertyId)
 
         if (propError) throw propError
@@ -63,31 +63,37 @@ export default function ContactsPage() {
         // Se ci sono più proprietà, usa la prima
         const property = properties[0]
         setPropertyName(property.name)
-        setContactInfo({
-          host_name: property.host_name || 'Not available',
-          host_phone: property.host_phone || 'Not available',
-          host_email: property.host_email || 'Not available',
-          emergency_contact: property.emergency_contact || 'Not available',
-          property_manager: property.property_manager,
-          property_manager_phone: property.property_manager_phone
-        })
         
-        // Fetch useful contacts from house_info
-        const { data: usefulContactsData, error: contactsError } = await supabase
+        // Fetch contacts data from house_info
+        const { data: contactsData, error: contactsError } = await supabase
           .from('house_info')
-          .select('content')
+          .select('content, section_type')
           .eq('property_id', propertyId)
-          .eq('section_type', 'useful_contacts')
-          .single()
+          .in('section_type', ['useful_contacts'])
         
-        if (contactsError && contactsError.code !== 'PGRST116') { // PGRST116 è l'errore quando non viene trovato nulla
-          console.error('Error fetching useful contacts:', contactsError)
+        if (contactsError) {
+          console.error('Error fetching contacts:', contactsError)
+          throw contactsError
         }
         
-        if (usefulContactsData) {
+        // Cerca i dati dei contatti nei risultati
+        const contactsItem = contactsData?.find(item => item.section_type === 'useful_contacts')
+        
+        if (contactsItem) {
           try {
             // Tenta di analizzare i dati JSON dal campo content
-            const parsedData = JSON.parse(usefulContactsData.content)
+            const parsedData = JSON.parse(contactsItem.content)
+            
+            // Imposta i dati di contatto dalla tabella house_info
+            setContactInfo({
+              host_name: parsedData.host_name || 'Not available',
+              host_phone: parsedData.host_phone || 'Not available',
+              host_email: parsedData.host_email || 'Not available',
+              emergency_contact: parsedData.emergency_contact || 'Not available',
+              property_manager: parsedData.property_manager,
+              property_manager_phone: parsedData.property_manager_phone
+            })
+            
             setUsefulContacts({
               email: parsedData.email || '',
               phoneNumber: parsedData.phoneNumber || '',
@@ -96,7 +102,25 @@ export default function ContactsPage() {
             })
           } catch (e) {
             console.error('Failed to parse contact data:', e)
+            setContactInfo({
+              host_name: 'Not available',
+              host_phone: 'Not available',
+              host_email: 'Not available',
+              emergency_contact: 'Not available',
+              property_manager: undefined,
+              property_manager_phone: undefined
+            })
           }
+        } else {
+          // Se non ci sono dati, usa valori predefiniti
+          setContactInfo({
+            host_name: 'Not available',
+            host_phone: 'Not available',
+            host_email: 'Not available',
+            emergency_contact: 'Not available',
+            property_manager: undefined,
+            property_manager_phone: undefined
+          })
         }
         
         setLoading(false)
