@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { MapPin, Car, Train } from 'lucide-react'
 
 interface ProvidedCategory {
   id: string
@@ -269,10 +270,7 @@ export default function BeforeLeavingPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M8 10h8M7 14h1M16 14h1M6 7h12a1 1 0 0 1 1 1v7.59a1 1 0 0 1-.3.7L17 18H7l-1.7-1.71a1 1 0 0 1-.3-.7V8a1 1 0 0 1 1-1z"/>
-                        <path d="M5 18v2a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-2" />
-                      </svg>
+                      <Car size={18} />
                       <span className="font-medium">By Car</span>
                     </button>
                     <button 
@@ -283,10 +281,7 @@ export default function BeforeLeavingPage() {
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path d="M4 15.5h16M4 8.5h16M18 15.5v4.5M6 15.5v4.5M12 15.5v4.5M8.5 4v4.5M15.5 4v4.5" />
-                        <rect x="6" y="4" width="12" height="11.5" rx="1" />
-                      </svg>
+                      <Train size={18} />
                       <span className="font-medium">By Train</span>
                     </button>
                   </div>
