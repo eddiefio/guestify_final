@@ -1,9 +1,28 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase'
+import { Calendar, ExternalLink } from 'lucide-react'
+
+interface BookAgainInfo {
+  id: string
+  property_id: string
+  section_type: string
+  content: string
+  image_url?: string
+  created_at: string
+  updated_at: string
+}
+
+interface PropertyLink {
+  id: string
+  property_id: string
+  title: string
+  url: string
+}
 
 export default function BookAgainPage() {
   const params = useParams()
@@ -11,13 +30,74 @@ export default function BookAgainPage() {
   const propertyId = params.propertyId as string
   const [selectedDates, setSelectedDates] = useState<{start: string, end: string} | null>(null)
   const [guests, setGuests] = useState(2)
+  const [bookAgainInfo, setBookAgainInfo] = useState<{text: string, image_url: string | null} | null>(null)
+  const [propertyLinks, setPropertyLinks] = useState<PropertyLink[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   
   // Mock calendar data - would come from a real booking API
   const unavailableDates = ['2023-06-10', '2023-06-11', '2023-06-12', '2023-06-20', '2023-06-21']
   
-  const handleBooking = () => {
-    // This would redirect to the actual booking service
-    alert('This would redirect to the booking service with your selected dates')
+  useEffect(() => {
+    const fetchBookAgainData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch book again info
+        const { data: bookAgainData, error: bookAgainError } = await supabase
+          .from('house_info')
+          .select('*')
+          .eq('property_id', propertyId)
+          .eq('section_type', 'book_again')
+          .single()
+        
+        if (bookAgainError && bookAgainError.code !== 'PGRST116') {
+          throw bookAgainError
+        }
+        
+        if (bookAgainData) {
+          try {
+            // Parse JSON data from content field
+            const parsedData = JSON.parse(bookAgainData.content)
+            setBookAgainInfo(parsedData)
+          } catch (e) {
+            console.error('Failed to parse book again data:', e)
+            setBookAgainInfo(null)
+          }
+        }
+
+        // Fetch property listing links
+        const { data: linksData, error: linksError } = await supabase
+          .from('property_listing_links')
+          .select('*')
+          .eq('property_id', propertyId)
+          .order('created_at', { ascending: true })
+        
+        if (linksError) throw linksError
+        
+        if (linksData && linksData.length > 0) {
+          setPropertyLinks(linksData)
+        }
+
+      } catch (error: any) {
+        console.error('Error fetching book again data:', error)
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (propertyId) {
+      fetchBookAgainData()
+    }
+  }, [propertyId])
+
+  const handleBooking = (url: string) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } else {
+      alert('This would redirect to the booking service with your selected dates')
+    }
   }
 
   return (
@@ -36,117 +116,77 @@ export default function BookAgainPage() {
         </div>
       </header>
 
-      <main className="flex-grow w-full px-4 py-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Reserve Your Next Stay</h2>
-          <p className="text-sm text-gray-600 mb-4">Enjoyed your stay? Book this property again for future visits.</p>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-            <input 
-              type="date" 
-              className="w-full p-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
-              onChange={(e) => setSelectedDates(prev => ({start: e.target.value, end: prev?.end || ''}))}
-            />
+      <main className="flex-grow w-full px-4 py-6 pb-20">
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#5E2BFF]"></div>
           </div>
+        ) : error ? (
+          <div className="bg-red-50 text-red-700 p-4 rounded-lg">
+            <p>{error}</p>
+          </div>
+        ) : (
+          <>
+            {bookAgainInfo?.image_url && (
+              <div className="mb-6">
+                <div className="relative w-full h-48 rounded-xl overflow-hidden">
+                  <img 
+                    src={bookAgainInfo.image_url}
+                    alt="Property Image"
+                    className="object-cover w-full h-full"
+                  />
+                </div>
+              </div>
+            )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-            <input 
-              type="date" 
-              className="w-full p-2 border rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-gray-50"
-              onChange={(e) => setSelectedDates(prev => ({start: prev?.start || '', end: e.target.value}))}
-            />
-          </div>
+            {bookAgainInfo?.text && (
+              <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
+                <h2 className="text-lg font-bold text-gray-800 mb-3">Information about booking again</h2>
+                <div className="text-gray-700 whitespace-pre-wrap">
+                  {bookAgainInfo.text}
+                </div>
+              </div>
+            )}
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Number of Guests</label>
-            <div className="flex items-center border rounded-lg bg-gray-50">
-              <button 
-                className="px-3 py-2 text-gray-700" 
-                onClick={() => setGuests(prev => Math.max(1, prev - 1))}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                </svg>
-              </button>
-              <span className="flex-grow text-center">{guests}</span>
-              <button 
-                className="px-3 py-2 text-gray-700" 
-                onClick={() => setGuests(prev => prev + 1)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          
-          <div className="mt-6">
-            <button
-              className="w-full bg-[#5E2BFF] text-white py-3 rounded-lg font-medium hover:bg-purple-700 transition duration-200"
-              onClick={handleBooking}
-            >
-              Check Availability
-            </button>
-          </div>
-        </div>
+            {propertyLinks.length > 0 && (
+              <div className="bg-white rounded-xl p-5 shadow-sm mb-6">
+                <h2 className="text-lg font-bold text-gray-800 mb-3">Booking Links</h2>
+                <div className="space-y-3">
+                  {propertyLinks.map((link, index) => (
+                    <div key={link.id || index} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div className="text-[#5E2BFF] mr-3">
+                        <ExternalLink size={20} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium text-gray-800">{link.title}</h3>
+                      </div>
+                      <button
+                        className="ml-2 bg-[#5E2BFF] text-white px-3 py-1 rounded text-sm font-medium hover:bg-purple-700 transition duration-200"
+                        onClick={() => handleBooking(link.url)}
+                      >
+                        Visit
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-          <h2 className="text-lg font-bold text-gray-800 mb-3">Property Highlights</h2>
-          
-          <div className="space-y-3">
-            <div className="flex items-start">
-              <div className="text-[#5E2BFF] mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Great Location</h3>
-                <p className="text-sm text-gray-600">Close to city center and major attractions</p>
+            <div className="bg-yellow-100 border border-yellow-200 rounded-xl p-4 shadow-sm">
+              <div className="flex items-start">
+                <div className="text-yellow-500 mr-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-medium text-yellow-800">Returning Guest Discount</h3>
+                  <p className="text-sm text-yellow-700">You may be eligible for a discount as a returning guest. Contact the host for details!</p>
+                </div>
               </div>
             </div>
-            
-            <div className="flex items-start">
-              <div className="text-[#5E2BFF] mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Modern Amenities</h3>
-                <p className="text-sm text-gray-600">Fully equipped kitchen and high-speed WiFi</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start">
-              <div className="text-[#5E2BFF] mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-medium text-gray-800">Great for Families</h3>
-                <p className="text-sm text-gray-600">Spacious with amenities for children</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-yellow-100 border border-yellow-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-start">
-            <div className="text-yellow-500 mr-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <h3 className="font-medium text-yellow-800">Returning Guest Discount</h3>
-              <p className="text-sm text-yellow-700">You're eligible for a 10% discount as a returning guest!</p>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </main>
 
       <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
@@ -176,4 +216,4 @@ export default function BookAgainPage() {
       </nav>
     </div>
   )
-} 
+}
