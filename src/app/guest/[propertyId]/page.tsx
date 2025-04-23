@@ -365,10 +365,13 @@ export default function GuestHomePage() {
                 </Link>
                 <Link href={`/guest/${propertyId}/before-leaving`} className="w-full">
                   <div className="bg-pink-100 rounded-xl p-4 shadow-sm border border-pink-200 w-full h-full">
-                    <div className="flex flex-col items-center">
-                      <img src="/images/before-leaving.svg" alt="Before you leave" className="h-12 w-12 mb-2" />
-                      <h2 className="text-sm font-bold text-gray-800">Before You Leave Home</h2>
+                    <div className="mb-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                      </svg>
                     </div>
+                    <h2 className="text-sm font-bold text-gray-800">Before You Leave Home</h2>
+                    <p className="text-xs text-gray-600">Essential informations before the trip</p>
                   </div>
                 </Link>
                 <Link href={`/guest/${propertyId}/city-guide`} className="w-full">

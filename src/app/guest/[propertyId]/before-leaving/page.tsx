@@ -56,21 +56,7 @@ export default function BeforeLeavingPage() {
   const [drivingDirections, setDrivingDirections] = useState<DirectionPhoto[]>([])
   const [trainDirections, setTrainDirections] = useState<DirectionPhoto[]>([])
   const [loading, setLoading] = useState(true)
-  const [checklist, setChecklist] = useState({
-    lights: false,
-    windows: false,
-    appliances: false,
-    trash: false,
-    keys: false,
-    belongings: false
-  })
-
-  const handleCheck = (item: keyof typeof checklist) => {
-    setChecklist(prev => ({
-      ...prev,
-      [item]: !prev[item]
-    }))
-  }
+  const [transportMethod, setTransportMethod] = useState<'car' | 'train'>('car')
 
   useEffect(() => {
     if (!propertyId) return
@@ -141,8 +127,6 @@ export default function BeforeLeavingPage() {
 
     fetchData()
   }, [propertyId])
-
-  const allChecked = Object.values(checklist).every(value => value)
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
@@ -261,7 +245,7 @@ export default function BeforeLeavingPage() {
                   {informationNeeded ? (
                     <div className="bg-gray-50 rounded-lg p-6">
                       {informationNeeded.split('\n').map((line, i) => (
-                        <p key={i} className="mb-2">{line}</p>
+                        <p key={i} className="mb-2 text-gray-800">{line}</p>
                       ))}
                     </div>
                   ) : (
@@ -276,196 +260,91 @@ export default function BeforeLeavingPage() {
                 <div className="p-4">
                   <h2 className="text-xl font-bold text-gray-800 mb-4">How To Get There</h2>
                   
-                  <div className="space-y-6">
-                    {/* Driving directions */}
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        <h3 className="font-bold text-gray-800">By Car</h3>
-                      </div>
-                      
-                      {drivingDirections.length > 0 ? (
-                        <div className="p-4 space-y-4">
-                          {drivingDirections.map((photo, index) => (
-                            <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                              <div className="relative w-full h-48">
-                                <img 
-                                  src={photo.photo_url} 
-                                  alt={`Driving direction ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              {photo.description && (
-                                <div className="p-3 bg-gray-50">
-                                  <p className="text-sm text-gray-700">{photo.description}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-4">No driving directions available</p>
-                      )}
-                    </div>
-                    
-                    {/* Train directions */}
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        <h3 className="font-bold text-gray-800">By Train</h3>
-                      </div>
-                      
-                      {trainDirections.length > 0 ? (
-                        <div className="p-4 space-y-4">
-                          {trainDirections.map((photo, index) => (
-                            <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                              <div className="relative w-full h-48">
-                                <img 
-                                  src={photo.photo_url} 
-                                  alt={`Train direction ${index + 1}`}
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              {photo.description && (
-                                <div className="p-3 bg-gray-50">
-                                  <p className="text-sm text-gray-700">{photo.description}</p>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 text-center py-4">No train directions available</p>
-                      )}
-                    </div>
+                  <div className="flex gap-4 mb-6">
+                    <button 
+                      onClick={() => setTransportMethod('car')}
+                      className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
+                        transportMethod === 'car' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span className="font-medium">By Car</span>
+                    </button>
+                    <button 
+                      onClick={() => setTransportMethod('train')}
+                      className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 ${
+                        transportMethod === 'train' 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                      </svg>
+                      <span className="font-medium">By Train</span>
+                    </button>
                   </div>
+                  
+                  {transportMethod === 'car' && (
+                    <div className="space-y-4">
+                      {drivingDirections.length > 0 ? (
+                        drivingDirections.map((photo, index) => (
+                          <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="relative w-full h-48">
+                              <img 
+                                src={photo.photo_url} 
+                                alt={`Driving direction ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            {photo.description && (
+                              <div className="p-3 bg-gray-50">
+                                <p className="text-sm text-gray-700">{photo.description}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <p className="text-gray-500">No driving directions available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {transportMethod === 'train' && (
+                    <div className="space-y-4">
+                      {trainDirections.length > 0 ? (
+                        trainDirections.map((photo, index) => (
+                          <div key={photo.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                            <div className="relative w-full h-48">
+                              <img 
+                                src={photo.photo_url} 
+                                alt={`Train direction ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            {photo.description && (
+                              <div className="p-3 bg-gray-50">
+                                <p className="text-sm text-gray-700">{photo.description}</p>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-lg">
+                          <p className="text-gray-500">No train directions available</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-
-            {/* Checkout checklist section */}
-            <div className="bg-white rounded-xl p-5 shadow-sm mb-4">
-              <h2 className="text-lg font-bold text-gray-800 mb-3">Checkout Checklist</h2>
-              <p className="text-sm text-gray-600 mb-4">Please check each item before you leave the property.</p>
-              
-              <div className="space-y-3">
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.lights ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('lights')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.lights ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.lights && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Turn off all lights</h3>
-                    <p className="text-xs text-gray-500">Check all rooms including bathroom</p>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.windows ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('windows')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.windows ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.windows && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Close all windows</h3>
-                    <p className="text-xs text-gray-500">Don't forget balcony doors</p>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.appliances ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('appliances')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.appliances ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.appliances && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Turn off all appliances</h3>
-                    <p className="text-xs text-gray-500">Check stove, oven, coffee maker</p>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.trash ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('trash')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.trash ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.trash && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Take out all trash</h3>
-                    <p className="text-xs text-gray-500">Containers are located outside</p>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.keys ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('keys')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.keys ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.keys && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Return keys</h3>
-                    <p className="text-xs text-gray-500">Follow host instructions for key return</p>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border rounded-lg p-3 flex items-center ${checklist.belongings ? 'bg-green-50 border-green-200' : 'border-gray-200'}`}
-                  onClick={() => handleCheck('belongings')}
-                >
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 ${checklist.belongings ? 'bg-green-500 text-white' : 'border border-gray-300'}`}>
-                    {checklist.belongings && (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-gray-800">Check for personal items</h3>
-                    <p className="text-xs text-gray-500">Look in drawers, cabinets, bathroom</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {allChecked && (
-              <div className="bg-green-100 border border-green-200 rounded-xl p-4 text-center shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto text-green-500 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h2 className="text-lg font-bold text-green-800">All Set!</h2>
-                <p className="text-sm text-green-700">You've completed all the checks. Have a safe journey!</p>
-              </div>
-            )}
           </>
         )}
       </main>
