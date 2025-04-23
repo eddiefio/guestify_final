@@ -23,6 +23,11 @@ interface UsefulContactsData {
   medicalInfo: string
 }
 
+interface HouseInfoItem {
+  content: string
+  section_type: string
+}
+
 export default function ContactsPage() {
   const params = useParams()
   const router = useRouter()
@@ -77,7 +82,7 @@ export default function ContactsPage() {
         }
         
         // Cerca i dati dei contatti nei risultati
-        const contactsItem = contactsData?.find(item => item.section_type === 'useful_contacts')
+        const contactsItem = contactsData?.find((item: HouseInfoItem) => item.section_type === 'useful_contacts')
         
         if (contactsItem) {
           try {
