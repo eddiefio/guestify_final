@@ -237,7 +237,7 @@ export default function ContactsPage() {
                             <Phone className="h-5 w-5" />
                           </a>
                           <button 
-                            onClick={() => copyToClipboard(contactInfo.property_manager_phone, 'manager_phone')} 
+                            onClick={() => copyToClipboard(contactInfo.property_manager_phone ?? '', 'manager_phone')} 
                             className="bg-gray-100 text-gray-700 p-2 rounded-full"
                             aria-label="Copy phone number"
                           >
