@@ -17,7 +17,6 @@ declare global {
 export default function MapPage() {
   const params = useParams()
   const propertyId = params.propertyId as string
-  const router = useRouter()
   const [propertyName, setPropertyName] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -206,18 +205,18 @@ export default function MapPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-3">
-        <div className="w-full px-4 flex items-center justify-between">
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 flex items-center justify-between">
           <div className="flex items-center">
-            <button 
-              onClick={() => router.back()} 
-              className="mr-4 text-gray-700"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <h1 className="text-xl font-bold text-gray-800">Map</h1>
+            <div className="relative h-12 w-12">
+              <Image 
+                src="/images/logo_guest.png"
+                alt="Guestify Logo"
+                fill
+                className="object-contain"
+              />
+            </div>
+            <h1 className="text-xl font-bold text-[#5E2BFF] ml-2">Map</h1>
           </div>
           <div className="text-gray-700">{propertyName}</div>
         </div>
@@ -243,7 +242,7 @@ export default function MapPage() {
               <div className="aspect-w-16 aspect-h-9 bg-gray-200 h-[calc(100vh-260px)] w-full">
                 {!mapLoaded || !coordinates ? (
                   <div className="flex items-center justify-center h-full">
-                <div className="text-center p-4">
+                    <div className="text-center p-4">
                       <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4 mx-auto"></div>
                       <p className="text-gray-500">Loading map...</p>
                     </div>
