@@ -293,6 +293,11 @@ export default function PrintQR() {
       // Add image to PDF
       doc.addImage(previewUrl, 'PNG', x, y, imgWidth, imgHeight)
       
+      // Add property name in small text in the top right corner
+      doc.setFontSize(8) // Very small font size
+      doc.setTextColor(100, 100, 100) // Gray color
+      doc.text(propertyName, a4Width - 10, 10, { align: 'right' }) // Positioned 10mm from top and right edges
+      
       // Save the PDF
       doc.save(`guestify-qr-${propertyName.replace(/\s+/g, '-').toLowerCase()}.pdf`)
       
