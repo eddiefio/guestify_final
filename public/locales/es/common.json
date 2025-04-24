@@ -1,39 +1,24 @@
 {
-  "app_title": "Guestify",
-  "language": "Idioma",
-  "language_en": "Inglés",
-  "language_it": "Italiano",
-  "language_es": "Español",
-  "language_fr": "Francés",
-  "language_zh": "Chino",
-  "guest_categories": {
-    "wifi": "Wifi",
-    "checkin": "Check-in",
-    "checkout": "Check-out",
-    "house_rules": "Reglas de la Casa"
-  },
-  "features": {
-    "how_things_work": "Cómo Funciona",
-    "before_leaving": "Antes de Salir",
-    "host_guides": "Guías del Anfitrión",
-    "book_again": "Reservar de Nuevo"
-  },
-  "actions": {
-    "read_more": "Leer más",
-    "connect": "Conectar",
-    "back": "Volver",
-    "submit": "Enviar",
-    "cancel": "Cancelar"
-  },
-  "weather": {
-    "title": "Clima",
-    "forecast": "Pronóstico"
-  },
-  "loading": "Cargando...",
-  "rules_not_available": "Reglas no disponibles",
-  "house_rules_for": "Reglas de la Casa para",
-  "please_follow_rules": "Por favor siga estas reglas durante su estancia",
-  "no_house_rules": "Sin Reglas de la Casa",
-  "no_specific_rules": "No se han establecido reglas específicas para esta propiedad",
-  "to_all_services": "a todos los servicios"
+  "guest": {
+    "essentials": {
+      "wifi": "Wifi",
+      "checkin": "Registro de entrada",
+      "checkout": "Registro de salida",
+      "houseRules": "Normas de la Casa"
+    },
+    "categories": {
+      "howThingsWork": "Cómo Funcionan las Cosas",
+      "beforeLeaving": "Antes de Partir",
+      "hostGuides": "Guías del Anfitrión",
+      "bookAgain": "Reservar de Nuevo"
+    },
+    "search": {
+      "placeholder": "Buscar cualquier cosa...",
+      "button": "Buscar"
+    },
+    "weather": {
+      "forecast": "Pronóstico del Tiempo"
+    },
+    "languageSelector": "Idioma"
+  }
 } 

@@ -21,16 +21,6 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <style>
-          {`
-            .skiptranslate {
-              display: none !important;
-            }
-            body {
-              top: 0 !important;
-            }
-          `}
-        </style>
       </head>
       <body className="font-sans">
         <Providers>

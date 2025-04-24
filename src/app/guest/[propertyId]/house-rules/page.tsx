@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { useTranslation } from '@/contexts/TranslationContext'
-import DynamicTranslatedContent from '@/components/DynamicTranslatedContent'
 
 interface HouseRule {
   id: string
@@ -20,7 +18,6 @@ export default function HouseRulesGuest() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
-  const { t } = useTranslation()
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -82,7 +79,7 @@ export default function HouseRulesGuest() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h1 className="text-xl font-bold text-gray-800">{t('guest_categories.house_rules')}</h1>
+            <h1 className="text-xl font-bold text-gray-800">House Rules</h1>
           </div>
         </div>
       </div>
@@ -91,7 +88,7 @@ export default function HouseRulesGuest() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="text-gray-600 font-medium">{t('loading')}</p>
+            <p className="text-gray-600 font-medium">Loading house rules...</p>
           </div>
         ) : error ? (
           <div className="text-center py-12">
@@ -99,13 +96,13 @@ export default function HouseRulesGuest() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <h2 className="text-lg font-bold text-gray-800 mb-2">{t('rules_not_available')}</h2>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">Rules Not Available</h2>
               <p className="text-gray-600">{error}</p>
               <button
                 onClick={() => router.push(`/guest/${propertyId}`)}
                 className="mt-6 bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200"
               >
-                {t('actions.back')}
+                Back to Home
               </button>
             </div>
           </div>
@@ -114,10 +111,10 @@ export default function HouseRulesGuest() {
             {/* Property name */}
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-800">
-                {t('house_rules_for')} {propertyName}
+                House Rules for {propertyName}
               </h2>
               <p className="text-gray-600 mt-2">
-                {t('please_follow_rules')}
+                Please follow these rules during your stay
               </p>
             </div>
 
@@ -126,9 +123,9 @@ export default function HouseRulesGuest() {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-                <h3 className="text-lg font-bold text-gray-700 mb-2">{t('no_house_rules')}</h3>
+                <h3 className="text-lg font-bold text-gray-700 mb-2">No House Rules</h3>
                 <p className="text-gray-600">
-                  {t('no_specific_rules')}
+                  No specific house rules have been set for this property.
                 </p>
               </div>
             ) : (
@@ -142,11 +139,11 @@ export default function HouseRulesGuest() {
                         </div>
                         <div>
                           <h3 className="text-lg font-bold text-gray-800 mb-2">
-                            <DynamicTranslatedContent content={rule.title} />
+                            {rule.title}
                           </h3>
                           {rule.description && (
                             <p className="text-gray-700">
-                              <DynamicTranslatedContent content={rule.description} />
+                              {rule.description}
                             </p>
                           )}
                         </div>
@@ -159,7 +156,7 @@ export default function HouseRulesGuest() {
 
             <div className="text-center mt-8">
               <Link href={`/guest/${propertyId}`} className="text-[#5E2BFF] hover:underline">
-                {t('actions.back')} {t('to_all_services')}
+                Back to All Services
               </Link>
             </div>
           </div>

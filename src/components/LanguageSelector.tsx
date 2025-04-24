@@ -1,91 +1,89 @@
-'use client'
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 
-import { useState, useEffect } from 'react'
-import { useTranslation } from '@/contexts/TranslationContext'
+interface LanguageSelectorProps {
+  className?: string;
+}
 
-export default function LanguageSelector() {
-  const { language, changeLanguage, t } = useTranslation()
-  const [isOpen, setIsOpen] = useState(false)
+const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) => {
+  const router = useRouter();
+  const { i18n, t } = useTranslation('common');
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Definisce le lingue supportate
+  const languages = [
+    { code: 'en', name: 'English' },
+    { code: 'it', name: 'Italiano' },
+    { code: 'es', name: 'Español' },
+    { code: 'fr', name: 'Français' },
+    { code: 'zh', name: '中文' }
+  ];
 
-  // Chiudi il dropdown quando si clicca fuori
+  // Ottiene la lingua corrente dal localStorage o imposta 'en' come predefinito
+  const [currentLanguage, setCurrentLanguage] = useState('en');
+
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('.language-selector')) {
-        setIsOpen(false)
-      }
-    }
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    setCurrentLanguage(savedLanguage);
+    i18n.changeLanguage(savedLanguage);
+  }, [i18n]);
 
-    document.addEventListener('click', handleOutsideClick)
-    return () => {
-      document.removeEventListener('click', handleOutsideClick)
-    }
-  }, [])
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+  };
 
-  // Funzione per cambiare lingua
-  const handleLanguageChange = (lang: 'en' | 'it' | 'es' | 'fr' | 'zh') => {
-    changeLanguage(lang)
-    setIsOpen(false)
-  }
+  const changeLanguage = (langCode: string) => {
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('language', langCode);
+    setCurrentLanguage(langCode);
+    setIsOpen(false);
+  };
 
-  // Ottieni il nome della lingua corrente
-  const getLanguageName = () => {
-    return t(`language_${language}`)
-  }
+  // Trova il nome della lingua corrente
+  const currentLangName = languages.find(lang => lang.code === currentLanguage)?.name || 'English';
 
   return (
-    <div className="language-selector relative z-10">
+    <div className={`relative inline-block text-left ${className}`}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-1 bg-purple-100 text-[#5E2BFF] px-3 py-2 rounded-md hover:bg-purple-200 transition-colors"
+        type="button"
+        className="flex items-center text-white text-sm font-medium rounded-md bg-[#5E2BFF] hover:bg-purple-700 px-3 py-1.5 focus:outline-none"
+        onClick={toggleDropdown}
         aria-expanded={isOpen}
+        aria-haspopup="true"
       >
-        <span>{t('language')}: {getLanguageName()}</span>
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor"
-        >
+        <span className="mr-1">🌐</span>
+        <span className="mx-1">{currentLangName}</span>
+        <svg className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1 w-48 bg-white shadow-lg rounded-md py-1 border border-gray-200">
-          <button
-            onClick={() => handleLanguageChange('en')}
-            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${language === 'en' ? 'bg-purple-50 text-[#5E2BFF]' : ''}`}
-          >
-            {t('language_en')}
-          </button>
-          <button
-            onClick={() => handleLanguageChange('it')}
-            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${language === 'it' ? 'bg-purple-50 text-[#5E2BFF]' : ''}`}
-          >
-            {t('language_it')}
-          </button>
-          <button
-            onClick={() => handleLanguageChange('es')}
-            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${language === 'es' ? 'bg-purple-50 text-[#5E2BFF]' : ''}`}
-          >
-            {t('language_es')}
-          </button>
-          <button
-            onClick={() => handleLanguageChange('fr')}
-            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${language === 'fr' ? 'bg-purple-50 text-[#5E2BFF]' : ''}`}
-          >
-            {t('language_fr')}
-          </button>
-          <button
-            onClick={() => handleLanguageChange('zh')}
-            className={`w-full text-left px-4 py-2 hover:bg-gray-100 ${language === 'zh' ? 'bg-purple-50 text-[#5E2BFF]' : ''}`}
-          >
-            {t('language_zh')}
-          </button>
+        <div
+          className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+          role="menu"
+          aria-orientation="vertical"
+          aria-labelledby="language-menu"
+        >
+          <div className="py-1" role="none">
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                className={`block w-full text-left px-4 py-2 text-sm ${
+                  currentLanguage === lang.code ? 'bg-gray-100 text-[#5E2BFF] font-medium' : 'text-gray-700'
+                } hover:bg-gray-50`}
+                role="menuitem"
+                onClick={() => changeLanguage(lang.code)}
+              >
+                {lang.name}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </div>
-  )
-} 
+  );
+};
+
+export default LanguageSelector; 

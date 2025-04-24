@@ -1,39 +1,24 @@
 {
-  "app_title": "Guestify",
-  "language": "语言",
-  "language_en": "英语",
-  "language_it": "意大利语",
-  "language_es": "西班牙语",
-  "language_fr": "法语",
-  "language_zh": "中文",
-  "guest_categories": {
-    "wifi": "无线网络",
-    "checkin": "入住",
-    "checkout": "退房",
-    "house_rules": "入住规则"
-  },
-  "features": {
-    "how_things_work": "使用指南",
-    "before_leaving": "离开前",
-    "host_guides": "房东指南",
-    "book_again": "再次预订"
-  },
-  "actions": {
-    "read_more": "阅读更多",
-    "connect": "连接",
-    "back": "返回",
-    "submit": "提交",
-    "cancel": "取消"
-  },
-  "weather": {
-    "title": "天气",
-    "forecast": "预报"
-  },
-  "loading": "加载中...",
-  "rules_not_available": "规则不可用",
-  "house_rules_for": "房屋规则",
-  "please_follow_rules": "请在您入住期间遵守以下规则",
-  "no_house_rules": "没有入住规则",
-  "no_specific_rules": "该物业没有设定具体规则",
-  "to_all_services": "所有服务"
+  "guest": {
+    "essentials": {
+      "wifi": "无线网络",
+      "checkin": "入住",
+      "checkout": "退房",
+      "houseRules": "住宿规则"
+    },
+    "categories": {
+      "howThingsWork": "设施使用指南",
+      "beforeLeaving": "离开前须知",
+      "hostGuides": "房东指南",
+      "bookAgain": "再次预订"
+    },
+    "search": {
+      "placeholder": "搜索任何内容...",
+      "button": "搜索"
+    },
+    "weather": {
+      "forecast": "天气预报"
+    },
+    "languageSelector": "语言"
+  }
 } 
