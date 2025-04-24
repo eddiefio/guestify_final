@@ -9,15 +9,18 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import { jsPDF } from 'jspdf'
 
 export default function PrintQR() {
   const [propertyName, setPropertyName] = useState('')
   const [qrCodeDataURL, setQrCodeDataURL] = useState('')
+  const [wifiQrCodeURL, setWifiQrCodeURL] = useState('')
   const [menuUrl, setMenuUrl] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [printingStatus, setPrintingStatus] = useState<'idle' | 'preparing' | 'ready' | 'error'>('idle')
   const [isCopied, setIsCopied] = useState(false)
+  const [wifiCredentials, setWifiCredentials] = useState<{ network_name: string, password: string } | null>(null)
   const qrRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const propertyId = params.propertyId as string
@@ -57,6 +60,26 @@ export default function PrintQR() {
           }
         })
         setQrCodeDataURL(qrCode)
+        
+        // Fetch WiFi credentials
+        const { data: wifiData, error: wifiError } = await supabase
+          .from('wifi_credentials')
+          .select('network_name, password')
+          .eq('property_id', propertyId)
+          .single()
+        
+        if (!wifiError && wifiData) {
+          setWifiCredentials(wifiData)
+          
+          // Generate WiFi QR code
+          const wifiString = `WIFI:T:WPA;S:${wifiData.network_name};P:${wifiData.password};;`
+          const wifiQrCode = await QRCode.toDataURL(wifiString, {
+            errorCorrectionLevel: 'H',
+            margin: 1,
+            width: 150
+          })
+          setWifiQrCodeURL(wifiQrCode)
+        }
         
         setLoading(false)
       } catch (error: any) {
@@ -162,6 +185,37 @@ export default function PrintQR() {
         throw new Error('QR code not generated yet')
       }
       
+      // Create a PDF document (A4 format)
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+      
+      // A4 dimensions in mm
+      const pageWidth = 210
+      const pageHeight = 297
+      
+      // Add title
+      doc.setFontSize(24)
+      doc.setTextColor(94, 43, 255) // #5E2BFF
+      doc.text('Guestify', pageWidth / 2, 30, { align: 'center' })
+      
+      // Add property name
+      doc.setFontSize(18)
+      doc.setTextColor(0, 0, 0)
+      doc.text(propertyName, pageWidth / 2, 45, { align: 'center' })
+      
+      // Load the frame image
+      const frameImg = new Image()
+      frameImg.src = frameImagePath
+      
+      // Wait for the frame to load
+      await new Promise((resolve, reject) => {
+        frameImg.onload = resolve
+        frameImg.onerror = reject
+      })
+      
       // Create a canvas to combine QR code with frame
       const canvas = document.createElement('canvas')
       const ctx = canvas.getContext('2d')
@@ -174,48 +228,84 @@ export default function PrintQR() {
       canvas.width = 600
       canvas.height = 600
       
-      // Load the frame image and QR code
-      const frameImg = new window.Image()
-      const qrImg = new window.Image()
-      
-      // Create a promise to wait for both images to load
-      const loadImages = new Promise((resolve, reject) => {
-        let loadedCount = 0
-        
-        const onLoad = () => {
-          loadedCount++
-          if (loadedCount === 2) resolve(true)
-        }
-        
-        frameImg.onload = onLoad
-        qrImg.onload = onLoad
-        frameImg.onerror = reject
-        qrImg.onerror = reject
-        
-        frameImg.src = frameImagePath
-        qrImg.src = qrCodeDataURL
-      })
-      
-      await loadImages
-      
       // Draw frame first
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
       
-      // Draw QR code in the center
-      const qrSize = 300
+      // Draw QR code in the center (make it slightly smaller)
+      const qrSize = 280 // Reduced from 300
       const qrX = (canvas.width - qrSize) / 2
       const qrY = (canvas.height - qrSize) / 2
+      
+      const qrImg = new Image()
+      qrImg.src = qrCodeDataURL
+      
+      // Wait for QR code to load
+      await new Promise((resolve, reject) => {
+        qrImg.onload = resolve
+        qrImg.onerror = reject
+      })
+      
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
       
       // Get the combined image URL
       const combinedQrDataUrl = canvas.toDataURL('image/png')
       
-      const link = document.createElement('a')
-      link.href = combinedQrDataUrl
-      link.download = `guestify-qr-${propertyName.replace(/\s+/g, '-').toLowerCase()}.png`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Add the main QR code to the PDF (centered)
+      const qrWidth = 150
+      const qrHeight = 150
+      const qrX1 = (pageWidth - qrWidth) / 2
+      const qrY1 = 70
+      doc.addImage(combinedQrDataUrl, 'PNG', qrX1, qrY1, qrWidth, qrHeight)
+      
+      // Add description
+      doc.setFontSize(12)
+      doc.text('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 15, { align: 'center' })
+      
+      // Add info about what's included
+      doc.setFontSize(14)
+      doc.setTextColor(94, 43, 255)
+      doc.text("What's included:", 20, qrY1 + qrHeight + 35)
+      
+      // Add list of features
+      doc.setFontSize(12)
+      doc.setTextColor(0, 0, 0)
+      const features = [
+        'House Information',
+        'Extra Services',
+        'House Rules',
+        'WiFi Connection',
+        'City Guides'
+      ]
+      
+      features.forEach((feature, index) => {
+        doc.text(`• ${feature}`, 25, qrY1 + qrHeight + 50 + (index * 8))
+      })
+      
+      // Add WiFi QR code if available
+      if (wifiQrCodeURL && wifiCredentials) {
+        // Add WiFi QR code to bottom right
+        const wifiQrSize = 50
+        const wifiQrX = pageWidth - wifiQrSize - 20
+        const wifiQrY = pageHeight - wifiQrSize - 40
+        
+        doc.addImage(wifiQrCodeURL, 'PNG', wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
+        
+        // Add WiFi details
+        doc.setFontSize(10)
+        doc.text('WiFi Connection', wifiQrX - 10, wifiQrY - 8, { align: 'right' })
+        doc.setFontSize(8)
+        doc.text(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10, wifiQrY - 3, { align: 'right' })
+        doc.text(`Password: ${wifiCredentials.password}`, wifiQrX - 10, wifiQrY + 2, { align: 'right' })
+      }
+      
+      // Add footer
+      doc.setFontSize(10)
+      doc.setTextColor(128, 128, 128)
+      doc.text('Powered by Guestify', pageWidth / 2, pageHeight - 10, { align: 'center' })
+      doc.text(menuUrl, pageWidth / 2, pageHeight - 5, { align: 'center' })
+      
+      // Save the PDF
+      doc.save(`guestify-qr-${propertyName.replace(/\s+/g, '-').toLowerCase()}.pdf`)
       
       toast.success('QR Code downloaded successfully')
     } catch (error: any) {
