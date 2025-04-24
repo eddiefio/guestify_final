@@ -75,7 +75,7 @@ export default function AddPropertyClient() {
         // Estrazione dei componenti dell'indirizzo
         const addressComponents: Record<string, string> = {};
         
-        place.address_components?.forEach((component) => {
+        place.address_components?.forEach((component: { types: string[], long_name: string, short_name: string }) => {
           const componentType = component.types[0];
           
           switch (componentType) {
