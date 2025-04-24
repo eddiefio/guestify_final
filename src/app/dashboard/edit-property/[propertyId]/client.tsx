@@ -36,10 +36,12 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const [propertyLoaded, setPropertyLoaded] = useState(false)
   
   // Riferimento all'input dell'indirizzo per Google Places Autocomplete
   const addressInputRef = useRef<HTMLInputElement>(null);
   const [placesLoaded, setPlacesLoaded] = useState(false);
+  const autocompleteRef = useRef<any>(null);
 
   // Caricamento dell'API Google Maps Places
   useEffect(() => {
@@ -61,10 +63,18 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
   // Inizializzazione di Google Places Autocomplete
   useEffect(() => {
-    if (placesLoaded && addressInputRef.current && window.google?.maps?.places) {
+    if (placesLoaded && addressInputRef.current && window.google?.maps?.places && propertyLoaded) {
+      // Pulizia di un eventuale precedente autocomplete
+      if (autocompleteRef.current) {
+        window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+      }
+      
+      // Creazione di una nuova istanza
       const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
         fields: ['address_components', 'formatted_address', 'geometry'],
       });
+      
+      autocompleteRef.current = autocomplete;
       
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
@@ -117,12 +127,13 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
       return () => {
         // Pulizia
-        if (window.google?.maps) {
-          window.google.maps.event.clearInstanceListeners(autocomplete);
+        if (window.google?.maps && autocompleteRef.current) {
+          window.google.maps.event.clearInstanceListeners(autocompleteRef.current);
+          autocompleteRef.current = null;
         }
       };
     }
-  }, [placesLoaded]);
+  }, [placesLoaded, propertyLoaded]);
 
   useEffect(() => {
     if (!propertyId) return
@@ -150,6 +161,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
         setError('Could not load property data')
       } finally {
         setLoading(false)
+        setPropertyLoaded(true)
       }
     }
 
