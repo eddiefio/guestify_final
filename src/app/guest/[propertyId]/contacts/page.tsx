@@ -256,7 +256,7 @@ export default function ContactsPage() {
               <div className="p-5 space-y-4">
                 {/* Mostra numeri di emergenza personalizzati se presenti */}
                 {usefulContacts && (usefulContacts.policeNumber || usefulContacts.ambulanceNumber || usefulContacts.fireNumber) && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {usefulContacts.policeNumber && (
                       <div className="bg-blue-50 p-4 rounded-lg">
                         <div className="flex items-center mb-2">
@@ -327,99 +327,13 @@ export default function ContactsPage() {
                     )}
                   </div>
                 )}
-              
-                {/* Numeri di emergenza generali */}
-                <div className="space-y-4 mt-4">
-                  <h3 className="text-md font-bold text-gray-700 mb-2">Standard Emergency Numbers</h3>
-                  
-                  <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                    <div>
-                      <h3 className="font-bold text-blue-800">Police</h3>
-                      <p className="text-sm text-blue-700">Emergency</p>
-                    </div>
-                    <div className="flex items-center">
-                      <a href="tel:112" className="bg-blue-200 text-blue-800 p-3 rounded-full mr-2">
-                        <ShieldAlert className="h-6 w-6" />
-                      </a>
-                      <button 
-                        onClick={() => copyToClipboard("112", 'police')} 
-                        className="bg-blue-100 text-blue-700 p-3 rounded-full"
-                        aria-label="Copy police number"
-                      >
-                        <Clipboard className="h-5 w-5" />
-                      </button>
-                      {copiedText === 'police' && (
-                        <span className="ml-2 text-green-600 text-sm font-semibold">Copied!</span>
-                      )}
-                    </div>
+                
+                {/* Messaggio se non ci sono numeri di emergenza personalizzati */}
+                {usefulContacts && !(usefulContacts.policeNumber || usefulContacts.ambulanceNumber || usefulContacts.fireNumber) && (
+                  <div className="text-center py-4">
+                    <p className="text-gray-700 font-medium">No custom emergency numbers available.</p>
                   </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                    <div>
-                      <h3 className="font-bold text-red-800">Ambulance</h3>
-                      <p className="text-sm text-red-700">Medical emergencies</p>
-                    </div>
-                    <div className="flex items-center">
-                      <a href="tel:118" className="bg-red-200 text-red-800 p-3 rounded-full mr-2">
-                        <Siren className="h-6 w-6" />
-                      </a>
-                      <button 
-                        onClick={() => copyToClipboard("118", 'ambulance')} 
-                        className="bg-red-100 text-red-700 p-3 rounded-full"
-                        aria-label="Copy ambulance number"
-                      >
-                        <Clipboard className="h-5 w-5" />
-                      </button>
-                      {copiedText === 'ambulance' && (
-                        <span className="ml-2 text-green-600 text-sm font-semibold">Copied!</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                    <div>
-                      <h3 className="font-bold text-orange-800">Fire Department</h3>
-                      <p className="text-sm text-orange-700">Fire and rescue</p>
-                    </div>
-                    <div className="flex items-center">
-                      <a href="tel:115" className="bg-orange-200 text-orange-800 p-3 rounded-full mr-2">
-                        <Flame className="h-6 w-6" />
-                      </a>
-                      <button 
-                        onClick={() => copyToClipboard("115", 'fire')} 
-                        className="bg-orange-100 text-orange-700 p-3 rounded-full"
-                        aria-label="Copy fire department number"
-                      >
-                        <Clipboard className="h-5 w-5" />
-                      </button>
-                      {copiedText === 'fire' && (
-                        <span className="ml-2 text-green-600 text-sm font-semibold">Copied!</span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-lg">
-                    <div>
-                      <h3 className="font-bold text-emerald-800">European Emergency Number</h3>
-                      <p className="text-sm text-emerald-700">All emergencies</p>
-                    </div>
-                    <div className="flex items-center">
-                      <a href="tel:112" className="bg-emerald-200 text-emerald-800 p-3 rounded-full mr-2">
-                        <AlertTriangle className="h-6 w-6" />
-                      </a>
-                      <button 
-                        onClick={() => copyToClipboard("112", 'eu_emergency')} 
-                        className="bg-emerald-100 text-emerald-700 p-3 rounded-full"
-                        aria-label="Copy European emergency number"
-                      >
-                        <Clipboard className="h-5 w-5" />
-                      </button>
-                      {copiedText === 'eu_emergency' && (
-                        <span className="ml-2 text-green-600 text-sm font-semibold">Copied!</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
