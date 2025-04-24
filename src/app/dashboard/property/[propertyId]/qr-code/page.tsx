@@ -52,14 +52,17 @@ export default function PrintQR() {
         const guestUrl = `${window.location.origin}/guest/${propertyId}`
         setMenuUrl(guestUrl)
         
-        const qrCode = await QRCode.toDataURL(guestUrl, {
+        // Define color options for QR codes
+        const qrColorOptions = {
           width: 300,
           margin: 1,
           color: {
             dark: '#5e2bff',
             light: '#ffffff'
           }
-        })
+        }
+        
+        const qrCode = await QRCode.toDataURL(guestUrl, qrColorOptions)
         setQrCodeDataURL(qrCode)
         
         // Fetch WiFi credentials
@@ -72,12 +75,11 @@ export default function PrintQR() {
         if (!wifiError && wifiData) {
           setWifiCredentials(wifiData)
           
-          // Generate WiFi QR code
+          // Generate WiFi QR code with same color scheme
           const wifiString = `WIFI:T:WPA;S:${wifiData.network_name};P:${wifiData.password};;`
           const wifiQrCode = await QRCode.toDataURL(wifiString, {
-            errorCorrectionLevel: 'H',
-            margin: 1,
-            width: 150
+            ...qrColorOptions,
+            errorCorrectionLevel: 'H'
           })
           setWifiQrCodeURL(wifiQrCode)
         }
@@ -148,8 +150,7 @@ export default function PrintQR() {
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
       
       // Draw the main QR code positioned in the center of the designated area
-      // The position may need adjustment based on the exact frame image
-      const qrSize = Math.min(canvas.width, canvas.height) * 0.45 // Using 45% of the smallest dimension
+      const qrSize = Math.min(canvas.width, canvas.height) * 0.4 // Reduced to 40% of the smallest dimension
       const qrX = (canvas.width - qrSize) / 2
       const qrY = canvas.height * 0.4 // Positioned at 40% from the top
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
@@ -157,8 +158,8 @@ export default function PrintQR() {
       // Draw the WiFi QR code if available
       if (wifiImg && wifiQrCodeURL) {
         const wifiQrSize = qrSize * 0.4 // WiFi QR is 40% the size of the main QR
-        const wifiQrX = canvas.width * 0.65 // Positioned at 65% from the left
-        const wifiQrY = canvas.height * 0.85 // Positioned at 85% from the top
+        const wifiQrX = canvas.width * 0.6 // Moved more to the left (was 0.65)
+        const wifiQrY = canvas.height * 0.8 // Moved more to the top (was 0.85)
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
       }
       
