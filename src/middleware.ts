@@ -35,6 +35,11 @@ export async function middleware(req: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession()
 
+  // Reindirizza utenti non autenticati dalla root alla pagina di login
+  if (req.nextUrl.pathname === '/' && !session) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  }
+
   // Proteggi le rotte che richiedono autenticazione
   if (req.nextUrl.pathname.startsWith('/dashboard') && !session) {
     const redirectUrl = new URL('/auth/signin', req.url)
