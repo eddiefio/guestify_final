@@ -5,11 +5,19 @@ import { createServerClient } from '@supabase/ssr'
 const PUBLIC_FILE = /\.(.*)$/;
 const SUPPORTED_LOCALES = ['en', 'it', 'es', 'fr', 'zh'];
 
+// Elenco delle rotte da escludere dal middleware di localizzazione
+const EXCLUDED_ROUTES = [
+  '/_next',
+  '/api',
+  '/favicon.ico',
+  '/_not-found',
+  '/_error'
+];
+
 export async function middleware(req: NextRequest) {
-  // Non applicare ai file statici o alle API
+  // Non applicare ai file statici, API o altre rotte di sistema
   if (
-    req.nextUrl.pathname.startsWith('/_next') ||
-    req.nextUrl.pathname.includes('/api/') ||
+    EXCLUDED_ROUTES.some(route => req.nextUrl.pathname.startsWith(route)) ||
     PUBLIC_FILE.test(req.nextUrl.pathname)
   ) {
     return;
@@ -110,5 +118,14 @@ export async function middleware(req: NextRequest) {
 
 // Specifica su quali percorsi eseguire il middleware
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: [
+    /*
+     * Corrispondenza con tutte le rotte tranne:
+     * 1. /api (rotte API)
+     * 2. /_next (file statici di Next.js)
+     * 3. /_vercel (file interni di Vercel)
+     * 4. /favicon.ico, /robots.txt, /sitemap.xml (file comuni nella root)
+     */
+    '/((?!api|_next|_vercel|_static|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:jpg|png|gif|ico|svg)).*)'
+  ],
 }

@@ -1,12 +1,12 @@
 /** @type {import('next').NextConfig} */
-const { i18n } = require('./next-i18next.config.js');
+// La configurazione i18n viene rimossa perché non è compatibile con App Router
+// next-i18next funzionerà comunque con il nostro middleware personalizzato
 
 const nextConfig = {
   /* config options here */
   output: 'standalone',
   reactStrictMode: true,
   swcMinify: true,
-  i18n,
   
   // Disabilita il prerendering per le pagine protette
   experimental: {
