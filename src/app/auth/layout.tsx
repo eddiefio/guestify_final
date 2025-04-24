@@ -17,7 +17,7 @@ export default function AuthLayout({
           <div className="flex justify-center">
             <Link href="/">
               <Image 
-                src="/logo_guest.png" 
+                src="/images/logo_guest.png" 
                 alt="Guestify Logo" 
                 width={200} 
                 height={200} 
@@ -25,9 +25,6 @@ export default function AuthLayout({
               />
             </Link>
           </div>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            La piattaforma per gli host di affitti brevi
-          </p>
         </div>
 
         <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">

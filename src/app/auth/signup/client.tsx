@@ -6,16 +6,75 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 
-// Componente per la selezione del paese
+// Component for country selection
 const CountrySelect = ({ value, onChange, className, required }: any) => {
   const countries = [
-    { code: 'IT', name: 'Italia' },
-    { code: 'FR', name: 'Francia' },
-    { code: 'DE', name: 'Germania' },
-    { code: 'ES', name: 'Spagna' },
-    { code: 'UK', name: 'Regno Unito' },
-    { code: 'US', name: 'Stati Uniti' },
-    // Aggiungi altri paesi secondo necessità
+    { code: 'AF', name: 'Afghanistan' },
+    { code: 'AL', name: 'Albania' },
+    { code: 'DZ', name: 'Algeria' },
+    { code: 'AR', name: 'Argentina' },
+    { code: 'AU', name: 'Australia' },
+    { code: 'AT', name: 'Austria' },
+    { code: 'BE', name: 'Belgium' },
+    { code: 'BR', name: 'Brazil' },
+    { code: 'BG', name: 'Bulgaria' },
+    { code: 'CA', name: 'Canada' },
+    { code: 'CL', name: 'Chile' },
+    { code: 'CN', name: 'China' },
+    { code: 'CO', name: 'Colombia' },
+    { code: 'HR', name: 'Croatia' },
+    { code: 'CY', name: 'Cyprus' },
+    { code: 'CZ', name: 'Czech Republic' },
+    { code: 'DK', name: 'Denmark' },
+    { code: 'EG', name: 'Egypt' },
+    { code: 'EE', name: 'Estonia' },
+    { code: 'FI', name: 'Finland' },
+    { code: 'FR', name: 'France' },
+    { code: 'DE', name: 'Germany' },
+    { code: 'GR', name: 'Greece' },
+    { code: 'HK', name: 'Hong Kong' },
+    { code: 'HU', name: 'Hungary' },
+    { code: 'IS', name: 'Iceland' },
+    { code: 'IN', name: 'India' },
+    { code: 'ID', name: 'Indonesia' },
+    { code: 'IE', name: 'Ireland' },
+    { code: 'IL', name: 'Israel' },
+    { code: 'IT', name: 'Italy' },
+    { code: 'JP', name: 'Japan' },
+    { code: 'LV', name: 'Latvia' },
+    { code: 'LT', name: 'Lithuania' },
+    { code: 'LU', name: 'Luxembourg' },
+    { code: 'MY', name: 'Malaysia' },
+    { code: 'MT', name: 'Malta' },
+    { code: 'MX', name: 'Mexico' },
+    { code: 'MA', name: 'Morocco' },
+    { code: 'NL', name: 'Netherlands' },
+    { code: 'NZ', name: 'New Zealand' },
+    { code: 'NO', name: 'Norway' },
+    { code: 'PK', name: 'Pakistan' },
+    { code: 'PE', name: 'Peru' },
+    { code: 'PH', name: 'Philippines' },
+    { code: 'PL', name: 'Poland' },
+    { code: 'PT', name: 'Portugal' },
+    { code: 'RO', name: 'Romania' },
+    { code: 'RU', name: 'Russia' },
+    { code: 'SA', name: 'Saudi Arabia' },
+    { code: 'SG', name: 'Singapore' },
+    { code: 'SK', name: 'Slovakia' },
+    { code: 'ZA', name: 'South Africa' },
+    { code: 'KR', name: 'South Korea' },
+    { code: 'ES', name: 'Spain' },
+    { code: 'SE', name: 'Sweden' },
+    { code: 'CH', name: 'Switzerland' },
+    { code: 'TW', name: 'Taiwan' },
+    { code: 'TH', name: 'Thailand' },
+    { code: 'TR', name: 'Turkey' },
+    { code: 'UA', name: 'Ukraine' },
+    { code: 'AE', name: 'United Arab Emirates' },
+    { code: 'GB', name: 'United Kingdom' },
+    { code: 'US', name: 'United States' },
+    { code: 'VE', name: 'Venezuela' },
+    { code: 'VN', name: 'Vietnam' }
   ]
 
   return (
@@ -25,7 +84,7 @@ const CountrySelect = ({ value, onChange, className, required }: any) => {
       className={className}
       required={required}
     >
-      <option value="">Seleziona un paese</option>
+      <option value="">Select a country</option>
       {countries.map((country) => (
         <option key={country.code} value={country.code}>
           {country.name}
@@ -49,7 +108,7 @@ export default function SignUpClient() {
   const { signUp, isLoading, isAuthenticated } = useAuth()
   const router = useRouter()
 
-  // Reindirizza se già autenticato
+  // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
       router.push('/dashboard')
@@ -62,27 +121,27 @@ export default function SignUpClient() {
     
     if (isLoading) return
     
-    // Validazione
+    // Validation
     if (password !== confirmPassword) {
-      setError('Le password non corrispondono')
+      setError('Passwords do not match')
       return
     }
     
     if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri')
+      setError('Password must be at least 6 characters long')
       return
     }
     
     if (!terms) {
-      setError('Devi accettare i Termini e Condizioni')
+      setError('You must accept the Terms and Conditions')
       return
     }
     
     try {
       await signUp(email, password, name, country)
-      // Il reindirizzamento avverrà nel contesto di autenticazione
+      // Redirection will happen in the authentication context
     } catch (error: any) {
-      // Errore gestito in AuthContext
+      // Error handled in AuthContext
     }
   }
 
@@ -105,7 +164,7 @@ export default function SignUpClient() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Nome completo
+            Full Name
           </label>
           <input
             id="name"
@@ -156,7 +215,7 @@ export default function SignUpClient() {
         
         <div>
           <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-            Conferma Password
+            Confirm Password
           </label>
           <input
             id="confirmPassword"
@@ -170,7 +229,7 @@ export default function SignUpClient() {
         
         <div>
           <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-            Paese
+            Country
           </label>
           <CountrySelect
             id="country"
@@ -190,16 +249,16 @@ export default function SignUpClient() {
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm text-gray-600">
-              Ho letto e accetto i{' '}
+              I have read and accept the{' '}
               <a 
                 href="#" 
                 className="text-indigo-600 hover:text-indigo-500"
                 onClick={(e) => {
                   e.preventDefault()
-                  toast.success('I Termini e Condizioni saranno disponibili a breve')
+                  toast.success('Terms and Conditions will be available soon')
                 }}
               >
-                Termini e Condizioni
+                Terms and Conditions
               </a>
             </span>
           </label>
