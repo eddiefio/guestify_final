@@ -9,6 +9,13 @@ import { supabase } from '@/lib/supabase'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { toast } from 'react-hot-toast'
 
+// Dichiarazione per TypeScript: estende l'interfaccia Window per includere google
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
 // Definizione delle librerie Google Maps
 const libraries = ["places"];
 
@@ -37,7 +44,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
   // Caricamento dell'API Google Maps Places
   useEffect(() => {
     // Controlla se lo script Google Maps è già caricato
-    if (!window.google && !document.getElementById('google-maps-script')) {
+    if (!(window.google?.maps?.places) && !document.getElementById('google-maps-script')) {
       const googleMapsScript = document.createElement('script');
       googleMapsScript.id = 'google-maps-script';
       googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
@@ -54,7 +61,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
   // Inizializzazione di Google Places Autocomplete
   useEffect(() => {
-    if (placesLoaded && addressInputRef.current) {
+    if (placesLoaded && addressInputRef.current && window.google?.maps?.places) {
       const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
         fields: ['address_components', 'formatted_address', 'geometry'],
       });
@@ -110,7 +117,9 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
       return () => {
         // Pulizia
-        google.maps.event.clearInstanceListeners(autocomplete);
+        if (window.google?.maps) {
+          window.google.maps.event.clearInstanceListeners(autocomplete);
+        }
       };
     }
   }, [placesLoaded]);
