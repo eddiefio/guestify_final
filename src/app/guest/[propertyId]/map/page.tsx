@@ -1,10 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import Image from 'next/image'
+
+// Dichiarazione per TypeScript
+declare global {
+  interface Window {
+    google?: any;
+    initMap?: () => void;
+  }
+}
 
 export default function MapPage() {
   const params = useParams()
@@ -13,6 +21,98 @@ export default function MapPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [address, setAddress] = useState<string | null>(null)
+  const [mapLoaded, setMapLoaded] = useState(false)
+  const [coordinates, setCoordinates] = useState<{lat: number, lng: number} | null>(null)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const googleMapRef = useRef<any>(null)
+
+  // Caricamento dell'API Google Maps
+  useEffect(() => {
+    if (!window.google && !document.getElementById('google-maps-script')) {
+      // Funzione di callback quando la mappa è caricata
+      window.initMap = () => {
+        setMapLoaded(true)
+      }
+
+      const googleMapsScript = document.createElement('script')
+      googleMapsScript.id = 'google-maps-script'
+      googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places&callback=initMap`
+      googleMapsScript.async = true
+      googleMapsScript.defer = true
+      document.head.appendChild(googleMapsScript)
+
+      return () => {
+        window.initMap = undefined
+        const script = document.getElementById('google-maps-script')
+        if (script) {
+          script.remove()
+        }
+      }
+    } else if (window.google?.maps) {
+      setMapLoaded(true)
+    }
+  }, [])
+
+  // Funzione per geocodificare l'indirizzo
+  const geocodeAddress = async (address: string): Promise<{lat: number, lng: number} | null> => {
+    return new Promise((resolve) => {
+      if (!window.google?.maps?.Geocoder) {
+        resolve(null)
+        return
+      }
+
+      const geocoder = new window.google.maps.Geocoder()
+      geocoder.geocode({ address }, (results: any[], status: string) => {
+        if (status === 'OK' && results && results.length > 0) {
+          const location = results[0].geometry.location
+          resolve({
+            lat: location.lat(),
+            lng: location.lng()
+          })
+        } else {
+          console.error('Geocodifica fallita:', status)
+          resolve(null)
+        }
+      })
+    })
+  }
+
+  // Inizializzazione della mappa quando abbiamo le coordinate
+  useEffect(() => {
+    if (mapLoaded && coordinates && mapRef.current) {
+      const mapOptions = {
+        center: coordinates,
+        zoom: 15,
+        mapTypeControl: true,
+        fullscreenControl: true,
+        streetViewControl: true,
+        zoomControl: true,
+      }
+
+      // Crea una nuova mappa
+      const map = new window.google.maps.Map(mapRef.current, mapOptions)
+      googleMapRef.current = map
+
+      // Crea un marker per la posizione della proprietà
+      new window.google.maps.Marker({
+        position: coordinates,
+        map,
+        title: propertyName,
+        animation: window.google.maps.Animation.DROP
+      })
+    }
+  }, [mapLoaded, coordinates, propertyName])
+
+  // Geocodifica l'indirizzo quando viene caricato
+  useEffect(() => {
+    if (address && mapLoaded) {
+      geocodeAddress(address).then(coords => {
+        if (coords) {
+          setCoordinates(coords)
+        }
+      })
+    }
+  }, [address, mapLoaded])
 
   useEffect(() => {
     if (!propertyId) return
@@ -104,7 +204,7 @@ export default function MapPage() {
         </div>
       </header>
 
-      <main className="flex-grow max-w-7xl mx-auto px-4 py-6 sm:px-6">
+      <main className="flex-grow max-w-7xl mx-auto px-4 py-6 sm:px-6 w-full">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
@@ -121,14 +221,17 @@ export default function MapPage() {
                 <h2 className="text-lg font-bold text-[#5E2BFF]">Posizione della proprietà</h2>
                 {address && <p className="text-gray-600 mt-1">{address}</p>}
               </div>
-              <div className="aspect-w-16 aspect-h-9 bg-gray-200 h-72 flex items-center justify-center">
-                <div className="text-center p-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <p className="text-gray-500 mt-4">Mappa non disponibile al momento</p>
-                </div>
+              <div className="aspect-w-16 aspect-h-9 bg-gray-200 h-[calc(100vh-220px)] w-full">
+                {!mapLoaded || !coordinates ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center p-4">
+                      <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4 mx-auto"></div>
+                      <p className="text-gray-500">Caricamento mappa...</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div ref={mapRef} className="w-full h-full"></div>
+                )}
               </div>
             </div>
 
