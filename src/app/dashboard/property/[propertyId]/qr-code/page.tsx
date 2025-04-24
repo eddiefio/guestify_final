@@ -207,7 +207,7 @@ export default function PrintQR() {
       doc.text(propertyName, pageWidth / 2, 45, { align: 'center' })
       
       // Load the frame image
-      const frameImg = new Image()
+      const frameImg = new window.Image()
       frameImg.src = frameImagePath
       
       // Wait for the frame to load
@@ -236,7 +236,7 @@ export default function PrintQR() {
       const qrX = (canvas.width - qrSize) / 2
       const qrY = (canvas.height - qrSize) / 2
       
-      const qrImg = new Image()
+      const qrImg = new window.Image()
       qrImg.src = qrCodeDataURL
       
       // Wait for QR code to load
