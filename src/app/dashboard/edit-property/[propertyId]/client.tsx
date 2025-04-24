@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/layout/Layout'
@@ -8,6 +8,9 @@ import { CountrySelect } from '@/components/layout/CountrySelect'
 import { supabase } from '@/lib/supabase'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { toast } from 'react-hot-toast'
+
+// Definizione delle librerie Google Maps
+const libraries = ["places"];
 
 interface EditPropertyClientProps {
   propertyId: string
@@ -26,6 +29,91 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  
+  // Riferimento all'input dell'indirizzo per Google Places Autocomplete
+  const addressInputRef = useRef<HTMLInputElement>(null);
+  const [placesLoaded, setPlacesLoaded] = useState(false);
+
+  // Caricamento dell'API Google Maps Places
+  useEffect(() => {
+    // Controlla se lo script Google Maps è già caricato
+    if (!window.google && !document.getElementById('google-maps-script')) {
+      const googleMapsScript = document.createElement('script');
+      googleMapsScript.id = 'google-maps-script';
+      googleMapsScript.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+      googleMapsScript.async = true;
+      googleMapsScript.defer = true;
+      googleMapsScript.onload = () => {
+        setPlacesLoaded(true);
+      };
+      document.head.appendChild(googleMapsScript);
+    } else if (window.google?.maps?.places) {
+      setPlacesLoaded(true);
+    }
+  }, []);
+
+  // Inizializzazione di Google Places Autocomplete
+  useEffect(() => {
+    if (placesLoaded && addressInputRef.current) {
+      const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+        fields: ['address_components', 'formatted_address', 'geometry'],
+      });
+      
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        
+        if (!place.geometry) {
+          // L'utente ha premuto invio nella casella di input senza selezionare un luogo
+          return;
+        }
+        
+        // Estrazione dei componenti dell'indirizzo
+        const addressComponents: Record<string, string> = {};
+        
+        place.address_components?.forEach((component) => {
+          const componentType = component.types[0];
+          
+          switch (componentType) {
+            case 'street_number':
+              addressComponents.street_number = component.long_name;
+              break;
+            case 'route':
+              addressComponents.route = component.long_name;
+              break;
+            case 'locality':
+              addressComponents.city = component.long_name;
+              break;
+            case 'administrative_area_level_1':
+              addressComponents.state = component.long_name;
+              break;
+            case 'postal_code':
+              addressComponents.zip = component.long_name;
+              break;
+            case 'country':
+              addressComponents.country = component.long_name;
+              break;
+            default:
+              break;
+          }
+        });
+        
+        // Aggiornamento degli altri campi del form
+        setFormData(prev => ({
+          ...prev,
+          address: place.formatted_address || addressInputRef.current?.value || '',
+          city: addressComponents.city || '',
+          state: addressComponents.state || '',
+          zip: addressComponents.zip || '',
+          country: addressComponents.country || '',
+        }));
+      });
+
+      return () => {
+        // Pulizia
+        google.maps.event.clearInstanceListeners(autocomplete);
+      };
+    }
+  }, [placesLoaded]);
 
   useEffect(() => {
     if (!propertyId) return
@@ -140,6 +228,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
               <input
                 type="text"
                 name="address"
+                ref={addressInputRef}
                 value={formData.address}
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
