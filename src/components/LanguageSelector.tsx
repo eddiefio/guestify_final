@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
@@ -8,9 +8,7 @@ interface LanguageSelectorProps {
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) => {
   const router = useRouter();
-  const { i18n, t, ready } = useTranslation('common', {
-    useSuspense: false
-  });
+  const { i18n, t } = useTranslation('common');
   const [isOpen, setIsOpen] = useState(false);
   
   // Definisce le lingue supportate
@@ -23,70 +21,61 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
   ];
 
   // Ottiene la lingua corrente dal localStorage o imposta 'en' come predefinito
-  const [currentLanguage, setCurrentLanguage] = useState('en');
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('language') || 'en';
+    }
+    return 'en';
+  });
 
   useEffect(() => {
-    try {
-      const savedLanguage = localStorage.getItem('language') || 'en';
+    const savedLanguage = localStorage.getItem('language') || 'en';
+    if (currentLanguage !== savedLanguage) {
       setCurrentLanguage(savedLanguage);
-      if (i18n.language !== savedLanguage) {
-        i18n.changeLanguage(savedLanguage).catch(err => 
-          console.error('Error changing language:', err)
-        );
-      }
-    } catch (error) {
-      console.error('Error accessing localStorage:', error);
-      // Fallback in caso di errore (ad es. se localStorage non è disponibile)
-      if (i18n.language !== 'en') {
-        i18n.changeLanguage('en').catch(err => 
-          console.error('Error changing language to fallback:', err)
-        );
-      }
     }
-  }, [i18n]);
+    i18n.changeLanguage(savedLanguage);
+  }, [i18n, currentLanguage]);
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
+  const toggleDropdown = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
 
-  const changeLanguage = (langCode: string) => {
-    try {
-      i18n.changeLanguage(langCode).catch(err => 
-        console.error('Error changing language:', err)
-      );
-      localStorage.setItem('language', langCode);
-      setCurrentLanguage(langCode);
+  const changeLanguage = useCallback((langCode: string) => {
+    if (langCode === currentLanguage) {
       setIsOpen(false);
-    } catch (error) {
-      console.error('Error setting language:', error);
+      return;
     }
-  };
+    
+    i18n.changeLanguage(langCode);
+    localStorage.setItem('language', langCode);
+    setCurrentLanguage(langCode);
+    setIsOpen(false);
+  }, [currentLanguage, i18n]);
 
   // Trova il nome della lingua corrente
   const currentLangName = languages.find(lang => lang.code === currentLanguage)?.name || 'English';
 
-  // Se i18n non è pronto, mostra un pulsante semplificato
-  if (!ready) {
-    return (
-      <div className={`relative inline-block text-left ${className}`}>
-        <button
-          type="button"
-          className="flex items-center text-white text-sm font-medium rounded-md bg-[#5E2BFF] hover:bg-purple-700 px-3 py-1.5 focus:outline-none"
-          disabled
-        >
-          <span className="mr-1">🌐</span>
-          <span className="mx-1">English</span>
-        </button>
-      </div>
-    );
-  }
+  // Chiudi il dropdown quando si fa clic altrove
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleClickOutside = () => setIsOpen(false);
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isOpen]);
 
   return (
     <div className={`relative inline-block text-left ${className}`}>
       <button
         type="button"
         className="flex items-center text-white text-sm font-medium rounded-md bg-[#5E2BFF] hover:bg-purple-700 px-3 py-1.5 focus:outline-none"
-        onClick={toggleDropdown}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleDropdown();
+        }}
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
@@ -103,6 +92,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
           role="menu"
           aria-orientation="vertical"
           aria-labelledby="language-menu"
+          onClick={(e) => e.stopPropagation()}
         >
           <div className="py-1" role="none">
             {languages.map((lang) => (
@@ -124,4 +114,4 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
   );
 };
 
-export default LanguageSelector; 
+export default memo(LanguageSelector); 

@@ -5,8 +5,11 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
-import GuestHeader from '@/components/GuestHeader'
-import { useTranslations } from 'next-intl'
+// Modifichiamo l'importazione di i18n
+import '@/lib/i18n'
+import { useTranslation } from 'react-i18next'
+import LanguageSelector from '@/components/LanguageSelector'
+import LoadingIndicator from '@/components/LoadingIndicator'
 
 interface Category {
   id: string
@@ -31,7 +34,6 @@ interface WeatherData {
 }
 
 export default function GuestHomePage() {
-  const t = useTranslations('GuestView');
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
@@ -41,12 +43,33 @@ export default function GuestHomePage() {
   const [error, setError] = useState<string | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [translationsLoaded, setTranslationsLoaded] = useState(false)
+  
+  // Aggiungi hook useTranslation
+  const { t, i18n } = useTranslation('common', {
+    useSuspense: false,
+  })
+
+  // Aggiungiamo un useEffect per verificare quando le traduzioni sono pronte
+  useEffect(() => {
+    if (i18n.isInitialized && i18n.hasResourceBundle(i18n.language, 'common')) {
+      setTranslationsLoaded(true)
+    } else {
+      const handleLoaded = () => {
+        setTranslationsLoaded(true)
+      }
+      i18n.on('loaded', handleLoaded)
+      return () => {
+        i18n.off('loaded', handleLoaded)
+      }
+    }
+  }, [i18n])
 
   // List of essential categories with SVG icons
   const essentials = [
     {
       id: 'wifi',
-      name: 'Wifi',
+      name: t('guest.essentials.wifi'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.246-3.905 14.15 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
@@ -56,7 +79,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'checkin',
-      name: 'Checkin',
+      name: t('guest.essentials.checkin'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -66,7 +89,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'checkout',
-      name: 'Checkout',
+      name: t('guest.essentials.checkout'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -76,7 +99,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'house-rules',
-      name: 'House Rules',
+      name: t('guest.essentials.houseRules'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -86,11 +109,11 @@ export default function GuestHomePage() {
     },
   ]
 
-  // List of main categories
-  const [categories, setCategories] = useState<Category[]>([
+  // Aggiorno le categorie per usare le traduzioni
+  const getTranslatedCategories = () => [
     {
       id: 'how-things-work',
-      name: 'How Things Work',
+      name: t('guest.categories.howThingsWork'),
       icon: '⚙️',
       path: `/guest/${propertyId}/how-things-work`,
       color: 'bg-purple-100',
@@ -98,7 +121,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'before-leaving',
-      name: 'Before You Leave Home',
+      name: t('guest.categories.beforeLeaving'),
       icon: '🏠',
       path: `/guest/${propertyId}/before-leaving`,
       color: 'bg-pink-100',
@@ -106,7 +129,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'host-guides',
-      name: 'Host Guides',
+      name: t('guest.categories.hostGuides'),
       icon: '📚',
       path: `/guest/${propertyId}/city-guide`,
       color: 'bg-yellow-100',
@@ -114,13 +137,20 @@ export default function GuestHomePage() {
     },
     {
       id: 'book-again',
-      name: 'Book Again',
+      name: t('guest.categories.bookAgain'),
       icon: '📅',
       path: `/guest/${propertyId}/book-again`,
       color: 'bg-green-100',
       available: true
     }
-  ])
+  ]
+
+  // Aggiorno le categorie quando cambia la lingua
+  useEffect(() => {
+    setCategories(getTranslatedCategories())
+  }, [i18n.language])
+
+  const [categories, setCategories] = useState<Category[]>(getTranslatedCategories())
 
   // Function to get simulated weather data
   const fetchWeatherData = async (city: string) => {
@@ -131,7 +161,7 @@ export default function GuestHomePage() {
       condition: 'Sunny',
       icon: '☀️',
       city: city,
-      date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
+      date: new Date().toLocaleDateString(i18n.language, { weekday: 'long', day: 'numeric', month: 'long' }),
       forecast: [
         { day: 'Tue', temperature: 25, icon: '☀️' },
         { day: 'Wed', temperature: 22, icon: '⛅' },
@@ -206,14 +236,13 @@ export default function GuestHomePage() {
               setWeatherData(weather);
             }
             
-            // Continua con il resto del codice...
-            const updatedCategories = [...categories];
+            const updatedCategories = [...getTranslatedCategories()];
             
             // Check city_guides
             const { count: cityGuideCount } = await supabase
               .from('city_guides')
               .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id) // Usa l'ID corretto
+              .eq('property_id', normalizedId)
             
             if (cityGuideCount && cityGuideCount > 0) {
               const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
@@ -225,7 +254,6 @@ export default function GuestHomePage() {
             return;
           }
           
-          // Se ancora non abbiamo trovato la proprietà
           throw new Error('Proprietà non trovata. Verifica l\'ID o scansiona nuovamente il QR code.');
         }
 
@@ -242,13 +270,13 @@ export default function GuestHomePage() {
         }
 
         // Check which sections are available for this property
-        const updatedCategories = [...categories]
+        const updatedCategories = [...getTranslatedCategories()]
 
         // Check city_guides
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
           .select('id', { count: 'exact', head: true })
-          .eq('property_id', property.id)
+          .eq('property_id', normalizedId)
         
         if (cityGuideCount && cityGuideCount > 0) {
           const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
@@ -257,189 +285,136 @@ export default function GuestHomePage() {
 
         setCategories(updatedCategories)
         setLoading(false)
-      } catch (error: any) {
-        console.error('Error fetching property data:', error)
-        setError(error.message)
-        setLoading(false)
+      } catch (err: any) {
+        console.error('Error loading property:', err);
+        setError(err.message || 'Error loading property');
+        setLoading(false);
       }
     }
 
     fetchPropertyData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId])
 
+  // Modifichiamo il return per mostrare il loader quando necessario
+  if (!translationsLoaded || loading) {
+    return <LoadingIndicator text="Caricamento contenuti..." />;
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div className="bg-red-100 text-red-700 p-6 rounded-lg max-w-lg w-full text-center">
+          <h2 className="text-xl font-bold mb-2">Errore</h2>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <GuestHeader propertyName={propertyName} />
+    <div className="min-h-screen bg-gray-50">
+      {/* Header con il selettore di lingua */}
+      <header className="bg-white shadow-sm py-4 px-6 flex justify-between items-center">
+        <h1 className="text-xl font-bold text-[#5E2BFF]">
+          {propertyName || 'Property'}
+        </h1>
+        <LanguageSelector />
+      </header>
 
-      <main className="flex-grow w-full px-4 pt-4 pb-14 flex flex-col">
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
-          </div>
-        ) : error ? (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-            {error}
-          </div>
-        ) : (
-          <div className="w-full flex flex-col space-y-5 flex-grow">
-            {/* Search bar */}
-            <div className="relative w-full">
-              <form onSubmit={handleSearch} className="w-full">
-                <input
-                  type="text"
-                  placeholder="Search information..."
-                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button type="submit" className="absolute inset-y-0 left-0 pl-3 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </form>
-            </div>
-
-            {/* Essentials section */}
-            <div>
-              <h2 className="text-base font-bold text-[#5E2BFF] mb-3">Essentials</h2>
-              <div className="grid grid-cols-4 gap-2">
-                {essentials.map((item) => (
-                  <Link href={item.path} key={item.id} className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-1 bg-white rounded-full flex items-center justify-center shadow-sm">
-                      {item.icon}
-                    </div>
-                    <span className="text-xs text-gray-700 block font-medium">{item.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Main section with all buttons */}
-            <div className="flex flex-col space-y-3 w-full">
-              {/* Extra Services */}
+      <main className="max-w-4xl mx-auto p-6">
+        {/* Essentials */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-4">Essentials</h2>
+          <div className="grid grid-cols-4 gap-4">
+            {essentials.map((item) => (
               <Link
-                href={`/guest/${propertyId}/extra-services`}
-                className="relative flex items-center justify-center h-36 rounded-lg bg-[#5E2BFF] text-white shadow-md hover:bg-[#4318d6] transition-colors"
+                href={item.path}
+                key={item.id}
+                className="flex flex-col items-center justify-center bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow"
               >
-                <div className="text-center">
-                  <div className="text-3xl mb-2">💼</div>
-                  <div className="text-lg font-medium">{t('Buttons.ExtraServices')}</div>
-                </div>
+                <div className="mb-2">{item.icon}</div>
+                <span className="text-center text-sm font-medium">{item.name}</span>
               </Link>
+            ))}
+          </div>
+        </div>
 
-              {/* Four center buttons */}
-              <div className="grid grid-cols-2 gap-3 w-full">
-                <Link href={`/guest/${propertyId}/how-things-work`} className="w-full">
-                  <div className="bg-purple-100 rounded-xl p-4 shadow-sm border border-purple-200 w-full h-full">
-                    <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-800">How Things Work</h2>
-                    <p className="text-xs text-gray-600">Help with appliances</p>
-                  </div>
-                </Link>
-                <Link href={`/guest/${propertyId}/before-leaving`} className="w-full">
-                  <div className="bg-pink-100 rounded-xl p-4 shadow-sm border border-pink-200 w-full h-full">
-                    <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-800">Before You Leave Home</h2>
-                    <p className="text-xs text-gray-600">Essential informations before the trip</p>
-                  </div>
-                </Link>
-                <Link
-                  href={`/guest/${propertyId}/city-guide`}
-                  className="relative flex items-center justify-center h-36 rounded-lg bg-[#5E2BFF] text-white shadow-md hover:bg-[#4318d6] transition-colors"
-                >
-                  <div className="text-center">
-                    <div className="text-3xl mb-2">🏙️</div>
-                    <div className="text-lg font-medium">{t('Buttons.CityGuide')}</div>
-                  </div>
-                </Link>
-                <Link href={`/guest/${propertyId}/book-again`} className="w-full">
-                  <div className="bg-green-100 rounded-xl p-4 shadow-sm border border-green-200 w-full h-full">
-                    <div className="mb-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <h2 className="text-sm font-bold text-gray-800">Book Again</h2>
-                    <p className="text-xs text-gray-600">Reserve your next stay</p>
-                  </div>
-                </Link>
+        {/* Search */}
+        <div className="mb-6">
+          <form onSubmit={handleSearch} className="relative">
+            <input
+              type="text"
+              placeholder={t('guest.search.placeholder')}
+              className="w-full p-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] focus:border-transparent"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <button
+              type="submit"
+              className="absolute right-2 top-2 bg-[#5E2BFF] text-white px-4 py-1 rounded-md"
+            >
+              {t('guest.search.button')}
+            </button>
+            <svg
+              className="absolute left-3 top-3.5 h-5 w-5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </form>
+        </div>
+
+        {/* Weather */}
+        {weatherData && (
+          <div className="mb-8 bg-white p-4 rounded-lg shadow-sm">
+            <h2 className="text-lg font-semibold mb-2">{t('guest.weather.forecast')}</h2>
+            <div className="flex items-center">
+              <div className="text-4xl mr-4">{weatherData.icon}</div>
+              <div>
+                <p className="text-xl font-medium">{weatherData.temperature}°C</p>
+                <p>{weatherData.condition}</p>
+                <p className="text-sm text-gray-500">{weatherData.city}</p>
+                <p className="text-sm text-gray-500">{weatherData.date}</p>
               </div>
             </div>
 
-            {/* Weather Information */}
-            {weatherData && (
-              <div className="w-full mt-auto">
-                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Weather in {weatherData.city}</h2>
-                <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
-                  <div className="p-3">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-sm font-bold">Tuesday 22 April</h3>
-                        <p className="text-xs opacity-90">{weatherData.city}</p>
-                      </div>
-                      <div className="text-3xl">☀️</div>
-                    </div>
-                    <div className="mt-1 flex items-end">
-                      <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
-                      <span className="ml-2 text-xs opacity-90">{weatherData.condition}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-white/20 p-2">
-                    <div className="flex justify-between">
-                      {weatherData.forecast.map((day, index) => (
-                        <div key={index} className="text-center">
-                          <div className="text-xs font-bold">{day.day}</div>
-                          <div className="text-lg my-1">{day.icon}</div>
-                          <div className="text-xs">{day.temperature}°</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+            {/* Forecast */}
+            <div className="mt-4 flex justify-between">
+              {weatherData.forecast.map((day, index) => (
+                <div key={index} className="text-center">
+                  <p className="text-sm font-medium">{day.day}</p>
+                  <p className="text-xl my-1">{day.icon}</p>
+                  <p className="text-sm">{day.temperature}°C</p>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         )}
-      </main>
 
-      {/* Navigation bar */}
-      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-14">
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-          </Link>
+        {/* Categories */}
+        <div className="grid grid-cols-2 gap-4">
+          {categories
+            .filter((category) => category.available)
+            .map((category) => (
+              <Link
+                href={category.path}
+                key={category.id}
+                className={`${category.color} p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col items-center justify-center text-center`}
+              >
+                <span className="text-3xl mb-2">{category.icon}</span>
+                <h3 className="font-medium text-gray-800">{category.name}</h3>
+              </Link>
+            ))}
         </div>
-      </nav>
+      </main>
     </div>
   )
 } 
