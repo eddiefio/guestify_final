@@ -152,14 +152,14 @@ export default function PrintQR() {
       // Draw the main QR code positioned in the center of the designated area
       const qrSize = Math.min(canvas.width, canvas.height) * 0.4 // Reduced to 40% of the smallest dimension
       const qrX = (canvas.width - qrSize) / 2
-      const qrY = canvas.height * 0.38 // Positioned at 40% from the top
+      const qrY = canvas.height * 0.36 // Positioned at 40% from the top
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
       
       // Draw the WiFi QR code if available
       if (wifiImg && wifiQrCodeURL) {
-        const wifiQrSize = qrSize * 0.4 // WiFi QR is 40% the size of the main QR
+        const wifiQrSize = qrSize * 0.5 // WiFi QR is 40% the size of the main QR
         const wifiQrX = canvas.width * 0.6 // Moved more to the left (was 0.65)
-        const wifiQrY = canvas.height * 0.8 // Moved more to the top (was 0.85)
+        const wifiQrY = canvas.height * 0.75 // Moved more to the top (was 0.85)
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
       }
       
@@ -370,7 +370,7 @@ export default function PrintQR() {
         
         // Add WiFi details
         doc.setFontSize(10)
-        doc.text('WiFi Connection', wifiQrX - 10, wifiQrY - 7.5, { align: 'right' })
+        doc.text('WiFi Connection', wifiQrX - 10, wifiQrY - 8, { align: 'right' })
         doc.setFontSize(8)
         doc.text(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10, wifiQrY - 3, { align: 'right' })
         doc.text(`Password: ${wifiCredentials.password}`, wifiQrX - 10, wifiQrY + 2, { align: 'right' })
