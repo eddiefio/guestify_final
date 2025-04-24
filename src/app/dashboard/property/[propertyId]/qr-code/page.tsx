@@ -107,7 +107,7 @@ export default function PrintQR() {
       // Create a canvas for the preview
       const canvas = document.createElement('canvas')
       // Set the canvas to A4 proportions (210×297mm = 794×1123px at 96 DPI)
-      const scale = 0.5 // Scale down for preview
+      const scale = 1.0 // Aumentato per riempire meglio lo spazio
       canvas.width = 794 * scale
       canvas.height = 1123 * scale
       const ctx = canvas.getContext('2d')
@@ -123,15 +123,15 @@ export default function PrintQR() {
       const pageHeight = canvas.height
       
       // Draw title
-      ctx.font = `${16 * scale}px Arial`
+      ctx.font = `bold ${28 * scale}px Arial`
       ctx.fillStyle = '#5E2BFF'
       ctx.textAlign = 'center'
-      ctx.fillText('Guestify', pageWidth / 2, 30 * scale)
+      ctx.fillText('Guestify', pageWidth / 2, 60 * scale)
       
       // Draw property name
-      ctx.font = `bold ${14 * scale}px Arial`
+      ctx.font = `bold ${22 * scale}px Arial`
       ctx.fillStyle = '#000000'
-      ctx.fillText(propertyName, pageWidth / 2, 45 * scale)
+      ctx.fillText(propertyName, pageWidth / 2, 100 * scale)
       
       // Load the frame image and QR code
       const frameImg = new window.Image()
@@ -173,25 +173,26 @@ export default function PrintQR() {
       qrCtx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
       
       // Add the framed QR code to the preview
-      const qrWidth = 150 * scale
-      const qrHeight = 150 * scale
+      const qrWidth = 320 * scale // Increased size
+      const qrHeight = 320 * scale // Increased size
       const qrX1 = (pageWidth - qrWidth) / 2
-      const qrY1 = 70 * scale
+      const qrY1 = 140 * scale
       ctx.drawImage(qrCanvas, 0, 0, qrCanvas.width, qrCanvas.height, qrX1, qrY1, qrWidth, qrHeight)
       
       // Add description
-      ctx.font = `${12 * scale}px Arial`
+      ctx.font = `${16 * scale}px Arial`
       ctx.fillStyle = '#000000'
-      ctx.fillText('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 15 * scale)
+      ctx.textAlign = 'center'
+      ctx.fillText('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 30 * scale)
       
       // Add info about what's included
-      ctx.font = `bold ${14 * scale}px Arial`
+      ctx.font = `bold ${18 * scale}px Arial`
       ctx.fillStyle = '#5E2BFF'
       ctx.textAlign = 'left'
-      ctx.fillText("What's included:", 20 * scale, qrY1 + qrHeight + 35 * scale)
+      ctx.fillText("What's included:", 60 * scale, qrY1 + qrHeight + 70 * scale)
       
       // Add list of features
-      ctx.font = `${12 * scale}px Arial`
+      ctx.font = `${16 * scale}px Arial`
       ctx.fillStyle = '#000000'
       const features = [
         'House Information',
@@ -202,15 +203,15 @@ export default function PrintQR() {
       ]
       
       features.forEach((feature, index) => {
-        ctx.fillText(`• ${feature}`, 25 * scale, qrY1 + qrHeight + 50 * scale + (index * 8 * scale))
+        ctx.fillText(`• ${feature}`, 70 * scale, qrY1 + qrHeight + 100 * scale + (index * 30 * scale))
       })
       
       // Add WiFi QR code if available
       if (wifiQrCodeURL && wifiCredentials) {
         // Add WiFi QR code to bottom right
-        const wifiQrSize = 50 * scale
-        const wifiQrX = pageWidth - wifiQrSize - 20 * scale
-        const wifiQrY = pageHeight - wifiQrSize - 40 * scale
+        const wifiQrSize = 100 * scale // Increased size
+        const wifiQrX = pageWidth - wifiQrSize - 60 * scale
+        const wifiQrY = pageHeight - wifiQrSize - 80 * scale
         
         const wifiImg = new window.Image()
         wifiImg.src = wifiQrCodeURL
@@ -222,21 +223,21 @@ export default function PrintQR() {
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
         
         // Add WiFi details
-        ctx.font = `${10 * scale}px Arial`
+        ctx.font = `bold ${14 * scale}px Arial`
         ctx.textAlign = 'right'
-        ctx.fillText('WiFi Connection', wifiQrX - 10 * scale, wifiQrY - 8 * scale)
-        ctx.font = `${8 * scale}px Arial`
-        ctx.fillText(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10 * scale, wifiQrY - 3 * scale)
-        ctx.fillText(`Password: ${wifiCredentials.password}`, wifiQrX - 10 * scale, wifiQrY + 2 * scale)
+        ctx.fillText('WiFi Connection', wifiQrX - 10 * scale, wifiQrY - 15 * scale)
+        ctx.font = `${12 * scale}px Arial`
+        ctx.fillText(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10 * scale, wifiQrY - 0 * scale)
+        ctx.fillText(`Password: ${wifiCredentials.password}`, wifiQrX - 10 * scale, wifiQrY + 15 * scale)
       }
       
       // Add footer
-      ctx.font = `${10 * scale}px Arial`
+      ctx.font = `${12 * scale}px Arial`
       ctx.fillStyle = '#808080'
       ctx.textAlign = 'center'
-      ctx.fillText('Powered by Guestify', pageWidth / 2, pageHeight - 10 * scale)
-      ctx.font = `${8 * scale}px Arial`
-      ctx.fillText(menuUrl, pageWidth / 2, pageHeight - 5 * scale)
+      ctx.fillText('Powered by Guestify', pageWidth / 2, pageHeight - 30 * scale)
+      ctx.font = `${10 * scale}px Arial`
+      ctx.fillText(menuUrl, pageWidth / 2, pageHeight - 15 * scale)
       
       // Get the preview image URL
       setPreviewUrl(canvas.toDataURL('image/png'))
@@ -510,16 +511,12 @@ export default function PrintQR() {
               {/* A4 Preview Display */}
               <div className="mb-6 border border-gray-300 rounded-lg bg-gray-50 mx-auto overflow-hidden" ref={qrRef}>
                 {previewUrl ? (
-                  <div className="text-center">
-                    <p className="text-sm text-gray-500 bg-gray-100 py-2">Anteprima PDF (Formato A4)</p>
-                    <div className="relative w-full mx-auto shadow-sm">
-                      <img 
-                        src={previewUrl} 
-                        alt="PDF Preview" 
-                        className="w-full"
-                        style={{ maxHeight: '500px', objectFit: 'contain' }}
-                      />
-                    </div>
+                  <div>
+                    <img 
+                      src={previewUrl} 
+                      alt="PDF Preview" 
+                      className="w-full"
+                    />
                   </div>
                 ) : (
                   <div className="p-4 text-center text-gray-500">
