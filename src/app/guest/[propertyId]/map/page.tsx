@@ -120,24 +120,15 @@ export default function MapPage() {
     
     const encodedAddress = encodeURIComponent(address);
     
-    // Crea un elenco di URL per diverse app di mappe
-    const appleMapsUrl = `maps://maps.apple.com/?q=${encodedAddress}`;
-    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    const wazeUrl = `https://waze.com/ul?q=${encodedAddress}`;
+    // Rileva se siamo su iOS
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     
-    // Prova a usare l'API Web Share se disponibile
-    if (navigator.share) {
-      navigator.share({
-        title: propertyName,
-        text: `Location of ${propertyName}`,
-        url: googleMapsUrl
-      }).catch(err => {
-        // Fallback: apri Google Maps come opzione predefinita
-        window.open(googleMapsUrl, '_blank');
-      });
+    if (isIOS) {
+      // Tenta di aprire Apple Maps (che è presente su tutti i dispositivi iOS)
+      window.location.href = `maps://maps.apple.com/?q=${encodedAddress}`;
     } else {
-      // Fallback: apri Google Maps come opzione predefinita
-      window.open(googleMapsUrl, '_blank');
+      // Su dispositivi Android o altri, apre Google Maps
+      window.location.href = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
     }
   };
 
