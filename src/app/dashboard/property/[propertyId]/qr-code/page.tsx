@@ -174,86 +174,72 @@ export default function PrintQR() {
     try {
       setPrintingStatus('preparing')
       
-      // Create a canvas to combine QR code with frame
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
-      
-      if (!ctx) {
-        throw new Error("Could not get canvas context")
+      if (!previewUrl) {
+        throw new Error('Preview not generated yet')
       }
       
-      // Set canvas size to match the frame
-      canvas.width = 600
-      canvas.height = 600
-      
-      // Load the frame image and QR code
-      const frameImg = new window.Image()
-      const qrImg = new window.Image()
-      
-      // Create a promise to wait for both images to load
-      const loadImages = new Promise((resolve, reject) => {
-        let loadedCount = 0
-        
-        const onLoad = () => {
-          loadedCount++
-          if (loadedCount === 2) resolve(true)
-        }
-        
-        frameImg.onload = onLoad
-        qrImg.onload = onLoad
-        frameImg.onerror = reject
-        qrImg.onerror = reject
-        
-        frameImg.src = frameImagePath
-        qrImg.src = qrCodeDataURL
-      })
-      
-      await loadImages
-      
-      // Draw frame first
-      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
-      
-      // Draw QR code in the center
-      const qrSize = 300
-      const qrX = (canvas.width - qrSize) / 2
-      const qrY = (canvas.height - qrSize) / 2
-      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
-      
-      // Get the combined image URL
-      const combinedQrDataUrl = canvas.toDataURL('image/png')
-      
-      // Create PDF content similar to direct print
-      const printWindow = window.open('', '', 'height=500,width=500')
+      // Create a print window
+      const printWindow = window.open('', '', 'height=600,width=600')
       if (!printWindow) {
         throw new Error("Couldn't open print window")
       }
       
-      printWindow.document.write('<html><head><title>Print QR Code</title>')
-      printWindow.document.write('</head><body>')
-      printWindow.document.write('<div style="text-align:center; padding:20px;">')
-      printWindow.document.write('<h1 style="font-family:Arial,sans-serif;color:#5e2bff;">Guestify</h1>')
-      printWindow.document.write('<h2 style="font-family:Arial,sans-serif;color:#333;">' + propertyName + '</h2>')
-      printWindow.document.write('<div style="margin:30px 0;">')
-      printWindow.document.write('<img src="' + combinedQrDataUrl + '" style="width:400px;height:400px;" />')
-      printWindow.document.write('</div>')
-      printWindow.document.write('<p style="font-family:Arial,sans-serif;color:#666;">Scan this QR code to access information</p>')
-      printWindow.document.write('<p style="font-family:Arial,sans-serif;color:#999;font-size:12px;">' + menuUrl + '</p>')
-      printWindow.document.write('</div>')
-      printWindow.document.write('</body></html>')
+      // Write HTML content to the print window with the preview image
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Guestify QR Code - ${propertyName}</title>
+            <style>
+              body {
+                margin: 0;
+                padding: 0;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                min-height: 100vh;
+                background-color: white;
+              }
+              img {
+                max-width: 100%;
+                max-height: 100vh;
+                object-fit: contain;
+              }
+              @media print {
+                body {
+                  margin: 0;
+                  padding: 0;
+                }
+                img {
+                  width: 100%;
+                  height: auto;
+                  page-break-inside: avoid;
+                }
+              }
+            </style>
+          </head>
+          <body>
+            <img src="${previewUrl}" alt="Guestify QR Code" />
+          </body>
+        </html>
+      `)
+      
       printWindow.document.close()
       
-      // Wait for content to load
+      // Wait for content to load before printing
       setTimeout(() => {
-        printWindow.document.title = "guestify-qrcode.pdf"
         printWindow.print()
         setPrintingStatus('ready')
-        printWindow.close()
-      }, 250)
-
+        
+        // Close after printing
+        setTimeout(() => {
+          printWindow.close()
+        }, 500)
+      }, 500)
+      
     } catch (error: any) {
-      console.error('Error creating PDF:', error)
+      console.error('Error printing QR code:', error)
       setPrintingStatus('error')
-      setError(error.message || 'Failed to generate PDF')
+      setError(error.message || 'Failed to print QR code')
     }
   }
 
