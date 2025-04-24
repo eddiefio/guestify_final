@@ -1,0 +1,18 @@
+{
+  "GuestView": {
+    "Buttons": {
+      "ExtraServices": "Services Supplémentaires",
+      "HouseRules": "Règles de la Maison",
+      "WifiConnection": "Connexion Wifi",
+      "CityGuide": "Guide de la Ville"
+    },
+    "Header": {
+      "LanguageSelector": "Langue",
+      "English": "Anglais",
+      "Italian": "Italien",
+      "Spanish": "Espagnol",
+      "French": "Français",
+      "Chinese": "Chinois"
+    }
+  }
+} 

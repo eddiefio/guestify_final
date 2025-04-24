@@ -1,0 +1,18 @@
+{
+  "GuestView": {
+    "Buttons": {
+      "ExtraServices": "Extra Services",
+      "HouseRules": "House Rules",
+      "WifiConnection": "Wifi Connection",
+      "CityGuide": "City Guide"
+    },
+    "Header": {
+      "LanguageSelector": "Language",
+      "English": "English",
+      "Italian": "Italian",
+      "Spanish": "Spanish",
+      "French": "French",
+      "Chinese": "Chinese"
+    }
+  }
+} 
