@@ -150,14 +150,14 @@ export default function PrintQR() {
       ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
       
       // Draw the main QR code positioned in the center of the designated area
-      const qrSize = Math.min(canvas.width, canvas.height) * 0.4 // Reduced to 40% of the smallest dimension
+      const qrSize = Math.min(canvas.width, canvas.height) * 0.42 // Reduced to 40% of the smallest dimension
       const qrX = (canvas.width - qrSize) / 2
       const qrY = canvas.height * 0.36 // Positioned at 40% from the top
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
       
       // Draw the WiFi QR code if available
       if (wifiImg && wifiQrCodeURL) {
-        const wifiQrSize = qrSize * 0.5 // WiFi QR is 40% the size of the main QR
+        const wifiQrSize = qrSize * 0.6 // WiFi QR is 40% the size of the main QR
         const wifiQrX = canvas.width * 0.6 // Moved more to the left (was 0.65)
         const wifiQrY = canvas.height * 0.75 // Moved more to the top (was 0.85)
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
@@ -259,128 +259,53 @@ export default function PrintQR() {
 
   const downloadQRCode = async () => {
     try {
-      if (!qrCodeDataURL) {
-        throw new Error('QR code not generated yet')
+      if (!previewUrl) {
+        throw new Error('Preview not generated yet')
       }
       
-      // Create a PDF document (A4 format)
+      console.log("Starting download with preview image")
+      
+      // Create a PDF document in A4 format
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       })
       
-      // A4 dimensions in mm
-      const pageWidth = 210
-      const pageHeight = 297
-      
-      // Add title
-      doc.setFontSize(24)
-      doc.setTextColor(94, 43, 255) // #5E2BFF
-      doc.text('Guestify', pageWidth / 2, 30, { align: 'center' })
-      
-      // Add property name
-      doc.setFontSize(18)
-      doc.setTextColor(0, 0, 0)
-      doc.text(propertyName, pageWidth / 2, 45, { align: 'center' })
-      
-      // Load the frame image
-      const frameImg = new window.Image()
-      frameImg.src = frameImagePath
-      
-      // Wait for the frame to load
+      // Load the preview image
+      const img = new window.Image()
       await new Promise((resolve, reject) => {
-        frameImg.onload = resolve
-        frameImg.onerror = reject
+        img.onload = resolve
+        img.onerror = reject
+        img.src = previewUrl
       })
       
-      // Create a canvas to combine QR code with frame
-      const canvas = document.createElement('canvas')
-      const ctx = canvas.getContext('2d')
+      // Calculate dimensions to fit A4 keeping aspect ratio
+      const a4Width = 210 // A4 width in mm
+      const a4Height = 297 // A4 height in mm
       
-      if (!ctx) {
-        throw new Error("Could not get canvas context")
+      // Calculate the scaling ratio
+      const aspectRatio = img.width / img.height
+      
+      // Determine dimensions based on aspect ratio
+      let imgWidth, imgHeight
+      
+      if (aspectRatio > a4Width / a4Height) {
+        // Image is wider than A4 proportionally
+        imgWidth = a4Width
+        imgHeight = a4Width / aspectRatio
+      } else {
+        // Image is taller than A4 proportionally
+        imgHeight = a4Height
+        imgWidth = a4Height * aspectRatio
       }
       
-      // Set canvas size to match the frame
-      canvas.width = 600
-      canvas.height = 600
+      // Center the image on the page
+      const x = (a4Width - imgWidth) / 2
+      const y = (a4Height - imgHeight) / 2
       
-      // Draw frame first
-      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
-      
-      // Draw QR code in the center (make it slightly smaller)
-      const qrSize = 280 // Reduced from 300
-      const qrX = (canvas.width - qrSize) / 2
-      const qrY = (canvas.height - qrSize) / 2
-      
-      const qrImg = new window.Image()
-      qrImg.src = qrCodeDataURL
-      
-      // Wait for QR code to load
-      await new Promise((resolve, reject) => {
-        qrImg.onload = resolve
-        qrImg.onerror = reject
-      })
-      
-      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
-      
-      // Get the combined image URL
-      const combinedQrDataUrl = canvas.toDataURL('image/png')
-      
-      // Add the main QR code to the PDF (centered)
-      const qrWidth = 150
-      const qrHeight = 150
-      const qrX1 = (pageWidth - qrWidth) / 2
-      const qrY1 = 70
-      doc.addImage(combinedQrDataUrl, 'PNG', qrX1, qrY1, qrWidth, qrHeight)
-      
-      // Add description
-      doc.setFontSize(12)
-      doc.text('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 15, { align: 'center' })
-      
-      // Add info about what's included
-      doc.setFontSize(14)
-      doc.setTextColor(94, 43, 255)
-      doc.text("What's included:", 20, qrY1 + qrHeight + 35)
-      
-      // Add list of features
-      doc.setFontSize(12)
-      doc.setTextColor(0, 0, 0)
-      const features = [
-        'House Information',
-        'Extra Services',
-        'House Rules',
-        'WiFi Connection',
-        'City Guides'
-      ]
-      
-      features.forEach((feature, index) => {
-        doc.text(`• ${feature}`, 25, qrY1 + qrHeight + 50 + (index * 8))
-      })
-      
-      // Add WiFi QR code if available
-      if (wifiQrCodeURL && wifiCredentials) {
-        // Add WiFi QR code to bottom right
-        const wifiQrSize = 50
-        const wifiQrX = pageWidth - wifiQrSize - 20
-        const wifiQrY = pageHeight - wifiQrSize - 40
-        
-        doc.addImage(wifiQrCodeURL, 'PNG', wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
-        
-        // Add WiFi details
-        doc.setFontSize(10)
-        doc.text('WiFi Connection', wifiQrX - 10, wifiQrY - 8, { align: 'right' })
-        doc.setFontSize(8)
-        doc.text(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10, wifiQrY - 3, { align: 'right' })
-        doc.text(`Password: ${wifiCredentials.password}`, wifiQrX - 10, wifiQrY + 2, { align: 'right' })
-      }
-      
-      // Add footer
-      doc.setFontSize(10)
-      doc.setTextColor(128, 128, 128)
-      doc.text('Powered by Guestify', pageWidth / 2, pageHeight - 10, { align: 'center' })
-      doc.text(menuUrl, pageWidth / 2, pageHeight - 5, { align: 'center' })
+      // Add image to PDF
+      doc.addImage(previewUrl, 'PNG', x, y, imgWidth, imgHeight)
       
       // Save the PDF
       doc.save(`guestify-qr-${propertyName.replace(/\s+/g, '-').toLowerCase()}.pdf`)
