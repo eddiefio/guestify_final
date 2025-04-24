@@ -1,47 +1,39 @@
 {
-  "header": {
+  "app_title": "Guestify",
+  "language": "Lingua",
+  "language_en": "Inglese",
+  "language_it": "Italiano",
+  "language_es": "Spagnolo",
+  "language_fr": "Francese",
+  "language_zh": "Cinese",
+  "guest_categories": {
     "wifi": "Wifi",
     "checkin": "Check-in",
     "checkout": "Check-out",
-    "houseRules": "Regole della casa"
+    "house_rules": "Regole della Casa"
   },
-  "categories": {
-    "howThingsWork": "Come funziona",
-    "beforeLeaving": "Prima di partire",
-    "hostGuides": "Guide dell'host",
-    "bookAgain": "Prenota di nuovo"
+  "features": {
+    "how_things_work": "Come Funziona",
+    "before_leaving": "Prima di Uscire",
+    "host_guides": "Guide dell'Host",
+    "book_again": "Prenota di Nuovo"
   },
-  "search": {
-    "placeholder": "Cerca",
-    "button": "Cerca"
+  "actions": {
+    "read_more": "Leggi di più",
+    "connect": "Connetti",
+    "back": "Indietro",
+    "submit": "Invia",
+    "cancel": "Annulla"
   },
   "weather": {
+    "title": "Meteo",
     "forecast": "Previsioni"
   },
-  "extraServices": {
-    "title": "Servizi extra",
-    "subtitle": "Esplora i servizi aggiuntivi offerti dal tuo host",
-    "book": "Prenota",
-    "noServices": "Nessun servizio extra disponibile"
-  },
-  "houseRules": {
-    "title": "Regole della casa",
-    "subtitle": "Per favore familiarizza con le regole della casa",
-    "noRules": "Nessuna regola della casa disponibile"
-  },
-  "cityGuide": {
-    "title": "Guida della città",
-    "subtitle": "Esplora la città con la nostra guida",
-    "download": "Scarica guida",
-    "noGuide": "Nessuna guida della città disponibile"
-  },
-  "wifi": {
-    "title": "Connessione Wi-Fi",
-    "networkName": "Nome rete",
-    "password": "Password",
-    "connect": "Connetti",
-    "connected": "Connesso",
-    "instructions": "Istruzioni per connettersi"
-  },
-  "language": "Lingua"
+  "loading": "Caricamento...",
+  "rules_not_available": "Regole non disponibili",
+  "house_rules_for": "Regole della Casa per",
+  "please_follow_rules": "Si prega di seguire queste regole durante il soggiorno",
+  "no_house_rules": "Nessuna Regola della Casa",
+  "no_specific_rules": "Non sono state impostate regole specifiche per questa proprietà",
+  "to_all_services": "a tutti i servizi"
 } 

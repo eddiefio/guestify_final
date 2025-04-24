@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
-// La configurazione i18n viene rimossa perché non è compatibile con App Router
-// next-i18next funzionerà comunque con il nostro middleware personalizzato
+const { i18n } = require('./next-i18next.config');
 
 const nextConfig = {
   /* config options here */
@@ -24,6 +23,9 @@ const nextConfig = {
       },
     ],
   },
+  
+  // Configurazione i18n
+  i18n,
 };
 
 module.exports = nextConfig;

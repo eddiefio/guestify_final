@@ -1,47 +1,39 @@
 {
-  "header": {
+  "app_title": "Guestify",
+  "language": "Language",
+  "language_en": "English",
+  "language_it": "Italian",
+  "language_es": "Spanish",
+  "language_fr": "French",
+  "language_zh": "Chinese",
+  "guest_categories": {
     "wifi": "Wifi",
     "checkin": "Check-in",
     "checkout": "Check-out",
-    "houseRules": "House Rules"
+    "house_rules": "House Rules"
   },
-  "categories": {
-    "howThingsWork": "How Things Work",
-    "beforeLeaving": "Before You Leave Home",
-    "hostGuides": "Host Guides",
-    "bookAgain": "Book Again"
+  "features": {
+    "how_things_work": "How Things Work",
+    "before_leaving": "Before Leaving",
+    "host_guides": "Host Guides",
+    "book_again": "Book Again"
   },
-  "search": {
-    "placeholder": "Search",
-    "button": "Search"
+  "actions": {
+    "read_more": "Read more",
+    "connect": "Connect",
+    "back": "Back",
+    "submit": "Submit",
+    "cancel": "Cancel"
   },
   "weather": {
+    "title": "Weather",
     "forecast": "Forecast"
   },
-  "extraServices": {
-    "title": "Extra Services",
-    "subtitle": "Explore additional services offered by your host",
-    "book": "Book",
-    "noServices": "No extra services available"
-  },
-  "houseRules": {
-    "title": "House Rules",
-    "subtitle": "Please familiarize yourself with the house rules",
-    "noRules": "No house rules available"
-  },
-  "cityGuide": {
-    "title": "City Guide",
-    "subtitle": "Explore the city with our guide",
-    "download": "Download guide",
-    "noGuide": "No city guide available"
-  },
-  "wifi": {
-    "title": "Wi-Fi Connection",
-    "networkName": "Network name",
-    "password": "Password",
-    "connect": "Connect",
-    "connected": "Connected",
-    "instructions": "Instructions to connect"
-  },
-  "language": "Language"
+  "loading": "Loading...",
+  "rules_not_available": "Rules not available",
+  "house_rules_for": "House Rules for",
+  "please_follow_rules": "Please follow these rules during your stay",
+  "no_house_rules": "No House Rules",
+  "no_specific_rules": "No specific rules have been set for this property",
+  "to_all_services": "to all services"
 } 

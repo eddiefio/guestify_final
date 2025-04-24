@@ -1,47 +1,39 @@
 {
-  "header": {
+  "app_title": "Guestify",
+  "language": "Langue",
+  "language_en": "Anglais",
+  "language_it": "Italien",
+  "language_es": "Espagnol",
+  "language_fr": "Français",
+  "language_zh": "Chinois",
+  "guest_categories": {
     "wifi": "Wifi",
-    "checkin": "Arrivée",
-    "checkout": "Départ",
-    "houseRules": "Règles de la maison"
+    "checkin": "Check-in",
+    "checkout": "Check-out",
+    "house_rules": "Règles de la Maison"
   },
-  "categories": {
-    "howThingsWork": "Comment ça marche",
-    "beforeLeaving": "Avant de quitter la maison",
-    "hostGuides": "Guides de l'hôte",
-    "bookAgain": "Réserver à nouveau"
+  "features": {
+    "how_things_work": "Comment Ça Marche",
+    "before_leaving": "Avant de Partir",
+    "host_guides": "Guides de l'Hôte",
+    "book_again": "Réserver à Nouveau"
   },
-  "search": {
-    "placeholder": "Rechercher",
-    "button": "Rechercher"
+  "actions": {
+    "read_more": "Lire plus",
+    "connect": "Connecter",
+    "back": "Retour",
+    "submit": "Soumettre",
+    "cancel": "Annuler"
   },
   "weather": {
+    "title": "Météo",
     "forecast": "Prévisions"
   },
-  "extraServices": {
-    "title": "Services supplémentaires",
-    "subtitle": "Découvrez les services supplémentaires proposés par votre hôte",
-    "book": "Réserver",
-    "noServices": "Aucun service supplémentaire disponible"
-  },
-  "houseRules": {
-    "title": "Règles de la maison",
-    "subtitle": "Veuillez vous familiariser avec les règles de la maison",
-    "noRules": "Aucune règle de maison disponible"
-  },
-  "cityGuide": {
-    "title": "Guide de la ville",
-    "subtitle": "Explorez la ville avec notre guide",
-    "download": "Télécharger le guide",
-    "noGuide": "Aucun guide de ville disponible"
-  },
-  "wifi": {
-    "title": "Connexion Wi-Fi",
-    "networkName": "Nom du réseau",
-    "password": "Mot de passe",
-    "connect": "Connecter",
-    "connected": "Connecté",
-    "instructions": "Instructions pour se connecter"
-  },
-  "language": "Langue"
+  "loading": "Chargement...",
+  "rules_not_available": "Règles non disponibles",
+  "house_rules_for": "Règles de la Maison pour",
+  "please_follow_rules": "Veuillez suivre ces règles pendant votre séjour",
+  "no_house_rules": "Pas de Règles de Maison",
+  "no_specific_rules": "Aucune règle spécifique n'a été établie pour cette propriété",
+  "to_all_services": "à tous les services"
 } 

@@ -1,47 +1,39 @@
 {
-  "header": {
+  "app_title": "Guestify",
+  "language": "语言",
+  "language_en": "英语",
+  "language_it": "意大利语",
+  "language_es": "西班牙语",
+  "language_fr": "法语",
+  "language_zh": "中文",
+  "guest_categories": {
     "wifi": "无线网络",
     "checkin": "入住",
     "checkout": "退房",
-    "houseRules": "房屋规则"
+    "house_rules": "入住规则"
   },
-  "categories": {
-    "howThingsWork": "如何使用",
-    "beforeLeaving": "离开前",
-    "hostGuides": "房东指南",
-    "bookAgain": "再次预订"
+  "features": {
+    "how_things_work": "使用指南",
+    "before_leaving": "离开前",
+    "host_guides": "房东指南",
+    "book_again": "再次预订"
   },
-  "search": {
-    "placeholder": "搜索",
-    "button": "搜索"
+  "actions": {
+    "read_more": "阅读更多",
+    "connect": "连接",
+    "back": "返回",
+    "submit": "提交",
+    "cancel": "取消"
   },
   "weather": {
-    "forecast": "天气预报"
+    "title": "天气",
+    "forecast": "预报"
   },
-  "extraServices": {
-    "title": "额外服务",
-    "subtitle": "探索房东提供的额外服务",
-    "book": "预订",
-    "noServices": "没有可用的额外服务"
-  },
-  "houseRules": {
-    "title": "房屋规则",
-    "subtitle": "请熟悉房屋规则",
-    "noRules": "没有可用的房屋规则"
-  },
-  "cityGuide": {
-    "title": "城市指南",
-    "subtitle": "使用我们的指南探索城市",
-    "download": "下载指南",
-    "noGuide": "没有可用的城市指南"
-  },
-  "wifi": {
-    "title": "Wi-Fi 连接",
-    "networkName": "网络名称",
-    "password": "密码",
-    "connect": "连接",
-    "connected": "已连接",
-    "instructions": "连接说明"
-  },
-  "language": "语言"
+  "loading": "加载中...",
+  "rules_not_available": "规则不可用",
+  "house_rules_for": "房屋规则",
+  "please_follow_rules": "请在您入住期间遵守以下规则",
+  "no_house_rules": "没有入住规则",
+  "no_specific_rules": "该物业没有设定具体规则",
+  "to_all_services": "所有服务"
 } 

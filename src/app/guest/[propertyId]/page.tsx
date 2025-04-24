@@ -5,8 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
-import { useTranslation } from 'react-i18next'
-import LanguageSwitcher from '@/components/LanguageSwitcher'
+import LanguageSelector from '@/components/LanguageSelector'
+import { useTranslation, useDynamicTranslation } from '@/contexts/TranslationContext'
 
 interface Category {
   id: string
@@ -31,7 +31,7 @@ interface WeatherData {
 }
 
 export default function GuestHomePage() {
-  const { t } = useTranslation('common')
+  const { t } = useTranslation()
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
@@ -46,7 +46,7 @@ export default function GuestHomePage() {
   const essentials = [
     {
       id: 'wifi',
-      name: t('header.wifi'),
+      name: t('guest_categories.wifi'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.246-3.905 14.15 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
@@ -56,7 +56,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'checkin',
-      name: t('header.checkin'),
+      name: t('guest_categories.checkin'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
@@ -66,7 +66,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'checkout',
-      name: t('header.checkout'),
+      name: t('guest_categories.checkout'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -76,7 +76,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'house-rules',
-      name: t('header.houseRules'),
+      name: t('guest_categories.house_rules'),
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -90,7 +90,7 @@ export default function GuestHomePage() {
   const [categories, setCategories] = useState<Category[]>([
     {
       id: 'how-things-work',
-      name: t('categories.howThingsWork'),
+      name: t('features.how_things_work'),
       icon: '⚙️',
       path: `/guest/${propertyId}/how-things-work`,
       color: 'bg-purple-100',
@@ -98,7 +98,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'before-leaving',
-      name: t('categories.beforeLeaving'),
+      name: t('features.before_leaving'),
       icon: '🏠',
       path: `/guest/${propertyId}/before-leaving`,
       color: 'bg-pink-100',
@@ -106,7 +106,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'host-guides',
-      name: t('categories.hostGuides'),
+      name: t('features.host_guides'),
       icon: '📚',
       path: `/guest/${propertyId}/city-guide`,
       color: 'bg-yellow-100',
@@ -114,7 +114,7 @@ export default function GuestHomePage() {
     },
     {
       id: 'book-again',
-      name: t('categories.bookAgain'),
+      name: t('features.book_again'),
       icon: '📅',
       path: `/guest/${propertyId}/book-again`,
       color: 'bg-green-100',
@@ -149,6 +149,44 @@ export default function GuestHomePage() {
     // Implement search functionality here
     console.log('Searching:', searchQuery)
   }
+
+  // Aggiorna le categorie quando cambia la lingua
+  useEffect(() => {
+    setCategories([
+      {
+        id: 'how-things-work',
+        name: t('features.how_things_work'),
+        icon: '⚙️',
+        path: `/guest/${propertyId}/how-things-work`,
+        color: 'bg-purple-100',
+        available: true
+      },
+      {
+        id: 'before-leaving',
+        name: t('features.before_leaving'),
+        icon: '🏠',
+        path: `/guest/${propertyId}/before-leaving`,
+        color: 'bg-pink-100',
+        available: true
+      },
+      {
+        id: 'host-guides',
+        name: t('features.host_guides'),
+        icon: '📚',
+        path: `/guest/${propertyId}/city-guide`,
+        color: 'bg-yellow-100',
+        available: false
+      },
+      {
+        id: 'book-again',
+        name: t('features.book_again'),
+        icon: '📅',
+        path: `/guest/${propertyId}/book-again`,
+        color: 'bg-green-100',
+        available: true
+      }
+    ])
+  }, [t, propertyId])
 
   useEffect(() => {
     if (!propertyId) return
@@ -207,20 +245,9 @@ export default function GuestHomePage() {
             }
             
             // Continua con il resto del codice...
-            const updatedCategories = [...categories];
             
-            // Check city_guides
-            const { count: cityGuideCount } = await supabase
-              .from('city_guides')
-              .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id) // Usa l'ID corretto
+            // Il resto del codice originale...
             
-            if (cityGuideCount && cityGuideCount > 0) {
-              const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
-              if (index >= 0) updatedCategories[index].available = true
-            }
-            
-            setCategories(updatedCategories);
             setLoading(false);
             return;
           }
@@ -248,18 +275,18 @@ export default function GuestHomePage() {
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
           .select('id', { count: 'exact', head: true })
-          .eq('property_id', property.id)
+          .eq('property_id', normalizedId)
         
         if (cityGuideCount && cityGuideCount > 0) {
           const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
           if (index >= 0) updatedCategories[index].available = true
         }
-
+        
         setCategories(updatedCategories)
         setLoading(false)
-      } catch (error: any) {
-        console.error('Error fetching property data:', error)
-        setError(error.message)
+      } catch (error) {
+        console.error('Errore nel caricamento della proprietà:', error)
+        setError('Impossibile caricare i dettagli della proprietà. Riprova o contatta il servizio clienti.')
         setLoading(false)
       }
     }
@@ -267,165 +294,80 @@ export default function GuestHomePage() {
     fetchPropertyData()
   }, [propertyId])
 
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5E2BFF]"></div>
+    </div>
+  }
+
+  if (error) {
+    return <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+      <div className="text-red-500 text-lg">{error}</div>
+    </div>
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-3">
-        <div className="w-full px-4 flex items-center justify-between">
-          <div className="relative h-12 w-28">
-            <Image 
-              src="/images/logo_guest.png"
-              alt="Guestify Logo"
-              fill
-              className="object-contain object-left"
-            />
-          </div>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <div className="text-gray-700">{propertyName}</div>
-          </div>
-        </div>
-      </header>
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      {/* Header con nome della proprietà e selettore di lingua */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-800">{propertyName}</h1>
+        <LanguageSelector />
+      </div>
 
-      <main className="flex-grow w-full px-4 pt-4 pb-14 flex flex-col">
-        {loading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
-          </div>
-        ) : error ? (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-            {error}
-          </div>
-        ) : (
-          <div className="w-full flex flex-col space-y-5 flex-grow">
-            {/* Search bar */}
-            <div className="relative w-full">
-              <form onSubmit={handleSearch} className="w-full">
-                <input
-                  type="text"
-                  placeholder={t('search.placeholder')}
-                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button type="submit" className="absolute inset-y-0 left-0 pl-3 flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-              </form>
-            </div>
-
-            {/* Essentials section */}
+      {/* Sezione Meteo */}
+      {weatherData && (
+        <div className="bg-gradient-to-r from-blue-400 to-indigo-500 rounded-xl p-4 text-white mb-6">
+          <h2 className="text-lg font-medium mb-2">{t('weather.title')} - {weatherData.city}</h2>
+          <div className="flex items-center">
+            <div className="text-4xl mr-4">{weatherData.icon}</div>
             <div>
-              <h2 className="text-base font-bold text-[#5E2BFF] mb-3">Essentials</h2>
-              <div className="grid grid-cols-4 gap-2">
-                {essentials.map((item) => (
-                  <Link href={item.path} key={item.id} className="text-center">
-                    <div className="w-12 h-12 mx-auto mb-1 bg-white rounded-full flex items-center justify-center shadow-sm">
-                      {item.icon}
-                    </div>
-                    <span className="text-xs text-gray-700 block font-medium">{item.name}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* Main section with all buttons */}
-            <div className="flex flex-col space-y-3 w-full">
-              {/* Extra Services */}
-              <Link href={`/guest/${propertyId}/extra-services`} className="block w-full">
-                <div className="bg-[#5E2BFF] text-white rounded-xl p-4 shadow-sm w-full">
-                  <div className="flex items-center">
-                    <div className="mr-3">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-base font-bold">{t('extraServices.title')}</h2>
-                      <p className="text-xs text-white opacity-80">{t('extraServices.subtitle')}</p>
-                    </div>
-                    <div className="ml-auto">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              {/* Four center buttons */}
-              <div className="grid grid-cols-2 gap-3 w-full">
-                {categories.map((category) => (
-                  <Link href={category.path} key={category.id} className="w-full">
-                    <div className={`${category.color} rounded-xl p-4 shadow-sm border border-${category.color.replace('bg-', '')}-200 w-full h-full`}>
-                      <div className="mb-1">
-                        <span className="text-xl">{category.icon}</span>
-                      </div>
-                      <h2 className="text-sm font-bold text-gray-800">{category.name}</h2>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* Weather section */}
-              {weatherData && (
-                <div className="bg-white rounded-xl p-4 shadow-sm w-full">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-bold text-gray-800">{weatherData.city}</h3>
-                    <span className="text-xs text-gray-500">{weatherData.date}</span>
-                  </div>
-                  <div className="flex items-center mb-3">
-                    <div className="text-4xl mr-3">{weatherData.icon}</div>
-                    <div>
-                      <div className="text-xl font-bold">{weatherData.temperature}°C</div>
-                      <div className="text-sm text-gray-600">{weatherData.condition}</div>
-                    </div>
-                  </div>
-                  <h4 className="text-xs font-medium text-gray-600 mb-2">{t('weather.forecast')}</h4>
-                  <div className="flex justify-between">
-                    {weatherData.forecast.map((day, index) => (
-                      <div key={index} className="text-center">
-                        <div className="text-xs text-gray-600">{day.day}</div>
-                        <div className="text-lg my-1">{day.icon}</div>
-                        <div className="text-xs font-medium">{day.temperature}°</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="text-2xl font-semibold">{weatherData.temperature}°C</div>
+              <div>{weatherData.condition}</div>
+              <div className="text-sm opacity-80">{weatherData.date}</div>
             </div>
           </div>
-        )}
-      </main>
-
-      {/* Navigation bar */}
-      <nav className="bg-white border-t shadow-lg fixed bottom-0 left-0 right-0 w-full">
-        <div className="flex justify-around items-center h-14">
-          <Link href={`/guest/${propertyId}/contacts`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
+          <div className="mt-4">
+            <h3 className="text-sm font-medium mb-2">{t('weather.forecast')}:</h3>
+            <div className="flex justify-between">
+              {weatherData.forecast.map((day, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-xs">{day.day}</div>
+                  <div className="text-xl">{day.icon}</div>
+                  <div className="text-sm">{day.temperature}°</div>
+                </div>
+              ))}
             </div>
-          </Link>
-          <Link href={`/guest/${propertyId}`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-            </div>
-          </Link>
-          <Link href={`/guest/${propertyId}/map`} className="flex flex-col items-center justify-center">
-            <div className="text-[#5E2BFF]">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-              </svg>
-            </div>
-          </Link>
+          </div>
         </div>
-      </nav>
+      )}
+
+      {/* Categorie Essenziali */}
+      <div className="grid grid-cols-2 gap-3 mb-8">
+        {essentials.map((item) => (
+          <Link key={item.id} href={item.path}>
+            <div className="bg-white shadow-md rounded-xl p-4 flex items-center space-x-3 hover:shadow-lg transition-shadow">
+              <div className="flex-shrink-0">
+                {item.icon}
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-800">{item.name}</h3>
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Categorie Principali */}
+      <div className="grid grid-cols-2 gap-4">
+        {categories.filter(cat => cat.available).map((category) => (
+          <Link key={category.id} href={category.path}>
+            <div className={`${category.color} rounded-xl p-5 hover:shadow-md transition-shadow`}>
+              <div className="text-4xl mb-4">{category.icon}</div>
+              <h3 className="font-medium text-gray-800">{category.name}</h3>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 } 

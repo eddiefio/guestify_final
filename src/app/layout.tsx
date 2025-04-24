@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Providers from './providers'
 import Script from 'next/script'
-import '../lib/i18n' // Importa la configurazione i18n
 
 export const metadata: Metadata = {
   title: 'Guestify - La piattaforma per gli host di affitti brevi',
@@ -11,24 +10,30 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  params,
 }: {
-  children: React.ReactNode;
-  params?: { locale?: string };
+  children: React.ReactNode
 }) {
-  const locale = params?.locale || 'en';
-  
   return (
-    <html lang={locale}>
+    <html lang="it">
       <head>
         <link rel="icon" href="/favicon.ico" />
         <link
           href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <style>
+          {`
+            .skiptranslate {
+              display: none !important;
+            }
+            body {
+              top: 0 !important;
+            }
+          `}
+        </style>
       </head>
       <body className="font-sans">
-        <Providers locale={locale}>
+        <Providers>
           {children}
         </Providers>
         {/* Font Awesome */}
