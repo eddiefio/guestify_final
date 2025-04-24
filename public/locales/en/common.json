@@ -1,0 +1,47 @@
+{
+  "header": {
+    "wifi": "Wifi",
+    "checkin": "Check-in",
+    "checkout": "Check-out",
+    "houseRules": "House Rules"
+  },
+  "categories": {
+    "howThingsWork": "How Things Work",
+    "beforeLeaving": "Before You Leave Home",
+    "hostGuides": "Host Guides",
+    "bookAgain": "Book Again"
+  },
+  "search": {
+    "placeholder": "Search",
+    "button": "Search"
+  },
+  "weather": {
+    "forecast": "Forecast"
+  },
+  "extraServices": {
+    "title": "Extra Services",
+    "subtitle": "Explore additional services offered by your host",
+    "book": "Book",
+    "noServices": "No extra services available"
+  },
+  "houseRules": {
+    "title": "House Rules",
+    "subtitle": "Please familiarize yourself with the house rules",
+    "noRules": "No house rules available"
+  },
+  "cityGuide": {
+    "title": "City Guide",
+    "subtitle": "Explore the city with our guide",
+    "download": "Download guide",
+    "noGuide": "No city guide available"
+  },
+  "wifi": {
+    "title": "Wi-Fi Connection",
+    "networkName": "Network name",
+    "password": "Password",
+    "connect": "Connect",
+    "connected": "Connected",
+    "instructions": "Instructions to connect"
+  },
+  "language": "Language"
+} 

@@ -1,0 +1,47 @@
+{
+  "header": {
+    "wifi": "无线网络",
+    "checkin": "入住",
+    "checkout": "退房",
+    "houseRules": "房屋规则"
+  },
+  "categories": {
+    "howThingsWork": "如何使用",
+    "beforeLeaving": "离开前",
+    "hostGuides": "房东指南",
+    "bookAgain": "再次预订"
+  },
+  "search": {
+    "placeholder": "搜索",
+    "button": "搜索"
+  },
+  "weather": {
+    "forecast": "天气预报"
+  },
+  "extraServices": {
+    "title": "额外服务",
+    "subtitle": "探索房东提供的额外服务",
+    "book": "预订",
+    "noServices": "没有可用的额外服务"
+  },
+  "houseRules": {
+    "title": "房屋规则",
+    "subtitle": "请熟悉房屋规则",
+    "noRules": "没有可用的房屋规则"
+  },
+  "cityGuide": {
+    "title": "城市指南",
+    "subtitle": "使用我们的指南探索城市",
+    "download": "下载指南",
+    "noGuide": "没有可用的城市指南"
+  },
+  "wifi": {
+    "title": "Wi-Fi 连接",
+    "networkName": "网络名称",
+    "password": "密码",
+    "connect": "连接",
+    "connected": "已连接",
+    "instructions": "连接说明"
+  },
+  "language": "语言"
+} 

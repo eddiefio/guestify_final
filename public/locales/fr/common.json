@@ -1,0 +1,47 @@
+{
+  "header": {
+    "wifi": "Wifi",
+    "checkin": "Arrivée",
+    "checkout": "Départ",
+    "houseRules": "Règles de la maison"
+  },
+  "categories": {
+    "howThingsWork": "Comment ça marche",
+    "beforeLeaving": "Avant de quitter la maison",
+    "hostGuides": "Guides de l'hôte",
+    "bookAgain": "Réserver à nouveau"
+  },
+  "search": {
+    "placeholder": "Rechercher",
+    "button": "Rechercher"
+  },
+  "weather": {
+    "forecast": "Prévisions"
+  },
+  "extraServices": {
+    "title": "Services supplémentaires",
+    "subtitle": "Découvrez les services supplémentaires proposés par votre hôte",
+    "book": "Réserver",
+    "noServices": "Aucun service supplémentaire disponible"
+  },
+  "houseRules": {
+    "title": "Règles de la maison",
+    "subtitle": "Veuillez vous familiariser avec les règles de la maison",
+    "noRules": "Aucune règle de maison disponible"
+  },
+  "cityGuide": {
+    "title": "Guide de la ville",
+    "subtitle": "Explorez la ville avec notre guide",
+    "download": "Télécharger le guide",
+    "noGuide": "Aucun guide de ville disponible"
+  },
+  "wifi": {
+    "title": "Connexion Wi-Fi",
+    "networkName": "Nom du réseau",
+    "password": "Mot de passe",
+    "connect": "Connecter",
+    "connected": "Connecté",
+    "instructions": "Instructions pour se connecter"
+  },
+  "language": "Langue"
+} 

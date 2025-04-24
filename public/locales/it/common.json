@@ -1,0 +1,47 @@
+{
+  "header": {
+    "wifi": "Wifi",
+    "checkin": "Check-in",
+    "checkout": "Check-out",
+    "houseRules": "Regole della casa"
+  },
+  "categories": {
+    "howThingsWork": "Come funziona",
+    "beforeLeaving": "Prima di partire",
+    "hostGuides": "Guide dell'host",
+    "bookAgain": "Prenota di nuovo"
+  },
+  "search": {
+    "placeholder": "Cerca",
+    "button": "Cerca"
+  },
+  "weather": {
+    "forecast": "Previsioni"
+  },
+  "extraServices": {
+    "title": "Servizi extra",
+    "subtitle": "Esplora i servizi aggiuntivi offerti dal tuo host",
+    "book": "Prenota",
+    "noServices": "Nessun servizio extra disponibile"
+  },
+  "houseRules": {
+    "title": "Regole della casa",
+    "subtitle": "Per favore familiarizza con le regole della casa",
+    "noRules": "Nessuna regola della casa disponibile"
+  },
+  "cityGuide": {
+    "title": "Guida della città",
+    "subtitle": "Esplora la città con la nostra guida",
+    "download": "Scarica guida",
+    "noGuide": "Nessuna guida della città disponibile"
+  },
+  "wifi": {
+    "title": "Connessione Wi-Fi",
+    "networkName": "Nome rete",
+    "password": "Password",
+    "connect": "Connetti",
+    "connected": "Connesso",
+    "instructions": "Istruzioni per connettersi"
+  },
+  "language": "Lingua"
+} 
