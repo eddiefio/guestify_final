@@ -104,46 +104,19 @@ export default function PrintQR() {
     try {
       if (!qrCodeDataURL) return
       
-      // Create a canvas for the preview
-      const canvas = document.createElement('canvas')
-      // Set the canvas to A4 proportions (210×297mm = 794×1123px at 96 DPI)
-      const scale = 1.0 // Aumentato per riempire meglio lo spazio
-      canvas.width = 794 * scale
-      canvas.height = 1123 * scale
-      const ctx = canvas.getContext('2d')
-      
-      if (!ctx) return
-      
-      // Fill with white background
-      ctx.fillStyle = '#FFFFFF'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
-      
-      // A4 dimensions in px
-      const pageWidth = canvas.width
-      const pageHeight = canvas.height
-      
-      // Draw title
-      ctx.font = `bold ${28 * scale}px Arial`
-      ctx.fillStyle = '#5E2BFF'
-      ctx.textAlign = 'center'
-      ctx.fillText('Guestify', pageWidth / 2, 60 * scale)
-      
-      // Draw property name
-      ctx.font = `bold ${22 * scale}px Arial`
-      ctx.fillStyle = '#000000'
-      ctx.fillText(propertyName, pageWidth / 2, 100 * scale)
-      
-      // Load the frame image and QR code
+      // Load all necessary images first
       const frameImg = new window.Image()
       const qrImg = new window.Image()
+      let wifiImg = null
       
-      // Create a promise to wait for both images to load
+      // Make sure the QR code and frame are loaded
       await new Promise((resolve, reject) => {
         let loadedCount = 0
+        const totalImages = wifiQrCodeURL ? 3 : 2
         
         const onLoad = () => {
           loadedCount++
-          if (loadedCount === 2) resolve(true)
+          if (loadedCount === totalImages) resolve(true)
         }
         
         frameImg.onload = onLoad
@@ -153,91 +126,41 @@ export default function PrintQR() {
         
         frameImg.src = frameImagePath
         qrImg.src = qrCodeDataURL
+        
+        // Load WiFi QR code if available
+        if (wifiQrCodeURL) {
+          wifiImg = new window.Image()
+          wifiImg.onload = onLoad
+          wifiImg.onerror = reject
+          wifiImg.src = wifiQrCodeURL
+        }
       })
       
-      // Create QR code with frame on a separate canvas
-      const qrCanvas = document.createElement('canvas')
-      qrCanvas.width = 600
-      qrCanvas.height = 600
-      const qrCtx = qrCanvas.getContext('2d')
+      // Create canvas with the same dimensions as the frame
+      const canvas = document.createElement('canvas')
+      canvas.width = frameImg.width 
+      canvas.height = frameImg.height
+      const ctx = canvas.getContext('2d')
       
-      if (!qrCtx) return
+      if (!ctx) return
       
-      // Draw frame first
-      qrCtx.drawImage(frameImg, 0, 0, qrCanvas.width, qrCanvas.height)
+      // Draw the frame first
+      ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height)
       
-      // Draw QR code in the center (make it slightly smaller)
-      const qrSize = 280 // Reduced from 300
-      const qrX = (qrCanvas.width - qrSize) / 2
-      const qrY = (qrCanvas.height - qrSize) / 2
-      qrCtx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
+      // Draw the main QR code positioned in the center of the designated area
+      // The position may need adjustment based on the exact frame image
+      const qrSize = Math.min(canvas.width, canvas.height) * 0.45 // Using 45% of the smallest dimension
+      const qrX = (canvas.width - qrSize) / 2
+      const qrY = canvas.height * 0.4 // Positioned at 40% from the top
+      ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
       
-      // Add the framed QR code to the preview
-      const qrWidth = 320 * scale // Increased size
-      const qrHeight = 320 * scale // Increased size
-      const qrX1 = (pageWidth - qrWidth) / 2
-      const qrY1 = 140 * scale
-      ctx.drawImage(qrCanvas, 0, 0, qrCanvas.width, qrCanvas.height, qrX1, qrY1, qrWidth, qrHeight)
-      
-      // Add description
-      ctx.font = `${16 * scale}px Arial`
-      ctx.fillStyle = '#000000'
-      ctx.textAlign = 'center'
-      ctx.fillText('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 30 * scale)
-      
-      // Add info about what's included
-      ctx.font = `bold ${18 * scale}px Arial`
-      ctx.fillStyle = '#5E2BFF'
-      ctx.textAlign = 'left'
-      ctx.fillText("What's included:", 60 * scale, qrY1 + qrHeight + 70 * scale)
-      
-      // Add list of features
-      ctx.font = `${16 * scale}px Arial`
-      ctx.fillStyle = '#000000'
-      const features = [
-        'House Information',
-        'Extra Services',
-        'House Rules',
-        'WiFi Connection',
-        'City Guides'
-      ]
-      
-      features.forEach((feature, index) => {
-        ctx.fillText(`• ${feature}`, 70 * scale, qrY1 + qrHeight + 100 * scale + (index * 30 * scale))
-      })
-      
-      // Add WiFi QR code if available
-      if (wifiQrCodeURL && wifiCredentials) {
-        // Add WiFi QR code to bottom right
-        const wifiQrSize = 100 * scale // Increased size
-        const wifiQrX = pageWidth - wifiQrSize - 60 * scale
-        const wifiQrY = pageHeight - wifiQrSize - 80 * scale
-        
-        const wifiImg = new window.Image()
-        wifiImg.src = wifiQrCodeURL
-        
-        await new Promise((resolve) => {
-          wifiImg.onload = resolve
-        })
-        
+      // Draw the WiFi QR code if available
+      if (wifiImg && wifiQrCodeURL) {
+        const wifiQrSize = qrSize * 0.4 // WiFi QR is 40% the size of the main QR
+        const wifiQrX = canvas.width * 0.65 // Positioned at 65% from the left
+        const wifiQrY = canvas.height * 0.85 // Positioned at 85% from the top
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
-        
-        // Add WiFi details
-        ctx.font = `bold ${14 * scale}px Arial`
-        ctx.textAlign = 'right'
-        ctx.fillText('WiFi Connection', wifiQrX - 10 * scale, wifiQrY - 15 * scale)
-        ctx.font = `${12 * scale}px Arial`
-        ctx.fillText(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10 * scale, wifiQrY - 0 * scale)
-        ctx.fillText(`Password: ${wifiCredentials.password}`, wifiQrX - 10 * scale, wifiQrY + 15 * scale)
       }
-      
-      // Add footer
-      ctx.font = `${12 * scale}px Arial`
-      ctx.fillStyle = '#808080'
-      ctx.textAlign = 'center'
-      ctx.fillText('Powered by Guestify', pageWidth / 2, pageHeight - 30 * scale)
-      ctx.font = `${10 * scale}px Arial`
-      ctx.fillText(menuUrl, pageWidth / 2, pageHeight - 15 * scale)
       
       // Get the preview image URL
       setPreviewUrl(canvas.toDataURL('image/png'))
@@ -508,16 +431,14 @@ export default function PrintQR() {
                 Place this QR code in your property so guests can easily access information.
               </p>
 
-              {/* A4 Preview Display */}
-              <div className="mb-6 border border-gray-300 rounded-lg bg-gray-50 mx-auto overflow-hidden" ref={qrRef}>
+              {/* Frame Preview Display */}
+              <div className="mb-6 mx-auto overflow-hidden flex justify-center" ref={qrRef}>
                 {previewUrl ? (
-                  <div>
-                    <img 
-                      src={previewUrl} 
-                      alt="PDF Preview" 
-                      className="w-full"
-                    />
-                  </div>
+                  <img 
+                    src={previewUrl} 
+                    alt="QR Code Preview" 
+                    className="w-full max-w-md object-contain"
+                  />
                 ) : (
                   <div className="p-4 text-center text-gray-500">
                     <p>Generazione anteprima...</p>
