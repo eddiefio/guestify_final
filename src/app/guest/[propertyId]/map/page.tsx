@@ -70,7 +70,7 @@ export default function MapPage() {
             lng: location.lng()
           })
         } else {
-          console.error('Geocodifica fallita:', status)
+          console.error('Geocode failed:', status)
           resolve(null)
         }
       })
@@ -114,6 +114,33 @@ export default function MapPage() {
     }
   }, [address, mapLoaded])
 
+  // Funzione per aprire l'indirizzo nell'app di mappe preferita
+  const openInMapsApp = () => {
+    if (!address) return;
+    
+    const encodedAddress = encodeURIComponent(address);
+    
+    // Crea un elenco di URL per diverse app di mappe
+    const appleMapsUrl = `maps://maps.apple.com/?q=${encodedAddress}`;
+    const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+    const wazeUrl = `https://waze.com/ul?q=${encodedAddress}`;
+    
+    // Prova a usare l'API Web Share se disponibile
+    if (navigator.share) {
+      navigator.share({
+        title: propertyName,
+        text: `Location of ${propertyName}`,
+        url: googleMapsUrl
+      }).catch(err => {
+        // Fallback: apri Google Maps come opzione predefinita
+        window.open(googleMapsUrl, '_blank');
+      });
+    } else {
+      // Fallback: apri Google Maps come opzione predefinita
+      window.open(googleMapsUrl, '_blank');
+    }
+  };
+
   useEffect(() => {
     if (!propertyId) return
 
@@ -122,15 +149,15 @@ export default function MapPage() {
         setLoading(true)
 
         // Debug: mostra l'ID della proprietà
-        console.log('Mappa - Tentativo di caricare proprietà con ID:', propertyId);
+        console.log('Map - Trying to load property with ID:', propertyId);
         
         if (!propertyId) {
-          throw new Error('ID della proprietà mancante');
+          throw new Error('Property ID missing');
         }
         
         // Normalizza l'ID (rimuovi spazi, converti in minuscolo)
         const normalizedId = propertyId.toString().trim();
-        console.log('ID normalizzato:', normalizedId);
+        console.log('Normalized ID:', normalizedId);
 
         // Fetch property details
         const { data: properties, error: propError } = await supabase
@@ -138,16 +165,16 @@ export default function MapPage() {
           .select('name, address')
           .eq('id', normalizedId)
         
-        console.log('Risposta Supabase:', { data: properties, error: propError });
+        console.log('Supabase response:', { data: properties, error: propError });
         
         if (propError) {
-          console.error('Errore Supabase:', propError);
+          console.error('Supabase error:', propError);
           throw propError;
         }
 
         // Se non ci sono proprietà, prova a cercare con ID diversi (maiuscole/minuscole)
         if (!properties || properties.length === 0) {
-          console.log('Proprietà non trovata, tentativo con ricerca più ampia...');
+          console.log('Property not found, trying with broader search...');
           
           // Prova una query ilike (case insensitive)
           const { data: propertiesAlt, error: errorAlt } = await supabase
@@ -156,7 +183,7 @@ export default function MapPage() {
             .ilike('id', `%${normalizedId}%`)
             .limit(1);
           
-          console.log('Risultato ricerca alternativa:', { data: propertiesAlt, error: errorAlt });
+          console.log('Alternative search result:', { data: propertiesAlt, error: errorAlt });
           
           if (propertiesAlt && propertiesAlt.length > 0) {
             const property = propertiesAlt[0];
@@ -167,7 +194,7 @@ export default function MapPage() {
           }
           
           // Se ancora non abbiamo trovato la proprietà
-          throw new Error('Proprietà non trovata. Verifica l\'ID o scansiona nuovamente il QR code.');
+          throw new Error('Property not found. Please verify the ID or scan the QR code again.');
         }
 
         // Se ci sono più proprietà, usa la prima
@@ -198,7 +225,7 @@ export default function MapPage() {
                 className="object-contain"
               />
             </div>
-            <h1 className="text-xl font-bold text-[#5E2BFF] ml-2">Mappa</h1>
+            <h1 className="text-xl font-bold text-[#5E2BFF] ml-2">Map</h1>
           </div>
           <div className="text-gray-700">{propertyName}</div>
         </div>
@@ -208,7 +235,7 @@ export default function MapPage() {
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
-            <p className="ml-3 text-gray-600 font-medium">Caricamento informazioni...</p>
+            <p className="ml-3 text-gray-600 font-medium">Loading information...</p>
           </div>
         ) : error ? (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
@@ -218,64 +245,34 @@ export default function MapPage() {
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm overflow-hidden">
               <div className="p-4 border-b border-[#5E2BFF]/20">
-                <h2 className="text-lg font-bold text-[#5E2BFF]">Posizione della proprietà</h2>
+                <h2 className="text-lg font-bold text-[#5E2BFF]">Property Location</h2>
                 {address && <p className="text-gray-600 mt-1">{address}</p>}
               </div>
-              <div className="aspect-w-16 aspect-h-9 bg-gray-200 h-[calc(100vh-220px)] w-full">
+              <div className="aspect-w-16 aspect-h-9 bg-gray-200 h-[calc(100vh-260px)] w-full">
                 {!mapLoaded || !coordinates ? (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center p-4">
                       <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4 mx-auto"></div>
-                      <p className="text-gray-500">Caricamento mappa...</p>
+                      <p className="text-gray-500">Loading map...</p>
                     </div>
                   </div>
                 ) : (
                   <div ref={mapRef} className="w-full h-full"></div>
                 )}
               </div>
-            </div>
-
-            <div className="space-y-4">
-              <h3 className="text-lg font-bold text-[#5E2BFF]">Luoghi di interesse nelle vicinanze</h3>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-[#5E2BFF]/10 mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-bold">Ristoranti</h4>
-                    <p className="text-sm text-gray-600">Scopri i ristoranti vicini</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-[#5E2BFF]/10 mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-bold">Supermercati</h4>
-                    <p className="text-sm text-gray-600">Trova i supermercati nella zona</p>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-[#5E2BFF]/10 mr-4">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#5E2BFF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h4 className="font-bold">Trasporti</h4>
-                    <p className="text-sm text-gray-600">Fermate degli autobus e stazioni vicine</p>
-                  </div>
-                </div>
+              
+              {/* Pulsante per aprire nelle app di mappe */}
+              <div className="p-4 bg-white border-t border-[#5E2BFF]/20">
+                <button
+                  onClick={openInMapsApp}
+                  className="w-full py-3 px-4 bg-[#5E2BFF] text-white rounded-lg flex items-center justify-center font-medium hover:bg-[#4A22CC] transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Open in Maps App
+                </button>
               </div>
             </div>
           </div>
