@@ -8,7 +8,9 @@ interface LanguageSelectorProps {
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) => {
   const router = useRouter();
-  const { i18n, t } = useTranslation('common');
+  const { i18n, t, ready } = useTranslation('common', {
+    useSuspense: false
+  });
   const [isOpen, setIsOpen] = useState(false);
   
   // Definisce le lingue supportate
@@ -24,9 +26,23 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
   const [currentLanguage, setCurrentLanguage] = useState('en');
 
   useEffect(() => {
-    const savedLanguage = localStorage.getItem('language') || 'en';
-    setCurrentLanguage(savedLanguage);
-    i18n.changeLanguage(savedLanguage);
+    try {
+      const savedLanguage = localStorage.getItem('language') || 'en';
+      setCurrentLanguage(savedLanguage);
+      if (i18n.language !== savedLanguage) {
+        i18n.changeLanguage(savedLanguage).catch(err => 
+          console.error('Error changing language:', err)
+        );
+      }
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+      // Fallback in caso di errore (ad es. se localStorage non è disponibile)
+      if (i18n.language !== 'en') {
+        i18n.changeLanguage('en').catch(err => 
+          console.error('Error changing language to fallback:', err)
+        );
+      }
+    }
   }, [i18n]);
 
   const toggleDropdown = () => {
@@ -34,14 +50,36 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
   };
 
   const changeLanguage = (langCode: string) => {
-    i18n.changeLanguage(langCode);
-    localStorage.setItem('language', langCode);
-    setCurrentLanguage(langCode);
-    setIsOpen(false);
+    try {
+      i18n.changeLanguage(langCode).catch(err => 
+        console.error('Error changing language:', err)
+      );
+      localStorage.setItem('language', langCode);
+      setCurrentLanguage(langCode);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error setting language:', error);
+    }
   };
 
   // Trova il nome della lingua corrente
   const currentLangName = languages.find(lang => lang.code === currentLanguage)?.name || 'English';
+
+  // Se i18n non è pronto, mostra un pulsante semplificato
+  if (!ready) {
+    return (
+      <div className={`relative inline-block text-left ${className}`}>
+        <button
+          type="button"
+          className="flex items-center text-white text-sm font-medium rounded-md bg-[#5E2BFF] hover:bg-purple-700 px-3 py-1.5 focus:outline-none"
+          disabled
+        >
+          <span className="mr-1">🌐</span>
+          <span className="mx-1">English</span>
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className={`relative inline-block text-left ${className}`}>

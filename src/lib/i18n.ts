@@ -2,6 +2,7 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import Backend from 'i18next-http-backend';
 import LanguageDetector from 'i18next-browser-languagedetector';
+import { defaultResources } from './i18n-resources';
 
 // Inizializza i18next con le configurazioni necessarie
 i18n
@@ -13,10 +14,12 @@ i18n
   .use(initReactI18next)
   // Inizializza i18next
   .init({
+    // Risorse predefinite caricate subito
+    resources: defaultResources,
     // Lingua predefinita
     fallbackLng: 'en',
-    // Abilita la modalità di debug in sviluppo
-    debug: process.env.NODE_ENV === 'development',
+    // Disabilita la modalità di debug in produzione
+    debug: false,
     // Namespace predefinito
     defaultNS: 'common',
     // Opzioni di rilevamento lingua (prioritizzando localStorage)
@@ -29,12 +32,26 @@ i18n
     backend: {
       // Percorso per caricare le traduzioni
       loadPath: '/locales/{{lng}}/{{ns}}.json',
+      // Riduce il timeout per evitare blocchi
+      requestOptions: {
+        timeout: 3000 // 3 secondi di timeout
+      }
     },
     // Opzioni di interpolazione
     interpolation: {
       // React già fa l'escape dei valori per prevenire XSS
       escapeValue: false,
     },
-  });
+    // Strategia di fallback in caso di errore
+    partialBundledLanguages: true,
+    load: 'languageOnly', // Carica solo la lingua base (en invece di en-US)
+    // Non bloccare l'UI se le traduzioni non sono disponibili
+    react: {
+      useSuspense: false
+    }
+  }).catch(error => console.error('i18n initialization error:', error));
+
+// Precarica la lingua inglese per evitare ritardi
+i18n.loadLanguages('en');
 
 export default i18n; 

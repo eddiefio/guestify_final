@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
@@ -32,7 +32,29 @@ interface WeatherData {
   }>
 }
 
-export default function GuestHomePage() {
+// Loading fallback component
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex justify-center items-center bg-gray-50">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+// Componente principale avvolto in Suspense
+export default function GuestHomePageWrapper() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <GuestHomePage />
+    </Suspense>
+  );
+}
+
+// Il componente principale separato
+function GuestHomePage() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
@@ -42,9 +64,19 @@ export default function GuestHomePage() {
   const [error, setError] = useState<string | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [i18nReady, setI18nReady] = useState(false)
   
-  // Aggiungi hook useTranslation
-  const { t, i18n } = useTranslation('common')
+  // Uso hook useTranslation con gestione di errori
+  const { t, i18n, ready } = useTranslation('common', {
+    useSuspense: false
+  });
+
+  // Imposta i18nReady quando il sistema di traduzione è pronto
+  useEffect(() => {
+    if (ready) {
+      setI18nReady(true);
+    }
+  }, [ready]);
 
   // List of essential categories with SVG icons
   const essentials = [
