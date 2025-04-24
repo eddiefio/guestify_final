@@ -16,14 +16,15 @@ export default function AuthLayout({
         <div className="sm:mx-auto sm:w-full sm:max-w-md">
           <div className="flex justify-center">
             <Link href="/">
-              <div className="w-32 h-32 flex items-center justify-center bg-gradient-to-br from-[#5E2BFF] to-[#FFDE59] rounded-full">
-                <span className="text-white text-2xl font-bold">Guestify</span>
-              </div>
+              <Image 
+                src="/logo_guest.png" 
+                alt="Guestify Logo" 
+                width={200} 
+                height={200} 
+                className="mx-auto"
+              />
             </Link>
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Guestify
-          </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             La piattaforma per gli host di affitti brevi
           </p>
