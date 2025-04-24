@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import Layout from '@/components/layout/Layout'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
-import { Phone, Mail, PenLine, Stethoscope } from 'lucide-react'
+import { Phone, Mail, PenLine, ShieldAlert, Siren, Flame } from 'lucide-react'
 
 interface Property {
   id: string
@@ -31,7 +31,9 @@ interface UsefulContactsData {
   email: string
   phoneNumber: string
   textNumber: string
-  medicalInfo: string
+  policeNumber: string
+  ambulanceNumber: string
+  fireNumber: string
 }
 
 export default function UsefulContacts() {
@@ -44,7 +46,9 @@ export default function UsefulContacts() {
     email: '',
     phoneNumber: '',
     textNumber: '',
-    medicalInfo: ''
+    policeNumber: '',
+    ambulanceNumber: '',
+    fireNumber: ''
   })
   const { user } = useAuth()
   const router = useRouter()
@@ -95,7 +99,9 @@ export default function UsefulContacts() {
               email: parsedData.email || '',
               phoneNumber: parsedData.phoneNumber || '',
               textNumber: parsedData.textNumber || '',
-              medicalInfo: parsedData.medicalInfo || ''
+              policeNumber: parsedData.policeNumber || '',
+              ambulanceNumber: parsedData.ambulanceNumber || '',
+              fireNumber: parsedData.fireNumber || ''
             })
           } catch (e) {
             // Se il parsing fallisce, potrebbe essere che il campo non è in formato JSON
@@ -104,7 +110,9 @@ export default function UsefulContacts() {
               email: '',
               phoneNumber: '',
               textNumber: '',
-              medicalInfo: ''
+              policeNumber: '',
+              ambulanceNumber: '',
+              fireNumber: ''
             })
           }
         }
@@ -287,22 +295,61 @@ export default function UsefulContacts() {
                       </div>
                     </div>
                     
-                    <div>
-                      <label htmlFor="medicalInfo" className="block text-sm font-medium text-gray-700 mb-1">
-                        <div className="flex items-center">
-                          <Stethoscope className="h-5 w-5 text-red-500 mr-2" />
-                          <span>Need to See a Doctor?</span>
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">Common Emergency Contacts</h3>
+                      <div>
+                        <label htmlFor="policeNumber" className="block text-sm font-medium text-gray-700 mb-1">Police Number</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <ShieldAlert className="h-5 w-5 text-blue-500" />
+                          </div>
+                          <input
+                            type="tel"
+                            id="policeNumber"
+                            name="policeNumber"
+                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-[#5E2BFF] focus:border-[#5E2BFF] p-3"
+                            placeholder="Enter police emergency number"
+                            value={formData.policeNumber}
+                            onChange={handleInputChange}
+                          />
                         </div>
-                      </label>
-                      <textarea
-                        id="medicalInfo"
-                        name="medicalInfo"
-                        rows={8}
-                        className="w-full rounded-lg border border-gray-300 focus:ring-[#5E2BFF] focus:border-[#5E2BFF] p-3"
-                        placeholder="Add information about local medical facilities, emergency services, etc."
-                        value={formData.medicalInfo}
-                        onChange={handleInputChange}
-                      ></textarea>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="ambulanceNumber" className="block text-sm font-medium text-gray-700 mb-1">Ambulance Number</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Siren className="h-5 w-5 text-red-500" />
+                          </div>
+                          <input
+                            type="tel"
+                            id="ambulanceNumber"
+                            name="ambulanceNumber"
+                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-[#5E2BFF] focus:border-[#5E2BFF] p-3"
+                            placeholder="Enter ambulance emergency number"
+                            value={formData.ambulanceNumber}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label htmlFor="fireNumber" className="block text-sm font-medium text-gray-700 mb-1">Fire Department Number</label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Flame className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <input
+                            type="tel"
+                            id="fireNumber"
+                            name="fireNumber"
+                            className="pl-10 w-full rounded-lg border border-gray-300 focus:ring-[#5E2BFF] focus:border-[#5E2BFF] p-3"
+                            placeholder="Enter fire department number"
+                            value={formData.fireNumber}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -376,20 +423,48 @@ export default function UsefulContacts() {
                         )}
                       </div>
                       
-                      {formData.medicalInfo && (
+                      {(formData.policeNumber || formData.ambulanceNumber || formData.fireNumber) && (
                         <div className="mt-8">
                           <div className="flex items-center mb-4">
-                            <Stethoscope className="h-6 w-6 text-red-500 mr-2" />
-                            <h3 className="text-lg font-bold text-gray-800">Need to See a Doctor?</h3>
+                            <ShieldAlert className="h-6 w-6 text-blue-600 mr-2" />
+                            <h3 className="text-lg font-bold text-gray-800">Common Emergency Contacts</h3>
                           </div>
-                          <div className="bg-red-50 p-6 rounded-lg">
-                            <div className="prose max-w-none">
-                              {formData.medicalInfo.split('\n').map((paragraph, index) => (
-                                <p key={index} className="mb-2 text-gray-700">
-                                  {paragraph}
-                                </p>
-                              ))}
-                            </div>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {formData.policeNumber && (
+                              <div className="bg-blue-50 p-4 rounded-lg">
+                                <div className="flex items-center mb-2">
+                                  <ShieldAlert className="h-5 w-5 text-blue-600 mr-2" />
+                                  <h3 className="font-bold text-gray-800">Police</h3>
+                                </div>
+                                <a href={`tel:${formData.policeNumber}`} className="text-blue-600 hover:underline">
+                                  {formData.policeNumber}
+                                </a>
+                              </div>
+                            )}
+                            
+                            {formData.ambulanceNumber && (
+                              <div className="bg-red-50 p-4 rounded-lg">
+                                <div className="flex items-center mb-2">
+                                  <Siren className="h-5 w-5 text-red-600 mr-2" />
+                                  <h3 className="font-bold text-gray-800">Ambulance</h3>
+                                </div>
+                                <a href={`tel:${formData.ambulanceNumber}`} className="text-red-600 hover:underline">
+                                  {formData.ambulanceNumber}
+                                </a>
+                              </div>
+                            )}
+                            
+                            {formData.fireNumber && (
+                              <div className="bg-orange-50 p-4 rounded-lg">
+                                <div className="flex items-center mb-2">
+                                  <Flame className="h-5 w-5 text-orange-600 mr-2" />
+                                  <h3 className="font-bold text-gray-800">Fire Department</h3>
+                                </div>
+                                <a href={`tel:${formData.fireNumber}`} className="text-orange-600 hover:underline">
+                                  {formData.fireNumber}
+                                </a>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
