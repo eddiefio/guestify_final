@@ -21,6 +21,7 @@ export default function PrintQR() {
   const [printingStatus, setPrintingStatus] = useState<'idle' | 'preparing' | 'ready' | 'error'>('idle')
   const [isCopied, setIsCopied] = useState(false)
   const [wifiCredentials, setWifiCredentials] = useState<{ network_name: string, password: string } | null>(null)
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const qrRef = useRef<HTMLDivElement>(null)
   const params = useParams()
   const propertyId = params.propertyId as string
@@ -91,6 +92,158 @@ export default function PrintQR() {
 
     fetchData()
   }, [propertyId, user])
+
+  // Generate preview when required data is loaded
+  useEffect(() => {
+    if (qrCodeDataURL && propertyName) {
+      generatePreview()
+    }
+  }, [qrCodeDataURL, wifiQrCodeURL, propertyName])
+
+  const generatePreview = async () => {
+    try {
+      if (!qrCodeDataURL) return
+      
+      // Create a canvas for the preview
+      const canvas = document.createElement('canvas')
+      // Set the canvas to A4 proportions (210×297mm = 794×1123px at 96 DPI)
+      const scale = 0.5 // Scale down for preview
+      canvas.width = 794 * scale
+      canvas.height = 1123 * scale
+      const ctx = canvas.getContext('2d')
+      
+      if (!ctx) return
+      
+      // Fill with white background
+      ctx.fillStyle = '#FFFFFF'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      
+      // A4 dimensions in px
+      const pageWidth = canvas.width
+      const pageHeight = canvas.height
+      
+      // Draw title
+      ctx.font = `${16 * scale}px Arial`
+      ctx.fillStyle = '#5E2BFF'
+      ctx.textAlign = 'center'
+      ctx.fillText('Guestify', pageWidth / 2, 30 * scale)
+      
+      // Draw property name
+      ctx.font = `bold ${14 * scale}px Arial`
+      ctx.fillStyle = '#000000'
+      ctx.fillText(propertyName, pageWidth / 2, 45 * scale)
+      
+      // Load the frame image and QR code
+      const frameImg = new window.Image()
+      const qrImg = new window.Image()
+      
+      // Create a promise to wait for both images to load
+      await new Promise((resolve, reject) => {
+        let loadedCount = 0
+        
+        const onLoad = () => {
+          loadedCount++
+          if (loadedCount === 2) resolve(true)
+        }
+        
+        frameImg.onload = onLoad
+        qrImg.onload = onLoad
+        frameImg.onerror = reject
+        qrImg.onerror = reject
+        
+        frameImg.src = frameImagePath
+        qrImg.src = qrCodeDataURL
+      })
+      
+      // Create QR code with frame on a separate canvas
+      const qrCanvas = document.createElement('canvas')
+      qrCanvas.width = 600
+      qrCanvas.height = 600
+      const qrCtx = qrCanvas.getContext('2d')
+      
+      if (!qrCtx) return
+      
+      // Draw frame first
+      qrCtx.drawImage(frameImg, 0, 0, qrCanvas.width, qrCanvas.height)
+      
+      // Draw QR code in the center (make it slightly smaller)
+      const qrSize = 280 // Reduced from 300
+      const qrX = (qrCanvas.width - qrSize) / 2
+      const qrY = (qrCanvas.height - qrSize) / 2
+      qrCtx.drawImage(qrImg, qrX, qrY, qrSize, qrSize)
+      
+      // Add the framed QR code to the preview
+      const qrWidth = 150 * scale
+      const qrHeight = 150 * scale
+      const qrX1 = (pageWidth - qrWidth) / 2
+      const qrY1 = 70 * scale
+      ctx.drawImage(qrCanvas, 0, 0, qrCanvas.width, qrCanvas.height, qrX1, qrY1, qrWidth, qrHeight)
+      
+      // Add description
+      ctx.font = `${12 * scale}px Arial`
+      ctx.fillStyle = '#000000'
+      ctx.fillText('Scan this QR code to access all information about this property', pageWidth / 2, qrY1 + qrHeight + 15 * scale)
+      
+      // Add info about what's included
+      ctx.font = `bold ${14 * scale}px Arial`
+      ctx.fillStyle = '#5E2BFF'
+      ctx.textAlign = 'left'
+      ctx.fillText("What's included:", 20 * scale, qrY1 + qrHeight + 35 * scale)
+      
+      // Add list of features
+      ctx.font = `${12 * scale}px Arial`
+      ctx.fillStyle = '#000000'
+      const features = [
+        'House Information',
+        'Extra Services',
+        'House Rules',
+        'WiFi Connection',
+        'City Guides'
+      ]
+      
+      features.forEach((feature, index) => {
+        ctx.fillText(`• ${feature}`, 25 * scale, qrY1 + qrHeight + 50 * scale + (index * 8 * scale))
+      })
+      
+      // Add WiFi QR code if available
+      if (wifiQrCodeURL && wifiCredentials) {
+        // Add WiFi QR code to bottom right
+        const wifiQrSize = 50 * scale
+        const wifiQrX = pageWidth - wifiQrSize - 20 * scale
+        const wifiQrY = pageHeight - wifiQrSize - 40 * scale
+        
+        const wifiImg = new window.Image()
+        wifiImg.src = wifiQrCodeURL
+        
+        await new Promise((resolve) => {
+          wifiImg.onload = resolve
+        })
+        
+        ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
+        
+        // Add WiFi details
+        ctx.font = `${10 * scale}px Arial`
+        ctx.textAlign = 'right'
+        ctx.fillText('WiFi Connection', wifiQrX - 10 * scale, wifiQrY - 8 * scale)
+        ctx.font = `${8 * scale}px Arial`
+        ctx.fillText(`Network: ${wifiCredentials.network_name}`, wifiQrX - 10 * scale, wifiQrY - 3 * scale)
+        ctx.fillText(`Password: ${wifiCredentials.password}`, wifiQrX - 10 * scale, wifiQrY + 2 * scale)
+      }
+      
+      // Add footer
+      ctx.font = `${10 * scale}px Arial`
+      ctx.fillStyle = '#808080'
+      ctx.textAlign = 'center'
+      ctx.fillText('Powered by Guestify', pageWidth / 2, pageHeight - 10 * scale)
+      ctx.font = `${8 * scale}px Arial`
+      ctx.fillText(menuUrl, pageWidth / 2, pageHeight - 5 * scale)
+      
+      // Get the preview image URL
+      setPreviewUrl(canvas.toDataURL('image/png'))
+    } catch (error) {
+      console.error('Error generating preview:', error)
+    }
+  }
 
   const handlePrintQR = async () => {
     try {
@@ -354,37 +507,23 @@ export default function PrintQR() {
                 Place this QR code in your property so guests can easily access information.
               </p>
 
-              {/* QR Code Display */}
-              <div className="mb-6 border p-4 rounded-lg bg-gray-50 mx-auto" ref={qrRef}>
-                {qrCodeDataURL && (
+              {/* A4 Preview Display */}
+              <div className="mb-6 border border-gray-300 rounded-lg bg-gray-50 mx-auto overflow-hidden" ref={qrRef}>
+                {previewUrl ? (
                   <div className="text-center">
-                    <div className="text-[#5e2bff] font-bold text-lg mb-2">Guestify</div>
-                    <div className="relative w-full max-w-xs mx-auto">
+                    <p className="text-sm text-gray-500 bg-gray-100 py-2">Anteprima PDF (Formato A4)</p>
+                    <div className="relative w-full mx-auto shadow-sm">
                       <img 
-                        src={qrCodeDataURL} 
-                        alt="QR Code" 
+                        src={previewUrl} 
+                        alt="PDF Preview" 
                         className="w-full"
+                        style={{ maxHeight: '500px', objectFit: 'contain' }}
                       />
                     </div>
-                    <div className="mt-2 text-sm text-gray-600">{propertyName}</div>
-                    <div className="mt-1 text-xs text-gray-500 break-all flex justify-center items-center">
-                      <span className="truncate max-w-[250px]">{menuUrl}</span>
-                      <button 
-                        className="ml-2 p-1 text-indigo-600 hover:text-indigo-800"
-                        onClick={copyUrlToClipboard}
-                        aria-label="Copy URL to clipboard"
-                      >
-                        {isCopied ? (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path>
-                          </svg>
-                        )}
-                      </button>
-                    </div>
+                  </div>
+                ) : (
+                  <div className="p-4 text-center text-gray-500">
+                    <p>Generazione anteprima...</p>
                   </div>
                 )}
               </div>
