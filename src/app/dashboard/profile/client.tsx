@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
 import Link from 'next/link'
 
 export default function ProfileClient() {
@@ -160,7 +159,9 @@ export default function ProfileClient() {
     <div className="container max-w-4xl mx-auto px-4 py-6">
       <div className="mb-6">
         <Link href="/dashboard" className="inline-flex items-center text-indigo-600 hover:text-indigo-800">
-          <ArrowLeftIcon className="h-4 w-4 mr-1" />
+          <svg className="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
           Back to Dashboard
         </Link>
       </div>
