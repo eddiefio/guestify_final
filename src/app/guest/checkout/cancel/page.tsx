@@ -1,6 +1,5 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
 import { XCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -25,12 +24,18 @@ export default function CheckoutCancel() {
           </p>
           
           <div className="flex flex-col space-y-3">
-            <Button className="w-full" asChild>
-              <Link href="/guest/dashboard">Torna alla Dashboard</Link>
-            </Button>
-            <Button variant="outline" className="w-full" asChild>
-              <Link href="/support">Contatta Assistenza</Link>
-            </Button>
+            <Link 
+              href="/guest/dashboard" 
+              className="w-full bg-[#5E2BFF] text-white py-3 rounded-lg hover:bg-opacity-90 transition duration-200 text-center font-bold"
+            >
+              Torna alla Dashboard
+            </Link>
+            <Link 
+              href="/support" 
+              className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-50 transition duration-200 text-center font-bold"
+            >
+              Contatta Assistenza
+            </Link>
           </div>
         </div>
       </div>

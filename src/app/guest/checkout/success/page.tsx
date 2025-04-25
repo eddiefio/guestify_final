@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { LoadingSpinner } from '@/components/LoadingSpinner'
 import Link from 'next/link'
 
 export default function CheckoutSuccess() {
@@ -80,7 +78,7 @@ export default function CheckoutSuccess() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4">
-        <LoadingSpinner size={48} />
+        <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
         <p className="mt-4 text-gray-600">Stiamo elaborando il tuo ordine...</p>
       </div>
     )
@@ -92,9 +90,12 @@ export default function CheckoutSuccess() {
         <div className="bg-red-50 p-6 rounded-lg shadow-sm w-full max-w-md">
           <h1 className="text-xl font-semibold text-red-600 mb-4">Si è verificato un errore</h1>
           <p className="text-gray-700">{error}</p>
-          <Button className="mt-6 w-full" asChild>
-            <Link href="/guest/dashboard">Torna alla Dashboard</Link>
-          </Button>
+          <Link 
+            href="/guest/dashboard" 
+            className="mt-6 w-full bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200 flex items-center justify-center font-bold"
+          >
+            Torna alla Dashboard
+          </Link>
         </div>
       </div>
     )
@@ -165,9 +166,12 @@ export default function CheckoutSuccess() {
         )}
         
         <div className="flex flex-col space-y-3">
-          <Button className="w-full" asChild>
-            <Link href="/guest/dashboard">Torna alla Dashboard</Link>
-          </Button>
+          <Link 
+            href="/guest/dashboard" 
+            className="w-full bg-[#5E2BFF] text-white py-3 rounded-lg hover:bg-opacity-90 transition duration-200 text-center font-bold"
+          >
+            Torna alla Dashboard
+          </Link>
         </div>
       </div>
     </div>
