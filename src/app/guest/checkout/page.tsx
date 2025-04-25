@@ -44,11 +44,30 @@ export default function Checkout() {
           hostId: property.host_id
         })
         
-        // Assumiamo che l'host sia già configurato per accettare pagamenti se ci sono servizi extra
-        // Imposta un ID account Stripe fittizio per continuare il processo
-        setHostDetails({
-          stripeAccountId: "active"
-        })
+        // Recupera l'account Stripe dell'host dalla tabella host_stripe_accounts
+        const { data: hostStripeAccount, error: stripeError } = await supabase
+          .from('host_stripe_accounts')
+          .select('stripe_account_id, stripe_account_status')
+          .eq('host_id', property.host_id)
+          .single()
+        
+        if (stripeError) {
+          console.warn('Impossibile recuperare l\'account Stripe dell\'host:', stripeError)
+          // Imposta un ID account Stripe fittizio per continuare il processo
+          setHostDetails({
+            stripeAccountId: "active"
+          })
+        } else {
+          // Se l'account Stripe dell'host è stato trovato, impostalo
+          setHostDetails({
+            stripeAccountId: hostStripeAccount.stripe_account_id
+          })
+          
+          // Verifica che l'account sia attivo
+          if (hostStripeAccount.stripe_account_status !== 'active') {
+            console.warn('L\'account Stripe dell\'host non è attivo:', hostStripeAccount.stripe_account_status)
+          }
+        }
         
       } catch (error) {
         console.error('Error fetching details:', error)

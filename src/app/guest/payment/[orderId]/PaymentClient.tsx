@@ -18,12 +18,81 @@ const formatEuro = (price: number) => {
   }).format(price);
 }
 
-// Inizializzazione Stripe fuori dal componente per evitare reinizializzazioni
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+// Dichiarazione ma non inizializzazione dello stripe Promise 
+// perché ora abbiamo bisogno dell'ID dell'account host
+let stripePromise: Promise<any> | null = null;
 
 export default function PaymentClient({ orderId }: { orderId: string }) {
+  const [stripePromiseState, setStripePromiseState] = useState<Promise<any> | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const initializeStripe = async () => {
+      try {
+        // Otteniamo prima il payment intent che contiene l'ID dell'account Stripe dell'host
+        const paymentResponse = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: 0 // Il valore verrà sostituito dall'API con quello effettivo
+          }),
+        });
+        
+        if (!paymentResponse.ok) {
+          throw new Error('Errore nella creazione del payment intent');
+        }
+        
+        const { clientSecret, stripeAccountId } = await paymentResponse.json();
+        
+        // Inizializza Stripe con l'ID dell'account dell'host
+        if (stripeAccountId) {
+          console.log("Inizializzazione Stripe con account:", stripeAccountId);
+          stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
+            stripeAccount: stripeAccountId, // Specifica l'account Stripe dell'host
+          });
+          setStripePromiseState(stripePromise);
+        } else {
+          stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+          setStripePromiseState(stripePromise);
+        }
+      } catch (error) {
+        console.error("Errore nell'inizializzazione di Stripe:", error);
+        // Fallback all'account principale
+        stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+        setStripePromiseState(stripePromise);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    initializeStripe();
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Inizializzazione pagamento...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!stripePromiseState) {
+    return (
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
+        <p>Impossibile inizializzare il sistema di pagamento. Riprova più tardi.</p>
+      </div>
+    );
+  }
+
   return (
-    <Elements stripe={stripePromise}>
+    <Elements stripe={stripePromiseState}>
       <CheckoutForm orderId={orderId} />
     </Elements>
   )
@@ -116,7 +185,7 @@ function CheckoutForm({ orderId }: { orderId: string }) {
         await updateOrderStatus()
         
         // Reindirizza alla pagina di successo
-        router.push(`/guest/order-success/${orderId}`)
+        router.push(`/guest/checkout/success?orderId=${orderId}`)
       }
     } catch (error) {
       console.error("Errore durante la conferma del pagamento:", error)
