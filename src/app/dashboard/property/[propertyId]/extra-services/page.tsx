@@ -9,6 +9,7 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Image from 'next/image'
+import StripeMiddleware from './middleware'
 
 type ExtraService = {
   id: string
@@ -34,7 +35,20 @@ type ServicePhoto = {
   display_order: number
 }
 
-export default function ExtraServices() {
+export default function ExtraServicesPage() {
+  const params = useParams();
+  const propertyId = params.propertyId as string;
+  
+  return (
+    <ProtectedRoute>
+      <StripeMiddleware propertyId={propertyId}>
+        <ExtraServices />
+      </StripeMiddleware>
+    </ProtectedRoute>
+  );
+}
+
+function ExtraServices() {
   const { propertyId } = useParams()
   const { user } = useAuth()
   const router = useRouter()
