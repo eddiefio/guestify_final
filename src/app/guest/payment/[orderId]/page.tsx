@@ -1,14 +1,12 @@
-// Questo è un server component (la versione predefinita in Next.js App Router)
+// Server component
 import PaymentClient from './PaymentClient';
 
-type PaymentPageProps = {
+interface Props {
   params: {
     orderId: string;
   };
-  searchParams?: { [key: string]: string | string[] | undefined };
 }
 
-// Componente server della pagina
-export default function PaymentPage({ params }: PaymentPageProps) {
+export default function Page({ params }: Props) {
   return <PaymentClient orderId={params.orderId} />;
 } 
