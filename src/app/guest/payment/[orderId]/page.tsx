@@ -1,12 +1,6 @@
 // Server component
 import PaymentClient from './PaymentClient';
 
-interface Props {
-  params: {
-    orderId: string;
-  };
-}
-
-export default function Page({ params }: Props) {
+export default function Page({ params }: { params: { orderId: string } }) {
   return <PaymentClient orderId={params.orderId} />;
 } 
