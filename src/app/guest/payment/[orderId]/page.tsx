@@ -154,8 +154,8 @@ function CheckoutForm({ clientSecret, orderDetails }: { clientSecret: string, or
   )
 }
 
-export default function PaymentPage({ params }: { params: { orderId: string } }) {
-  const orderId = params.orderId
+// Componente client per la pagina di pagamento
+function PaymentClient({ orderId }: { orderId: string }) {
   const router = useRouter()
   const [clientSecret, setClientSecret] = useState('')
   const [orderDetails, setOrderDetails] = useState<any>(null)
@@ -233,7 +233,7 @@ export default function PaymentPage({ params }: { params: { orderId: string } })
   const options = clientSecret ? {
     clientSecret,
     appearance: {
-      theme: 'stripe',
+      theme: 'stripe' as 'stripe',
     },
   } : {}
 
@@ -279,13 +279,36 @@ export default function PaymentPage({ params }: { params: { orderId: string } })
   }
 
   return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="max-w-lg mx-auto">
+        {orderDetails && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">Riepilogo Ordine</h2>
+            <p className="text-gray-600">ID Ordine: {orderDetails.id}</p>
+            <p className="text-gray-600">Importo Totale: €{orderDetails.total_amount.toFixed(2)}</p>
+          </div>
+        )}
+        
+        {clientSecret && (
+          <Elements stripe={stripePromise} options={options}>
+            <CheckoutForm clientSecret={clientSecret} orderDetails={orderDetails} />
+          </Elements>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Componente principale della pagina
+export default function PaymentPage({ params }: { params: { orderId: string } }) {
+  return (
     <div className="min-h-screen bg-gray-50 font-spartan">
       {/* Header */}
       <div className="bg-white shadow">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center">
             <button 
-              onClick={() => router.back()}
+              onClick={() => window.history.back()}
               className="p-2 mr-4 rounded-full hover:bg-gray-100"
             >
               <ChevronLeft className="h-6 w-6 text-gray-700" />
@@ -295,23 +318,7 @@ export default function PaymentPage({ params }: { params: { orderId: string } })
         </div>
       </div>
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-lg mx-auto">
-          {orderDetails && (
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold mb-2">Riepilogo Ordine</h2>
-              <p className="text-gray-600">ID Ordine: {orderDetails.id}</p>
-              <p className="text-gray-600">Importo Totale: €{orderDetails.total_amount.toFixed(2)}</p>
-            </div>
-          )}
-          
-          {clientSecret && (
-            <Elements stripe={stripePromise} options={options}>
-              <CheckoutForm clientSecret={clientSecret} orderDetails={orderDetails} />
-            </Elements>
-          )}
-        </div>
-      </div>
+      <PaymentClient orderId={params.orderId} />
     </div>
   )
 } 
