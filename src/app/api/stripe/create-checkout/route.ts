@@ -48,9 +48,26 @@ export async function POST(request: Request) {
       )
     }
 
-    // Crea la sessione Stripe
+    // Crea l'intento di pagamento per il Payment Element
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Converte in centesimi
+      currency: 'eur',
+      application_fee_amount: Math.round(amount * 0.10 * 100), // 10% di commissione
+      transfer_data: {
+        destination: stripeAccountId,
+      },
+      metadata: {
+        orderId: orderId,
+        propertyId: propertyId,
+      },
+      automatic_payment_methods: {
+        enabled: true,
+      },
+    });
+
+    // Crea la sessione Stripe per il checkout esterno
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      payment_method_types: ['card', 'apple_pay'],
       line_items: orderItems.map((item: any) => ({
         price_data: {
           currency: 'eur',
@@ -63,8 +80,8 @@ export async function POST(request: Request) {
         quantity: item.quantity,
       })),
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/checkout?canceled=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/guest/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/guest/checkout?canceled=true`,
       payment_intent_data: {
         application_fee_amount: Math.round(amount * 0.10 * 100), // 10% di commissione
         transfer_data: {
@@ -80,7 +97,10 @@ export async function POST(request: Request) {
     // Aggiorna l'ordine con l'ID della sessione Stripe
     const { error: updateError } = await supabase
       .from('orders')
-      .update({ stripe_session_id: session.id })
+      .update({ 
+        stripe_session_id: session.id,
+        stripe_payment_intent_id: paymentIntent.id
+      })
       .eq('id', orderId)
 
     if (updateError) {
@@ -89,6 +109,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
+      // Dati per il checkout integrato
+      clientSecret: paymentIntent.client_secret,
+      // Dati per il checkout esterno (se il cliente preferisce)
       sessionId: session.id,
       url: session.url,
     })

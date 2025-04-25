@@ -7,6 +7,66 @@ import { useCart } from '@/contexts/CartContext'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { loadStripe } from '@stripe/stripe-js'
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
+
+// Carica l'istanza di Stripe al di fuori del componente
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+
+// Componente del form di pagamento
+function CheckoutForm({ clientSecret, onPaymentComplete, onError }: { 
+  clientSecret: string, 
+  onPaymentComplete: () => void,
+  onError: (error: Error) => void
+}) {
+  const stripe = useStripe()
+  const elements = useElements()
+  const [isProcessing, setIsProcessing] = useState(false)
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!stripe || !elements) {
+      return
+    }
+    
+    setIsProcessing(true)
+    
+    try {
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: `${window.location.origin}/guest/checkout/success`,
+        },
+      })
+      
+      if (error) {
+        onError(error)
+        console.error('Payment error:', error)
+      } else {
+        onPaymentComplete()
+      }
+    } catch (err: any) {
+      console.error('Payment error:', err)
+      onError(err)
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement />
+      <button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        className="w-full py-3 mt-4 rounded-xl font-bold bg-[#ffde59] text-black hover:bg-opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
+      >
+        {isProcessing ? 'Elaborazione...' : 'Paga Ora'}
+      </button>
+    </form>
+  )
+}
 
 export default function Checkout() {
   const router = useRouter()
@@ -16,6 +76,7 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null)
   const [propertyDetails, setPropertyDetails] = useState<{name: string, hostId: string} | null>(null)
   const [hostDetails, setHostDetails] = useState<{stripeAccountId: string} | null>(null)
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null)
   const [checkoutSession, setCheckoutSession] = useState<string | null>(null)
   
   // Calcola il totale del carrello 
@@ -154,15 +215,30 @@ export default function Checkout() {
       
       const data = await response.json()
       
-      // Redirect to Stripe Checkout
-      setCheckoutSession(data.sessionId)
-      window.location.href = data.url
+      // Imposta il client secret di Stripe per il pagamento integrato
+      if (data.clientSecret) {
+        setPaymentClientSecret(data.clientSecret)
+      } else {
+        // Opzione alternativa: reindirizzamento a pagina di checkout Stripe esterna
+        setCheckoutSession(data.sessionId)
+        window.location.href = data.url
+      }
       
     } catch (error: any) {
       console.error('Checkout error:', error)
       setError(error.message || 'Failed to process checkout. Please try again.')
       setLoading(false)
     }
+  }
+  
+  const handlePaymentComplete = () => {
+    clearCart()
+    router.push('/guest/checkout/success')
+  }
+  
+  const handlePaymentError = (error: Error) => {
+    setError(error.message || 'Si è verificato un errore durante il pagamento. Riprova.')
+    setLoading(false)
   }
   
   return (
@@ -225,18 +301,32 @@ export default function Checkout() {
             </div>
           )}
           
-          {/* Checkout Button */}
-          <button
-            onClick={handleCheckout}
-            disabled={loading || !hostDetails}
-            className={`w-full py-3 rounded-xl font-bold ${
-              loading || !hostDetails
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[#ffde59] text-black hover:bg-opacity-90'
-            }`}
-          >
-            {loading ? 'Processing...' : 'Pay Now'}
-          </button>
+          {/* Stripe Payment Element (se è disponibile un clientSecret) */}
+          {paymentClientSecret ? (
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 p-6">
+              <h3 className="font-bold mb-4">Dettagli Pagamento</h3>
+              <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
+                <CheckoutForm 
+                  clientSecret={paymentClientSecret} 
+                  onPaymentComplete={handlePaymentComplete}
+                  onError={handlePaymentError}
+                />
+              </Elements>
+            </div>
+          ) : (
+            /* Checkout Button per reindirizzamento a pagina Stripe esterna */
+            <button
+              onClick={handleCheckout}
+              disabled={loading || !hostDetails}
+              className={`w-full py-3 rounded-xl font-bold ${
+                loading || !hostDetails
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#ffde59] text-black hover:bg-opacity-90'
+              }`}
+            >
+              {loading ? 'Processing...' : 'Pay Now'}
+            </button>
+          )}
           
           <div className="text-center mt-4">
             <Link 
