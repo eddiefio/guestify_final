@@ -24,12 +24,25 @@ let stripePromise: Promise<any> | null = null;
 
 export default function PaymentClient({ orderId }: { orderId: string }) {
   const [stripePromiseState, setStripePromiseState] = useState<Promise<any> | null>(null);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [orderData, setOrderData] = useState<any>(null);
 
   useEffect(() => {
-    const initializeStripe = async () => {
+    const initializePayment = async () => {
       try {
-        // Otteniamo prima il payment intent che contiene l'ID dell'account Stripe dell'host
+        setLoading(true);
+        
+        // Prima otteniamo i dettagli dell'ordine
+        const orderResponse = await fetch(`/api/orders/${orderId}`)
+        if (!orderResponse.ok) {
+          throw new Error('Ordine non trovato');
+        }
+        const orderDetails = await orderResponse.json();
+        setOrderData(orderDetails);
+        
+        // Ora creiamo il payment intent con l'importo corretto dall'ordine
         const paymentResponse = await fetch('/api/create-payment-intent', {
           method: 'POST',
           headers: {
@@ -37,7 +50,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           },
           body: JSON.stringify({ 
             orderId: orderId,
-            amount: 0 // Il valore verrà sostituito dall'API con quello effettivo
+            amount: orderDetails.total_amount || 0
           }),
         });
         
@@ -46,6 +59,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         }
         
         const { clientSecret, stripeAccountId } = await paymentResponse.json();
+        setClientSecret(clientSecret);
         
         // Inizializza Stripe con l'ID dell'account dell'host
         if (stripeAccountId) {
@@ -55,20 +69,19 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           });
           setStripePromiseState(stripePromise);
         } else {
+          console.warn("ID account Stripe host non trovato. Utilizzo dell'account principale");
           stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
           setStripePromiseState(stripePromise);
         }
-      } catch (error) {
-        console.error("Errore nell'inizializzazione di Stripe:", error);
-        // Fallback all'account principale
-        stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-        setStripePromiseState(stripePromise);
+      } catch (error: any) {
+        console.error("Errore nell'inizializzazione del pagamento:", error);
+        setError(error.message || "Si è verificato un errore nell'inizializzazione del pagamento");
       } finally {
         setLoading(false);
       }
     };
     
-    initializeStripe();
+    initializePayment();
   }, [orderId]);
 
   if (loading) {
@@ -82,7 +95,16 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
     );
   }
 
-  if (!stripePromiseState) {
+  if (error) {
+    return (
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!stripePromiseState || !clientSecret || !orderData) {
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
@@ -92,13 +114,13 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
   }
 
   return (
-    <Elements stripe={stripePromiseState}>
-      <CheckoutForm orderId={orderId} />
+    <Elements stripe={stripePromiseState} options={{ clientSecret }}>
+      <CheckoutForm orderId={orderId} order={orderData} />
     </Elements>
   )
 }
 
-function CheckoutForm({ orderId }: { orderId: string }) {
+function CheckoutForm({ orderId, order }: { orderId: string, order: any }) {
   const stripe = useStripe()
   const elements = useElements()
   const router = useRouter()
@@ -106,51 +128,6 @@ function CheckoutForm({ orderId }: { orderId: string }) {
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [succeeded, setSucceeded] = useState(false)
-  const [clientSecret, setClientSecret] = useState('')
-  const [order, setOrder] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    // Carica i dettagli dell'ordine e crea un payment intent
-    const fetchOrderAndCreateIntent = async () => {
-      try {
-        setLoading(true)
-        // Carica i dettagli dell'ordine
-        const orderResponse = await fetch(`/api/orders/${orderId}`)
-        if (!orderResponse.ok) {
-          throw new Error('Ordine non trovato')
-        }
-        const orderData = await orderResponse.json()
-        setOrder(orderData)
-        
-        // Crea un intent di pagamento
-        const paymentResponse = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            orderId: orderId,
-            amount: orderData.total_amount || 0
-          }),
-        })
-        
-        if (!paymentResponse.ok) {
-          throw new Error('Errore nella creazione del payment intent')
-        }
-        
-        const { clientSecret } = await paymentResponse.json()
-        setClientSecret(clientSecret)
-      } catch (error) {
-        console.error('Errore:', error)
-        setPaymentError(error instanceof Error ? error.message : "Si è verificato un errore")
-      } finally {
-        setLoading(false)
-      }
-    }
-    
-    fetchOrderAndCreateIntent()
-  }, [orderId])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -168,13 +145,16 @@ function CheckoutForm({ orderId }: { orderId: string }) {
     setProcessing(true)
     
     try {
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+      // Nota: quando passiamo il clientSecret tramite options all'elemento Elements,
+      // non dobbiamo passarlo qui - usiamo una stringa vuota al posto di undefined
+      const { error, paymentIntent } = await stripe.confirmCardPayment('', {
         payment_method: {
           card: cardElement,
         },
       })
       
       if (error) {
+        console.error('Errore nel pagamento:', error);
         setPaymentError(`Pagamento fallito: ${error.message}`)
         setProcessing(false)
       } else if (paymentIntent.status === 'succeeded') {
@@ -187,7 +167,7 @@ function CheckoutForm({ orderId }: { orderId: string }) {
         // Reindirizza alla pagina di successo
         router.push(`/guest/checkout/success?orderId=${orderId}`)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Errore durante la conferma del pagamento:", error)
       setPaymentError("Si è verificato un errore durante l'elaborazione del pagamento")
       setProcessing(false)
@@ -210,26 +190,6 @@ function CheckoutForm({ orderId }: { orderId: string }) {
     } catch (error) {
       console.error('Errore:', error)
     }
-  }
-  
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Caricamento...</p>
-        </div>
-      </div>
-    )
-  }
-  
-  if (!order) {
-    return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
-        <p>Impossibile caricare i dettagli dell'ordine. Riprova più tardi.</p>
-      </div>
-    )
   }
 
   return (
