@@ -12,12 +12,17 @@ export async function POST(req: Request) {
     const requestData = await req.json().catch(() => ({}))
     const redirectUrl = requestData.redirectUrl || ''
     
+    // Inizializza il client Supabase
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ 
+      cookies: () => cookieStore 
+    })
 
     // Verifica che il chiamante sia autenticato
     const { data: { session } } = await supabase.auth.getSession()
+    
     if (!session) {
+      console.error('No session found in create-account-link')
       return NextResponse.json(
         { error: 'Non autorizzato' },
         { status: 401 }
@@ -25,13 +30,18 @@ export async function POST(req: Request) {
     }
 
     const userUid = session.user.id
+    console.log('User authenticated:', userUid)
     
     // Controlla se l'host ha già un account Stripe
-    const { data: stripeAccount } = await supabase
+    const { data: stripeAccount, error: stripeAccountError } = await supabase
       .from('host_stripe_accounts')
       .select()
       .eq('host_id', userUid)
       .single()
+    
+    if (stripeAccountError && stripeAccountError.code !== 'PGRST116') {
+      console.error('Error fetching stripe account:', stripeAccountError)
+    }
     
     // URL di base per il reindirizzamento
     const baseRedirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect`;
@@ -41,6 +51,7 @@ export async function POST(req: Request) {
       : `${baseRedirectUrl}/success`;
     
     if (!stripeAccount) {
+      console.log('Creating new Stripe account for user:', userUid)
       // Crea un nuovo account Stripe Connect per l'host
       const account = await stripe.accounts.create({
         type: 'standard',
@@ -51,13 +62,17 @@ export async function POST(req: Request) {
       })
       
       // Salva l'ID dell'account nella tabella host_stripe_accounts
-      await supabase
+      const { error: insertError } = await supabase
         .from('host_stripe_accounts')
         .insert({
           host_id: userUid,
           stripe_account_id: account.id,
           stripe_account_status: 'pending'
         })
+        
+      if (insertError) {
+        console.error('Error saving stripe account:', insertError)
+      }
       
       // Crea il link di onboarding
       const accountLink = await stripe.accountLinks.create({
@@ -69,6 +84,7 @@ export async function POST(req: Request) {
       
       return NextResponse.json({ url: accountLink.url })
     } else {
+      console.log('Using existing Stripe account:', stripeAccount.stripe_account_id)
       // Se l'account esiste già, crea solo un nuovo link
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.stripe_account_id,

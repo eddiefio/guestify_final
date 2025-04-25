@@ -11,6 +11,7 @@ const verifyStripeSignature = async (req: Request) => {
   const signature = req.headers.get('stripe-signature')
   
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
+    console.error('Missing signature or webhook secret')
     throw new Error('Missing signature or webhook secret')
   }
   
@@ -30,6 +31,8 @@ export async function POST(req: Request) {
   try {
     // Verifica la firma Stripe
     const event = await verifyStripeSignature(req)
+    console.log('Stripe webhook event received:', event.type)
+    
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
@@ -37,13 +40,18 @@ export async function POST(req: Request) {
     switch (event.type) {
       case 'account.updated': {
         const account = event.data.object as Stripe.Account
+        console.log('Account updated event for account:', account.id)
         
         // Recupera il record dell'account dalla nostra tabella
-        const { data: stripeAccountData } = await supabase
+        const { data: stripeAccountData, error: accountError } = await supabase
           .from('host_stripe_accounts')
           .select('*')
           .eq('stripe_account_id', account.id)
           .single()
+        
+        if (accountError) {
+          console.error('Error fetching account in webhook:', accountError)
+        }
         
         if (stripeAccountData) {
           // Determina il nuovo stato dell'account
@@ -55,19 +63,29 @@ export async function POST(req: Request) {
             newStatus = 'error'
           }
           
+          console.log('Updating account status to:', newStatus)
+          
           // Aggiorna lo stato nel database
-          await supabase
+          const { error: updateError } = await supabase
             .from('host_stripe_accounts')
             .update({
               stripe_account_status: newStatus,
               connected_at: newStatus === 'active' ? new Date().toISOString() : null
             })
             .eq('stripe_account_id', account.id)
+            
+          if (updateError) {
+            console.error('Error updating account in webhook:', updateError)
+          }
+        } else {
+          console.log('No account found for Stripe account ID:', account.id)
         }
         break
       }
       
       // Aggiungi altri gestori di eventi secondo necessità
+      default:
+        console.log('Unhandled event type:', event.type)
     }
     
     return NextResponse.json({ received: true })
