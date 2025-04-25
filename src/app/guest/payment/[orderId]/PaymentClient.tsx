@@ -62,7 +62,7 @@ function CheckoutForm({ orderId }: { orderId: string }) {
           },
           body: JSON.stringify({ 
             orderId: orderId,
-            amount: orderData.totalAmount 
+            amount: orderData.total_amount || 0
           }),
         })
         
@@ -170,10 +170,9 @@ function CheckoutForm({ orderId }: { orderId: string }) {
       <div className="mb-6 p-4 bg-gray-50 rounded-md">
         <h3 className="font-semibold mb-2">Riepilogo ordine</h3>
         <p className="text-sm text-gray-600 mb-1">ID ordine: {orderId}</p>
-        <p className="text-sm text-gray-600 mb-1">Ristorante: {order.restaurant?.name || 'N/A'}</p>
-        <p className="text-sm text-gray-600 mb-3">Data: {new Date(order.createdAt).toLocaleDateString()}</p>
+        <p className="text-sm text-gray-600 mb-3">Data: {new Date(order.created_at).toLocaleDateString()}</p>
         <div className="border-t border-gray-200 pt-2 mt-2">
-          <p className="font-semibold text-lg">Totale: {formatEuro(order.totalAmount)}</p>
+          <p className="font-semibold text-lg">Totale: {formatEuro(order.total_amount)}</p>
         </div>
       </div>
       
