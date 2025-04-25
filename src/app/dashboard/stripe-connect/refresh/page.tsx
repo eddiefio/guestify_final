@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 
-export default function StripeConnectRefresh() {
+function RefreshContent() {
   const router = useRouter()
   
   useEffect(() => {
@@ -31,5 +31,20 @@ export default function StripeConnectRefresh() {
         <p className="text-gray-600">Redirecting back to the connection page...</p>
       </div>
     </div>
+  )
+}
+
+export default function StripeConnectRefresh() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#5E2BFF] mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold mb-2">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <RefreshContent />
+    </Suspense>
   )
 } 
