@@ -7,6 +7,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ShoppingCart, X, Plus, Minus, ChevronLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useCart } from '@/contexts/CartContext'
 
 interface ExtraService {
   id: string
@@ -27,22 +28,26 @@ interface ServicePhoto {
   service_id: string
 }
 
-interface CartItem {
-  service: ExtraService
-  quantity: number
-}
-
 export default function ExtraServicesGuest() {
   const params = useParams()
   const router = useRouter()
   const propertyId = params.propertyId as string
+  
+  const { 
+    cart, 
+    addToCart, 
+    removeFromCart, 
+    updateCartItem, 
+    getCartTotal, 
+    getCartItemCount,
+    setPropertyId 
+  } = useCart()
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [services, setServices] = useState<ExtraService[]>([])
   const [propertyName, setPropertyName] = useState('')
   const [servicePhotos, setServicePhotos] = useState<Record<string, ServicePhoto[]>>({})
-  const [cart, setCart] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
   const [serviceCategory, setServiceCategory] = useState<string>('all')
 
@@ -54,6 +59,13 @@ export default function ExtraServicesGuest() {
     { id: 'transport', name: 'Transportation' },
     { id: 'food', name: 'Food & Drinks' }
   ]
+
+  // Set property ID when component mounts
+  useEffect(() => {
+    if (propertyId) {
+      setPropertyId(propertyId)
+    }
+  }, [propertyId, setPropertyId])
 
   useEffect(() => {
     if (!propertyId) return
@@ -157,53 +169,23 @@ export default function ExtraServicesGuest() {
     ? services 
     : services.filter(service => getCategoryForService(service) === serviceCategory)
   
-  // Add to cart function
-  const addToCart = (service: ExtraService) => {
-    setCart(prevCart => {
-      const existingItemIndex = prevCart.findIndex(item => item.service.id === service.id)
-      
-      if (existingItemIndex >= 0) {
-        // Item already in cart, increase quantity
-        const updatedCart = [...prevCart]
-        updatedCart[existingItemIndex] = {
-          ...updatedCart[existingItemIndex],
-          quantity: updatedCart[existingItemIndex].quantity + 1
-        }
-        return updatedCart
-      } else {
-        // Add new item to cart
-        return [...prevCart, { service, quantity: 1 }]
-      }
-    })
-    
+  // Handle add to cart with global cart context
+  const handleAddToCart = (service: ExtraService) => {
+    addToCart(service)
     toast.success(`Added ${service.title} to cart`)
   }
-  
-  // Remove from cart function
-  const removeFromCart = (serviceId: string) => {
-    setCart(prevCart => prevCart.filter(item => item.service.id !== serviceId))
-    toast.success('Removed from cart')
+
+  // Handle checkout
+  const handleCheckout = () => {
+    if (cart.length === 0) {
+      toast.error('Your cart is empty')
+      return
+    }
+    router.push(`/guest/checkout`)
   }
-  
-  // Update quantity
-  const updateQuantity = (serviceId: string, newQuantity: number) => {
-    if (newQuantity < 1) return
-    
-    setCart(prevCart => {
-      return prevCart.map(item => {
-        if (item.service.id === serviceId) {
-          return { ...item, quantity: newQuantity }
-        }
-        return item
-      })
-    })
-  }
-  
-  // Calculate cart total
-  const cartTotal = cart.reduce((total, item) => total + (item.service.price * item.quantity), 0)
   
   // Calculate number of items in cart
-  const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0)
+  const cartItemCount = getCartItemCount()
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan">
@@ -345,7 +327,7 @@ export default function ExtraServicesGuest() {
                           ) : null}
                         </div>
                         <button
-                          onClick={() => addToCart(service)}
+                          onClick={() => handleAddToCart(service)}
                           className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200 text-sm font-bold"
                         >
                           Add to Cart
@@ -400,14 +382,14 @@ export default function ExtraServicesGuest() {
                           <h3 className="font-bold text-gray-800">{item.service.title}</h3>
                           <div className="flex items-center mt-2">
                             <button
-                              onClick={() => updateQuantity(item.service.id, item.quantity - 1)}
+                              onClick={() => updateCartItem(item.service.id, item.quantity - 1)}
                               className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-500 hover:bg-gray-100"
                             >
                               <Minus size={16} />
                             </button>
                             <span className="mx-3 w-6 text-center">{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item.service.id, item.quantity + 1)}
+                              onClick={() => updateCartItem(item.service.id, item.quantity + 1)}
                               className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-500 hover:bg-gray-100"
                             >
                               <Plus size={16} />
@@ -432,10 +414,11 @@ export default function ExtraServicesGuest() {
                   <div className="border-t pt-4">
                     <div className="flex justify-between font-bold text-lg mb-6">
                       <span>Total</span>
-                      <span>{formatPrice(cartTotal)}</span>
+                      <span>{formatPrice(getCartTotal())}</span>
                     </div>
                     
                     <button
+                      onClick={handleCheckout}
                       className="w-full bg-[#ffde59] text-black py-3 rounded-lg font-bold hover:bg-[#f8c70a] transition duration-200"
                     >
                       Proceed to Checkout
