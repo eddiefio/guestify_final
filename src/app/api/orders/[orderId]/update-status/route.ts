@@ -8,10 +8,10 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const orderId = params.orderId
+    const { orderId } = await params
     const { status } = await request.json()
 
     // Validate required fields

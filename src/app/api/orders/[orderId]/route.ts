@@ -8,10 +8,10 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const orderId = params.orderId
+    const { orderId } = await params
 
     // Valida l'ID dell'ordine
     if (!orderId) {
