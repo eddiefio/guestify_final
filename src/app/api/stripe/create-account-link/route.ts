@@ -19,7 +19,11 @@ export async function POST(req: Request) {
     })
 
     // Verifica che il chiamante sia autenticato
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError) {
+      console.error('Session error in create-account-link:', sessionError)
+    }
     
     if (!session) {
       console.error('No session found in create-account-link')

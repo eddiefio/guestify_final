@@ -10,6 +10,7 @@ export async function GET() {
   try {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
     if (sessionError) {
