@@ -87,7 +87,7 @@ export default function Layout({ children, title = 'Guestify' }: LayoutProps) {
                 >
                   Logout
                 </button>
-                <Link href="/profile">
+                <Link href="/dashboard/profile">
                   <span className="cursor-pointer flex items-center">
                     <div className="h-10 w-10 rounded-full bg-white text-[#5E2BFF] flex items-center justify-center shadow-md">
                       <i className="fas fa-user-circle text-xl"></i>
