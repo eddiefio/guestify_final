@@ -181,7 +181,7 @@ export default function ProfileClient() {
               type="text"
               value={userData.fullName}
               onChange={(e) => setUserData({...userData, fullName: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
               required
             />
           </div>
@@ -194,7 +194,7 @@ export default function ProfileClient() {
               id="email"
               type="email"
               value={userData.email}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed text-gray-900"
               disabled
             />
             <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
@@ -208,7 +208,7 @@ export default function ProfileClient() {
               id="country"
               type="text"
               value={userData.country}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed text-gray-900"
               disabled
             />
             <p className="mt-1 text-xs text-gray-500">Country cannot be changed</p>
@@ -223,7 +223,7 @@ export default function ProfileClient() {
               type="tel"
               value={userData.phoneNumber}
               onChange={(e) => setUserData({...userData, phoneNumber: e.target.value})}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
             />
           </div>
           
@@ -256,7 +256,7 @@ export default function ProfileClient() {
               type="password"
               value={oldPassword}
               onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
               required
             />
           </div>
@@ -270,7 +270,7 @@ export default function ProfileClient() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
               required
               minLength={6}
             />
@@ -285,7 +285,7 @@ export default function ProfileClient() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 text-gray-900"
               required
               minLength={6}
             />
