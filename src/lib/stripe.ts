@@ -1,11 +1,11 @@
 import Stripe from 'stripe';
 
 if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not defined in environment variables');
+  throw new Error('Chiave segreta Stripe mancante');
 }
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16', // Usa la versione più recente disponibile
+  apiVersion: '2025-03-31.basil', // Aggiornata alla versione più recente disponibile
 });
 
 export const createStripeConnectAccountLink = async (accountId: string) => {
@@ -29,6 +29,15 @@ export const createStripeAccount = async (userId: string, email: string) => {
   });
 
   return account;
+};
+
+export const getStripeAccount = async (accountId: string) => {
+  try {
+    return await stripe.accounts.retrieve(accountId);
+  } catch (error) {
+    console.error('Error retrieving Stripe account:', error);
+    throw error;
+  }
 };
 
 export const retrieveStripeAccount = async (accountId: string) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { toast } from 'react-hot-toast';
@@ -12,7 +12,8 @@ type StripeAccountStatus = {
   accountId?: string;
 };
 
-export default function StripeConnectClient() {
+// Componente interno che utilizza useSearchParams
+function StripeConnectInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClientComponentClient();
@@ -189,5 +190,18 @@ export default function StripeConnectClient() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Componente principale con Suspense
+export default function StripeConnectClient() {
+  return (
+    <Suspense fallback={
+      <div className="flex justify-center my-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <StripeConnectInner />
+    </Suspense>
   );
 } 

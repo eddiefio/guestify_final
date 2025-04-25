@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server';
-import { retrieveStripeAccount, isStripeAccountEnabled } from '@/lib/stripe';
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { getStripeAccount } from '@/lib/stripe';
 
 export async function GET(request: NextRequest) {
   const supabase = createClient();
@@ -16,47 +16,41 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Ottieni il profilo dell'utente con l'ID dell'account Stripe
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('stripe_account_id, stripe_account_enabled')
-      .eq('id', user.id)
+    // Ottieni i dati dell'account Stripe dell'utente
+    const { data: stripeAccount } = await supabase
+      .from('host_stripe_accounts')
+      .select('stripe_account_id, is_enabled')
+      .eq('user_id', user.id)
       .single();
-
-    if (!profile || !profile.stripe_account_id) {
-      return NextResponse.json({ 
-        hasStripeAccount: false,
-        isEnabled: false,
-        requiresSetup: true
-      });
-    }
-
-    // Verifica lo stato dell'account Stripe
-    const account = await retrieveStripeAccount(profile.stripe_account_id);
     
-    if (!account) {
+    // Se l'utente non ha un account Stripe
+    if (!stripeAccount || !stripeAccount.stripe_account_id) {
       return NextResponse.json({ 
-        hasStripeAccount: true,
-        isEnabled: false,
-        requiresSetup: true
+        exists: false,
+        enabled: false,
+        requiresSetup: true 
       });
     }
 
-    const isEnabled = isStripeAccountEnabled(account);
-
-    // Se lo stato è cambiato, aggiorna il database
-    if (isEnabled !== profile.stripe_account_enabled) {
+    // Ottieni lo stato dell'account da Stripe
+    const account = await getStripeAccount(stripeAccount.stripe_account_id);
+    
+    // Verifica se lo stato dell'account è cambiato
+    const isEnabled = account.charges_enabled;
+    
+    // Aggiorna il database se lo stato è cambiato
+    if (isEnabled !== stripeAccount.is_enabled) {
       await supabase
-        .from('profiles')
-        .update({ stripe_account_enabled: isEnabled })
-        .eq('id', user.id);
+        .from('host_stripe_accounts')
+        .update({ is_enabled: isEnabled })
+        .eq('user_id', user.id);
     }
 
+    // Restituisci lo stato dell'account
     return NextResponse.json({
-      hasStripeAccount: true,
-      isEnabled,
-      requiresSetup: !isEnabled,
-      accountId: profile.stripe_account_id
+      exists: true,
+      enabled: isEnabled,
+      requiresSetup: !account.details_submitted
     });
   } catch (error) {
     console.error('Error checking Stripe account status:', error);
