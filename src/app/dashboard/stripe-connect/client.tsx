@@ -58,13 +58,17 @@ export default function StripeConnectClient() {
           .from('host_stripe_accounts')
           .select('*')
           .eq('host_id', user.id)
-          .single()
+          .maybeSingle()
         
-        if (error && error.code !== 'PGRST116') { // PGRST116 è l'errore "non trovato"
+        if (error && error.code !== 'PGRST116') {
           console.error('Error fetching Stripe account:', error)
           toast.error('Error loading your Stripe account information')
         } else if (data) {
           setStripeAccount(data)
+        } else {
+          // Nessun account trovato, ma non è un errore
+          console.log('Nessun account Stripe trovato per questo utente')
+          // Lasciamo stripeAccount come null, che indica che l'utente non è connesso
         }
       } catch (error) {
         console.error('Error in fetchStripeAccount:', error)
