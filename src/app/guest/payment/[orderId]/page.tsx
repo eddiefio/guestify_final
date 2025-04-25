@@ -1,6 +1,12 @@
 // Server component
 import PaymentClient from './PaymentClient';
 
-export default function Page({ params }: { params: { orderId: string } }) {
+type PageParams = {
+  params: {
+    orderId: string;
+  };
+};
+
+export default async function Page({ params }: PageParams) {
   return <PaymentClient orderId={params.orderId} />;
 } 
