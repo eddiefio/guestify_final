@@ -1,79 +1,76 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 
 // Inizializza il client Stripe con la chiave segreta
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-07-09'
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
-    // Otteniamo l'utente corrente
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createRouteHandlerClient({ cookies })
 
-    if (!user) {
+    // Verifica che il chiamante sia autenticato
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
       return NextResponse.json(
-        { message: 'Authentication required' },
+        { error: 'Non autorizzato' },
         { status: 401 }
       )
     }
 
+    const userUid = session.user.id
+    
     // Controlla se l'host ha già un account Stripe
-    const { data: existingAccount, error: queryError } = await supabase
+    const { data: stripeAccount } = await supabase
       .from('host_stripe_accounts')
-      .select('*')
-      .eq('host_id', user.id)
+      .select()
+      .eq('host_uid', userUid)
       .single()
-
-    let stripeAccountId
-
-    // Se l'host ha già un account Stripe registrato
-    if (existingAccount?.stripe_account_id) {
-      stripeAccountId = existingAccount.stripe_account_id
-    } else {
-      // Crea un nuovo account Standard Stripe Connect per l'host
+    
+    if (!stripeAccount) {
+      // Crea un nuovo account Stripe Connect per l'host
       const account = await stripe.accounts.create({
         type: 'standard',
+        email: session.user.email,
         metadata: {
-          host_id: user.id
+          userUid
         }
       })
-
-      stripeAccountId = account.id
-
-      // Salva l'account nel database
-      const { error: insertError } = await supabase
+      
+      // Salva l'ID dell'account nella tabella host_stripe_accounts
+      await supabase
         .from('host_stripe_accounts')
         .insert({
-          host_id: user.id,
+          host_uid: userUid,
           stripe_account_id: account.id,
           stripe_account_status: 'pending'
         })
-
-      if (insertError) {
-        throw new Error(`Failed to save Stripe account: ${insertError.message}`)
-      }
+      
+      // Crea il link di onboarding
+      const accountLink = await stripe.accountLinks.create({
+        account: account.id,
+        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/refresh`,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/success`,
+        type: 'account_onboarding',
+      })
+      
+      return NextResponse.json({ url: accountLink.url })
+    } else {
+      // Se l'account esiste già, crea solo un nuovo link
+      const accountLink = await stripe.accountLinks.create({
+        account: stripeAccount.stripe_account_id,
+        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/refresh`,
+        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/success`,
+        type: 'account_onboarding',
+      })
+      
+      return NextResponse.json({ url: accountLink.url })
     }
-
-    // Crea un link per l'onboarding dell'account
-    const accountLink = await stripe.accountLinks.create({
-      account: stripeAccountId,
-      refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect`,
-      return_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/stripe/onboarding-complete`,
-      type: 'account_onboarding'
-    })
-
-    // Restituisci l'URL per il redirect
-    return NextResponse.json({ url: accountLink.url })
   } catch (error: any) {
-    console.error('Error creating Stripe account link:', error)
-    
+    console.error('Error creating account link:', error)
     return NextResponse.json(
-      { message: error.message || 'Failed to create Stripe account link' },
+      { error: error.message },
       { status: 500 }
     )
   }

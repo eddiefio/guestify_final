@@ -3,9 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-07-09',
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 // Questa funzione verifica che la richiesta provenga effettivamente da Stripe
 const verifyStripeSignature = async (req: Request) => {

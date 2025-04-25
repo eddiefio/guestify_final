@@ -14,7 +14,6 @@ export const getStripe = () => {
 
 // Inizializza il client Stripe lato server
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-07-09',
 })
 
 // Funzione per creare un intent di pagamento per servizi extra

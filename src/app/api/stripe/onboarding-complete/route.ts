@@ -5,58 +5,59 @@ import Stripe from 'stripe'
 import { redirect } from 'next/navigation'
 
 // Inizializza il client Stripe con la chiave segreta
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-07-09'
-})
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    // Otteniamo l'utente corrente
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createRouteHandlerClient({ cookies })
+    const { data: { session } } = await supabase.auth.getSession()
 
-    if (!user) {
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/auth/signin`)
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Non autorizzato' },
+        { status: 401 }
+      )
     }
 
-    // Recupera l'account Stripe dell'host
-    const { data: hostStripeAccount, error: queryError } = await supabase
+    const userUid = session.user.id
+
+    // Ottieni l'account Stripe dell'host
+    const { data: stripeAccount } = await supabase
       .from('host_stripe_accounts')
-      .select('*')
-      .eq('host_id', user.id)
+      .select()
+      .eq('host_uid', userUid)
       .single()
 
-    if (queryError || !hostStripeAccount) {
-      console.error('Error fetching host Stripe account:', queryError)
-      return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect?error=account_not_found`)
+    if (!stripeAccount) {
+      return NextResponse.json(
+        { error: 'Nessun account Stripe trovato' },
+        { status: 404 }
+      )
     }
 
-    // Verifica lo stato dell'account Stripe
-    const stripeAccount = await stripe.accounts.retrieve(hostStripeAccount.stripe_account_id)
+    // Recupera i dettagli dell'account Stripe per verificare lo stato
+    const account = await stripe.accounts.retrieve(
+      stripeAccount.stripe_account_id
+    )
 
     // Aggiorna lo stato dell'account nel database
-    let accountStatus: 'active' | 'pending' | 'error' = 'pending'
-    
-    if (stripeAccount.details_submitted && stripeAccount.charges_enabled) {
-      accountStatus = 'active'
-    } else if (stripeAccount.requirements?.disabled_reason) {
-      accountStatus = 'error'
-    }
-
-    // Aggiorna lo status nel database
     await supabase
       .from('host_stripe_accounts')
       .update({
-        stripe_account_status: accountStatus,
-        connected_at: accountStatus === 'active' ? new Date().toISOString() : null
+        stripe_account_status: account.details_submitted ? 'active' : 'pending',
+        updated_at: new Date().toISOString()
       })
-      .eq('host_id', user.id)
+      .eq('host_uid', userUid)
 
-    // Reindirizza l'utente alla pagina di Stripe Connect con un messaggio di successo
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect?status=${accountStatus}`)
-  } catch (error) {
-    console.error('Error processing onboarding completion:', error)
-    return NextResponse.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect?error=process_failed`)
+    // Redirect alla dashboard
+    return NextResponse.redirect(
+      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect`
+    )
+  } catch (error: any) {
+    console.error('Error completing onboarding:', error)
+    return NextResponse.json(
+      { error: error.message },
+      { status: 500 }
+    )
   }
 } 
