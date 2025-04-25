@@ -157,6 +157,11 @@ export default function Checkout() {
       setLoading(true)
       setError(null)
       
+      console.log('Avvio processo di checkout...')
+      console.log('Dati del carrello:', cart)
+      console.log('Property ID:', propertyId)
+      console.log('Host Stripe Account:', hostDetails.stripeAccountId)
+      
       // Prepare cart items for the API
       const cartItems = cart.map(item => ({
         productId: item.service.id,
@@ -164,6 +169,8 @@ export default function Checkout() {
         price: item.service.price,
         name: item.service.title
       }))
+      
+      console.log('Creazione ordine nel database...')
       
       // Create order in database
       const { data: order, error: orderError } = await supabase
@@ -178,9 +185,15 @@ export default function Checkout() {
         .select()
         .single()
         
-      if (orderError) throw orderError
+      if (orderError) {
+        console.error('Errore nella creazione dell\'ordine:', orderError)
+        throw orderError
+      }
+      
+      console.log('Ordine creato con successo:', order)
       
       // Add order items
+      console.log('Aggiunta elementi dell\'ordine...')
       const orderItems = cart.map(item => ({
         order_id: order.id,
         extra_service_id: item.service.id,
@@ -192,7 +205,16 @@ export default function Checkout() {
         .from('order_items')
         .insert(orderItems)
         
-      if (itemsError) throw itemsError
+      if (itemsError) {
+        console.error('Errore nell\'aggiunta degli elementi dell\'ordine:', itemsError)
+        throw itemsError
+      }
+      
+      console.log('Elementi dell\'ordine aggiunti con successo')
+      console.log('Creazione sessione di checkout Stripe...')
+      
+      // Aggiungi un breve ritardo per assicurarsi che l'ordine sia memorizzato correttamente
+      await new Promise(resolve => setTimeout(resolve, 500))
       
       // Create Stripe Checkout Session
       const response = await fetch('/api/stripe/create-checkout', {
@@ -208,18 +230,29 @@ export default function Checkout() {
         })
       })
       
+      console.log('Risposta dalla API di Stripe ricevuta, status:', response.status)
+      
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('Errore nella risposta dell\'API di Stripe:', errorData)
         throw new Error(errorData.error || 'Failed to create checkout session')
       }
       
       const data = await response.json()
+      console.log('Dati di checkout ricevuti:', { 
+        hasClientSecret: !!data.clientSecret, 
+        hasSessionId: !!data.sessionId, 
+        hasUrl: !!data.url 
+      })
       
       // Imposta il client secret di Stripe per il pagamento integrato
       if (data.clientSecret) {
+        console.log('Client secret ricevuto, mostrando elemento di pagamento')
         setPaymentClientSecret(data.clientSecret)
+        setLoading(false)
       } else {
         // Opzione alternativa: reindirizzamento a pagina di checkout Stripe esterna
+        console.log('Reindirizzamento al checkout esterno di Stripe')
         setCheckoutSession(data.sessionId)
         window.location.href = data.url
       }

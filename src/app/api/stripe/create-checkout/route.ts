@@ -12,43 +12,63 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { orderId, propertyId, amount, stripeAccountId } = body
 
+    console.log('Ricevuta richiesta di checkout con:', { orderId, propertyId, amount, stripeAccountId })
+
     if (!orderId || !propertyId || !amount || !stripeAccountId) {
+      console.error('Parametri mancanti:', { orderId, propertyId, amount, stripeAccountId })
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       )
     }
 
+    // Aggiungi un ritardo per dare tempo al database di sincronizzarsi
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
     // Recupera i dettagli dell'ordine
+    console.log('Recupero ordine con ID:', orderId)
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .select('*')
       .eq('id', orderId)
       .single()
 
-    if (orderError || !order) {
-      console.error('Order fetch error:', orderError)
+    if (orderError) {
+      console.error('Errore nel recupero dell\'ordine:', orderError)
+      // Se l'errore è PGRST116 (nessuna riga trovata), trattiamolo come "ordine non trovato"
+      if (orderError.code === 'PGRST116') {
+        return NextResponse.json(
+          { error: 'Order not found' },
+          { status: 404 }
+        )
+      }
       return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
+        { error: `Failed to fetch order: ${orderError.message}` },
+        { status: 500 }
       )
     }
 
+    console.log('Ordine recuperato con successo:', order)
+
     // Recupera gli elementi dell'ordine
+    console.log('Recupero elementi dell\'ordine...')
     const { data: orderItems, error: itemsError } = await supabase
       .from('order_items')
       .select('*, extra_services(*)')
       .eq('order_id', orderId)
 
     if (itemsError) {
-      console.error('Order items fetch error:', itemsError)
+      console.error('Errore nel recupero degli elementi dell\'ordine:', itemsError)
       return NextResponse.json(
         { error: 'Failed to fetch order items' },
         { status: 500 }
       )
     }
 
+    console.log(`Recuperati ${orderItems.length} elementi dell'ordine`)
+
     // Crea l'intento di pagamento per il Payment Element
+    console.log('Creazione del payment intent...')
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Converte in centesimi
       currency: 'eur',
@@ -65,7 +85,10 @@ export async function POST(request: Request) {
       },
     });
 
+    console.log('Payment intent creato con ID:', paymentIntent.id)
+
     // Crea la sessione Stripe per il checkout esterno
+    console.log('Creazione della sessione Stripe...')
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: orderItems.map((item: any) => ({
@@ -94,7 +117,10 @@ export async function POST(request: Request) {
       },
     })
 
+    console.log('Sessione Stripe creata con ID:', session.id)
+
     // Aggiorna l'ordine con l'ID della sessione Stripe
+    console.log('Aggiornamento dell\'ordine con IDs di Stripe...')
     const { error: updateError } = await supabase
       .from('orders')
       .update({ 
@@ -104,10 +130,11 @@ export async function POST(request: Request) {
       .eq('id', orderId)
 
     if (updateError) {
-      console.error('Order update error:', updateError)
+      console.error('Errore nell\'aggiornamento dell\'ordine:', updateError)
       // Continuiamo comunque per permettere il checkout
     }
 
+    console.log('Processo di checkout completato con successo')
     return NextResponse.json({
       // Dati per il checkout integrato
       clientSecret: paymentIntent.client_secret,
@@ -116,7 +143,7 @@ export async function POST(request: Request) {
       url: session.url,
     })
   } catch (error: any) {
-    console.error('Stripe session creation error:', error)
+    console.error('Errore nella creazione della sessione Stripe:', error)
     return NextResponse.json(
       { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
