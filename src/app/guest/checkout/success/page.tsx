@@ -1,68 +1,19 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
-import { useCart } from '@/contexts/CartContext'
-import { ChevronLeft } from 'lucide-react'
+import { Suspense } from 'react'
+import SuccessContent from './success-content'
 
 export default function CheckoutSuccess() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const { clearCart } = useCart()
-  const orderId = searchParams.get('orderId')
-
-  // Pulisci il carrello quando l'utente arriva alla pagina di successo
-  useEffect(() => {
-    clearCart()
-  }, [clearCart])
-
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center">
-            <button 
-              onClick={() => router.push('/')}
-              className="p-2 mr-4 rounded-full hover:bg-gray-100"
-            >
-              <ChevronLeft className="h-6 w-6 text-gray-700" />
-            </button>
-            <h1 className="text-xl font-bold text-gray-800">Ordine Completato</h1>
-          </div>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 font-spartan flex justify-center items-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Caricamento...</p>
         </div>
       </div>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-lg mx-auto">
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 p-6">
-            <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
-              <div className="flex">
-                <div className="ml-3">
-                  <p className="text-sm text-green-700">
-                    Grazie per il tuo ordine su Guestify
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            {orderId && (
-              <p className="text-sm mb-4">Numero ordine: <span className="font-medium">{orderId}</span></p>
-            )}
-            
-            <p className="text-sm text-gray-600 mb-6">
-              Grazie per il tuo acquisto. Il tuo ordine è stato completato con successo.
-            </p>
-            
-            <div className="mt-8">
-              <Link href="/" className="bg-[#ffde59] text-black px-4 py-2 rounded-full text-sm hover:opacity-90 transition font-semibold inline-block">
-                Torna alla Home
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   )
 } 
