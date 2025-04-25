@@ -7,66 +7,6 @@ import { useCart } from '@/contexts/CartContext'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
-
-// Carica l'istanza di Stripe al di fuori del componente
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
-
-// Componente del form di pagamento
-function CheckoutForm({ clientSecret, onPaymentComplete, onError }: { 
-  clientSecret: string, 
-  onPaymentComplete: () => void,
-  onError: (error: any) => void
-}) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [isProcessing, setIsProcessing] = useState(false)
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!stripe || !elements) {
-      return
-    }
-    
-    setIsProcessing(true)
-    
-    try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/guest/checkout/success`,
-        },
-      })
-      
-      if (error) {
-        onError(error)
-        console.error('Payment error:', error)
-      } else {
-        onPaymentComplete()
-      }
-    } catch (err: any) {
-      console.error('Payment error:', err)
-      onError(err)
-    } finally {
-      setIsProcessing(false)
-    }
-  }
-  
-  return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement />
-      <button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        className="w-full py-3 mt-4 rounded-xl font-bold bg-[#ffde59] text-black hover:bg-opacity-90 disabled:bg-gray-300 disabled:text-gray-500 disabled:cursor-not-allowed"
-      >
-        {isProcessing ? 'Elaborazione...' : 'Paga Ora'}
-      </button>
-    </form>
-  )
-}
 
 export default function Checkout() {
   const router = useRouter()
@@ -76,8 +16,6 @@ export default function Checkout() {
   const [error, setError] = useState<string | null>(null)
   const [propertyDetails, setPropertyDetails] = useState<{name: string, hostId: string} | null>(null)
   const [hostDetails, setHostDetails] = useState<{stripeAccountId: string} | null>(null)
-  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null)
-  const [checkoutSession, setCheckoutSession] = useState<string | null>(null)
   
   // Calcola il totale del carrello 
   const cartTotal = getCartTotal()
@@ -139,7 +77,7 @@ export default function Checkout() {
   
   // Format price to currency
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('it-IT', {
       style: 'currency',
       currency: 'EUR'
     }).format(price)
@@ -211,67 +149,15 @@ export default function Checkout() {
       }
       
       console.log('Elementi dell\'ordine aggiunti con successo')
-      console.log('Creazione sessione di checkout Stripe...')
       
-      // Aggiungi un breve ritardo per assicurarsi che l'ordine sia memorizzato correttamente
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Create Stripe Checkout Session
-      const response = await fetch('/api/stripe/create-checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          orderId: order.id,
-          propertyId,
-          amount: cartTotal,
-          stripeAccountId: hostDetails.stripeAccountId
-        })
-      })
-      
-      console.log('Risposta dalla API di Stripe ricevuta, status:', response.status)
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Errore nella risposta dell\'API di Stripe:', errorData)
-        throw new Error(errorData.error || 'Failed to create checkout session')
-      }
-      
-      const data = await response.json()
-      console.log('Dati di checkout ricevuti:', { 
-        hasClientSecret: !!data.clientSecret, 
-        hasSessionId: !!data.sessionId, 
-        hasUrl: !!data.url 
-      })
-      
-      // Imposta il client secret di Stripe per il pagamento integrato
-      if (data.clientSecret) {
-        console.log('Client secret ricevuto, mostrando elemento di pagamento')
-        setPaymentClientSecret(data.clientSecret)
-        setLoading(false)
-      } else {
-        // Opzione alternativa: reindirizzamento a pagina di checkout Stripe esterna
-        console.log('Reindirizzamento al checkout esterno di Stripe')
-        setCheckoutSession(data.sessionId)
-        window.location.href = data.url
-      }
+      // Reindirizza alla pagina di pagamento
+      router.push(`/guest/payment/${order.id}`)
       
     } catch (error: any) {
       console.error('Checkout error:', error)
       setError(error.message || 'Failed to process checkout. Please try again.')
       setLoading(false)
     }
-  }
-  
-  const handlePaymentComplete = () => {
-    clearCart()
-    router.push('/guest/checkout/success')
-  }
-  
-  const handlePaymentError = (error: Error) => {
-    setError(error.message || 'Si è verificato un errore durante il pagamento. Riprova.')
-    setLoading(false)
   }
   
   return (
@@ -334,32 +220,18 @@ export default function Checkout() {
             </div>
           )}
           
-          {/* Stripe Payment Element (se è disponibile un clientSecret) */}
-          {paymentClientSecret ? (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 p-6">
-              <h3 className="font-bold mb-4">Dettagli Pagamento</h3>
-              <Elements stripe={stripePromise} options={{ clientSecret: paymentClientSecret }}>
-                <CheckoutForm 
-                  clientSecret={paymentClientSecret} 
-                  onPaymentComplete={handlePaymentComplete}
-                  onError={handlePaymentError}
-                />
-              </Elements>
-            </div>
-          ) : (
-            /* Checkout Button per reindirizzamento a pagina Stripe esterna */
-            <button
-              onClick={handleCheckout}
-              disabled={loading || !hostDetails}
-              className={`w-full py-3 rounded-xl font-bold ${
-                loading || !hostDetails
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  : 'bg-[#ffde59] text-black hover:bg-opacity-90'
-              }`}
-            >
-              {loading ? 'Processing...' : 'Pay Now'}
-            </button>
-          )}
+          {/* Checkout Button */}
+          <button
+            onClick={handleCheckout}
+            disabled={loading || !hostDetails}
+            className={`w-full py-3 rounded-xl font-bold ${
+              loading || !hostDetails
+                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                : 'bg-[#ffde59] text-black hover:bg-opacity-90'
+            }`}
+          >
+            {loading ? 'Processing...' : 'Procedi al Pagamento'}
+          </button>
           
           <div className="text-center mt-4">
             <Link 
