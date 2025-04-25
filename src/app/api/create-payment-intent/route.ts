@@ -72,17 +72,17 @@ export async function POST(request: NextRequest) {
       // utilizzando Stripe Connect con l'header Stripe-Account
       const paymentIntent = await stripe.paymentIntents.create(
         {
-          amount: Math.round(amount * 100), // Stripe richiede centesimi
-          currency: 'eur',
-          automatic_payment_methods: {
-            enabled: true,
-          },
-          metadata: {
-            orderId,
-            propertyId: order.property_id,
+      amount: Math.round(amount * 100), // Stripe richiede centesimi
+      currency: 'eur',
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      metadata: {
+        orderId,
+        propertyId: order.property_id,
             hostId: property.host_id,
             paymentType: 'direct_charge' // Aggiungiamo questo per chiarezza
-          }
+      }
         },
         {
           stripeAccount: hostStripeAccount.stripe_account_id // Questo è il punto chiave: crea il pagamento direttamente sull'account dell'host
@@ -90,8 +90,8 @@ export async function POST(request: NextRequest) {
       )
       
       console.log(`API create-payment-intent: PaymentIntent creato con successo. ID: ${paymentIntent.id}, Client Secret: ${paymentIntent.client_secret?.substring(0, 10)}...`)
-      
-      // Return the client secret
+    
+    // Return the client secret
       return NextResponse.json({ 
         clientSecret: paymentIntent.client_secret,
         stripeAccountId: hostStripeAccount.stripe_account_id,

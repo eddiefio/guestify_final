@@ -206,6 +206,7 @@ export default function ExtraServicesGuest() {
             <button 
               className="relative p-2 rounded-full hover:bg-gray-100 text-[#5E2BFF]"
               onClick={() => setShowCart(true)}
+              aria-label="Open shopping cart"
             >
               <ShoppingCart className="w-6 h-6" />
               {cartItemCount > 0 && (
@@ -344,13 +345,15 @@ export default function ExtraServicesGuest() {
       
       {/* Cart Sidebar */}
       {showCart && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end">
-          <div className="w-full max-w-md bg-white h-full overflow-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-end transition-all">
+          <div onClick={() => setShowCart(false)} className="flex-grow" />
+          <div className="w-full max-w-md bg-white h-full overflow-auto shadow-xl animate-slide-in">
             <div className="p-4 border-b sticky top-0 bg-white z-10 flex items-center justify-between">
-              <h2 className="text-xl font-bold">Your Cart</h2>
+              <h2 className="text-xl font-bold text-gray-800">Your Cart</h2>
               <button
                 onClick={() => setShowCart(false)}
-                className="p-2 rounded-full hover:bg-gray-100"
+                className="p-2 rounded-full hover:bg-gray-100 text-gray-700"
+                aria-label="Close cart"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -359,16 +362,16 @@ export default function ExtraServicesGuest() {
             <div className="p-4">
               {cart.length === 0 ? (
                 <div className="text-center py-12">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <h3 className="text-lg font-bold text-gray-700 mb-2">Your Cart is Empty</h3>
-                  <p className="text-gray-600 mb-6">
+                  <div className="bg-gray-100 h-24 w-24 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShoppingCart className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-2">Your Cart is Empty</h3>
+                  <p className="text-gray-700 mb-6">
                     Add services to your cart to enhance your stay
                   </p>
                   <button
                     onClick={() => setShowCart(false)}
-                    className="bg-[#5E2BFF] text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition duration-200"
+                    className="bg-[#5E2BFF] text-white px-6 py-3 rounded-lg font-bold hover:bg-opacity-90 transition duration-200"
                   >
                     Browse Services
                   </button>
@@ -380,29 +383,36 @@ export default function ExtraServicesGuest() {
                       <div key={item.service.id} className="flex border-b pb-4">
                         <div className="flex-grow">
                           <h3 className="font-bold text-gray-800">{item.service.title}</h3>
-                          <div className="flex items-center mt-2">
+                          <p className="text-gray-700 text-sm mt-1">
+                            {formatPrice(item.service.price)} per item
+                          </p>
+                          <div className="flex items-center mt-3">
                             <button
                               onClick={() => updateCartItem(item.service.id, item.quantity - 1)}
-                              className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-500 hover:bg-gray-100"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-700 hover:bg-gray-100"
+                              aria-label="Decrease quantity"
+                              disabled={item.quantity <= 1}
                             >
                               <Minus size={16} />
                             </button>
-                            <span className="mx-3 w-6 text-center">{item.quantity}</span>
+                            <span className="mx-3 w-6 text-center font-medium text-gray-800">{item.quantity}</span>
                             <button
                               onClick={() => updateCartItem(item.service.id, item.quantity + 1)}
-                              className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-500 hover:bg-gray-100"
+                              className="w-8 h-8 flex items-center justify-center rounded-full border text-gray-700 hover:bg-gray-100"
+                              aria-label="Increase quantity"
                             >
                               <Plus size={16} />
                             </button>
                           </div>
                         </div>
                         <div className="flex flex-col items-end">
-                          <span className="font-bold text-[#5E2BFF]">
+                          <span className="font-bold text-gray-800">
                             {formatPrice(item.service.price * item.quantity)}
                           </span>
                           <button
                             onClick={() => removeFromCart(item.service.id)}
-                            className="text-red-500 text-sm mt-2 hover:underline"
+                            className="text-red-600 text-sm mt-3 hover:underline font-medium"
+                            aria-label="Remove item"
                           >
                             Remove
                           </button>
@@ -412,21 +422,28 @@ export default function ExtraServicesGuest() {
                   </div>
                   
                   <div className="border-t pt-4">
-                    <div className="flex justify-between font-bold text-lg mb-6">
+                    <div className="flex justify-between text-gray-700 mb-2">
+                      <span>Subtotal</span>
+                      <span>{formatPrice(getCartTotal())}</span>
+                    </div>
+                    
+                    <div className="flex justify-between font-bold text-lg mb-6 text-gray-800">
                       <span>Total</span>
                       <span>{formatPrice(getCartTotal())}</span>
                     </div>
                     
                     <button
                       onClick={handleCheckout}
-                      className="w-full bg-[#ffde59] text-black py-3 rounded-lg font-bold hover:bg-[#f8c70a] transition duration-200"
+                      className="w-full bg-[#ffde59] text-black py-3 rounded-lg font-bold hover:bg-[#f8c70a] transition duration-200 flex items-center justify-center"
+                      aria-label="Proceed to checkout"
                     >
-                      Proceed to Checkout
+                      <span>Proceed to Checkout</span>
                     </button>
                     
                     <button
                       onClick={() => setShowCart(false)}
                       className="w-full mt-3 border border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition duration-200"
+                      aria-label="Continue shopping"
                     >
                       Continue Shopping
                     </button>
