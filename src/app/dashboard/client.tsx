@@ -1,13 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
-import { toast } from 'react-hot-toast'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import Layout from '@/components/layout/Layout'
+import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import Layout from '@/components/layout/Layout'
+import Link from 'next/link'
+import { toast } from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 interface Property {
   id: string
@@ -87,6 +87,41 @@ export default function DashboardClient() {
 
     fetchProperties()
   }, [user])
+
+  // Handle the Extra Services link click
+  const handleExtraServicesClick = async (propertyId: string, e: React.MouseEvent) => {
+    e.preventDefault()
+    
+    if (!user) return
+    
+    try {
+      // Check if the user has an active Stripe account
+      const { data: stripeAccount, error } = await supabase
+        .from('host_stripe_accounts')
+        .select('stripe_account_status')
+        .eq('host_id', user.id)
+        .single()
+      
+      // If no account or error, redirect to Stripe connect page
+      if (error || !stripeAccount) {
+        router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`)
+        return
+      }
+      
+      // If account exists but is not active, redirect to Stripe connect page
+      if (stripeAccount.stripe_account_status !== 'active') {
+        router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`)
+        return
+      }
+      
+      // If account is active, redirect directly to extra services page
+      router.push(`/dashboard/property/${propertyId}/extra-services`)
+    } catch (error) {
+      console.error('Error checking Stripe account:', error)
+      // In case of error, redirect to Stripe connect page to be safe
+      router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`)
+    }
+  }
 
   // Filter properties based on search term
   const filteredProperties = properties.filter(prop => 
@@ -193,7 +228,7 @@ export default function DashboardClient() {
                           </div>
                         </Link>
                         
-                        <Link href={`/dashboard/stripe-connect?redirect=/dashboard/property/${property.id}/extra-services`}>
+                        <a href="#" onClick={(e) => handleExtraServicesClick(property.id, e)}>
                           <div className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition h-full">
                             <div className="w-9 h-9 rounded-full bg-green-500 flex items-center justify-center text-white shrink-0">
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -202,7 +237,7 @@ export default function DashboardClient() {
                             </div>
                             <span className="ml-3 font-bold text-base">Extra Services</span>
                           </div>
-                        </Link>
+                        </a>
                         
                         <Link href={`/dashboard/property/${property.id}/qr-code`}>
                           <div className="flex items-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition h-full">
