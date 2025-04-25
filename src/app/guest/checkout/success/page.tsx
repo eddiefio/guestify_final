@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 
-export default function CheckoutSuccess() {
+function CheckoutSuccessContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const sessionId = searchParams.get('session_id')
@@ -175,5 +175,19 @@ export default function CheckoutSuccess() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Componente principale che utilizza Suspense
+export default function CheckoutSuccess() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen py-12 px-4">
+        <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
+        <p className="mt-4 text-gray-600">Caricamento in corso...</p>
+      </div>
+    }>
+      <CheckoutSuccessContent />
+    </Suspense>
   )
 } 
