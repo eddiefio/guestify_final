@@ -17,7 +17,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
 function CheckoutForm({ clientSecret, onPaymentComplete, onError }: { 
   clientSecret: string, 
   onPaymentComplete: () => void,
-  onError: (error: Error) => void
+  onError: (error: any) => void
 }) {
   const stripe = useStripe()
   const elements = useElements()
