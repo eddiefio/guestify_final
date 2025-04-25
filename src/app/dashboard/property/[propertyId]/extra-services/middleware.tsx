@@ -22,7 +22,7 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
         const { data: { user } } = await supabase.auth.getUser();
         
         if (!user) {
-          router.push('/signin');
+          router.push('/auth/signin');
           return;
         }
 
@@ -34,8 +34,8 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
           .single();
 
         if (error && error.code !== 'PGRST116') { // PGRST116 è l'errore "non trovato"
-          console.error('Errore durante il controllo dell\'account Stripe:', error);
-          toast.error('Si è verificato un errore durante la verifica del tuo account Stripe');
+          console.error('Error checking Stripe account:', error);
+          toast.error('Error verifying your Stripe account');
           router.push('/dashboard');
           return;
         }
@@ -49,11 +49,11 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
         if (!hasActiveStripeAccount) {
           // Se l'account Stripe non è abilitato, reindirizza alla pagina di connessione
           router.push('/dashboard/stripe-connect');
-          toast.error('Devi configurare il tuo account Stripe per accedere ai Servizi Extra');
+          toast.error('You need to set up your Stripe account to access Extra Services');
         }
       } catch (error) {
-        console.error('Errore durante il controllo dello stato Stripe:', error);
-        toast.error('Si è verificato un errore durante la verifica del tuo account');
+        console.error('Error checking Stripe status:', error);
+        toast.error('Error verifying your account');
         router.push('/dashboard');
       } finally {
         setIsLoading(false);
@@ -66,7 +66,7 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#5E2BFF]"></div>
       </div>
     );
   }

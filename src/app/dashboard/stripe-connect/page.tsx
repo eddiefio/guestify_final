@@ -1,10 +1,11 @@
-import StripeConnectClient from './client';
+import { Metadata } from 'next'
+import StripeConnectClient from './client'
 
-export const metadata = {
-  title: 'Stripe Connect - Guestify',
-  description: 'Connect your Stripe account to receive payments',
-};
+export const metadata: Metadata = {
+  title: 'Connect Stripe - Guestify',
+  description: 'Connect your Stripe account to start receiving payments',
+}
 
 export default function StripeConnectPage() {
-  return <StripeConnectClient />;
+  return <StripeConnectClient />
 } 
