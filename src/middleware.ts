@@ -1,33 +1,57 @@
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export async function middleware(req: NextRequest) {
-  const res = NextResponse.next()
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return request.cookies.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          // Utilizziamo solo response.cookies.set per evitare problemi di duplicazione
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+        },
+        remove(name: string, options: any) {
+          // Utilizziamo solo response.cookies.set per evitare problemi di duplicazione
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+        },
+      },
+    }
+  )
   
-  try {
-    // Crea il client middleware di Supabase usando la richiesta e la risposta
-    const supabase = createMiddlewareClient({
-      req,
-      res,
-    }, {
-      // Imposta esplicitamente il metodo di codifica dei cookie per evitare il parsing JSON
-      cookieOptions: {
-        name: 'sb-auth-token',
-        domain: '',  // Lasciamo vuoto per usare il dominio corrente
-        path: '/',
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      }
-    })
-    
-    // Aggiorna la sessione dell'utente se presente
-    await supabase.auth.getSession()
-  } catch (error) {
-    console.error('Middleware error:', error)
+  // Aggiorniamo la sessione utente in ogni richiesta
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // Debug per tracciare i cookie
+  console.log('Cookie disponibili:', request.cookies.getAll().map(c => c.name))
+  
+  // Proteggiamo le rotte che iniziano con /dashboard
+  const isAuthRoute = request.nextUrl.pathname.startsWith('/dashboard')
+  
+  if (isAuthRoute && !user) {
+    // Reindirizza alla pagina di login se l'utente non è autenticato
+    return NextResponse.redirect(new URL('/auth/login', request.url))
   }
   
-  return res
+  return response
 }
 
 // Configura il matcher per specificare su quali percorsi eseguire il middleware

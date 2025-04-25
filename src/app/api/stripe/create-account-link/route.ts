@@ -12,18 +12,9 @@ export async function POST(req: Request) {
   try {
     console.log('Creazione di un account link iniziata')
     
-    // Inizializza il client Supabase con opzioni cookie esplicite
-    const supabase = createRouteHandlerClient({
-      cookies,
-    }, {
-      cookieOptions: {
-        name: 'sb-auth-token',
-        domain: '',  // Usa il dominio corrente
-        path: '/',
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
-      }
-    })
+    // Inizializza il client Supabase con opzioni cookie più semplici
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     // Verifica l'autenticazione dell'utente
     const { data: { session } } = await supabase.auth.getSession()
@@ -36,12 +27,17 @@ export async function POST(req: Request) {
     // Ottieni l'ID utente dalla sessione
     const userId = session.user.id
 
-    // Cerca se l'utente ha già un account Stripe
-    const { data: hostStripeAccount } = await supabase
+    // Cerca se l'utente ha già un account Stripe usando maybeSingle() invece di single()
+    const { data: hostStripeAccount, error: fetchError } = await supabase
       .from('host_stripe_accounts')
       .select('stripe_account_id')
       .eq('host_id', userId)
-      .single()
+      .maybeSingle()
+    
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Errore nel recupero dell\'account Stripe:', fetchError)
+      return NextResponse.json({ error: 'Errore nel recupero dell\'account Stripe' }, { status: 500 })
+    }
 
     let accountId
 
