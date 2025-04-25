@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, FormEvent } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { toast } from 'react-hot-toast'
 import { supabase } from '@/lib/supabase'
@@ -59,7 +59,7 @@ export default function ProfileClient() {
     fetchUserData()
   }, [user])
   
-  const handleUpdateProfile = async (e) => {
+  const handleUpdateProfile = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     
     if (!user) return
@@ -95,7 +95,7 @@ export default function ProfileClient() {
     }
   }
   
-  const handleUpdatePassword = async (e) => {
+  const handleUpdatePassword = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setPasswordError('')
     
