@@ -83,12 +83,19 @@ export default function StripeConnectClient() {
     try {
       setLoadingButton(true)
       
+      // Costruisci l'URL della richiesta
+      let url = '/api/stripe/create-account-link';
+      
+      // Prepara i dati con il redirect se presente
+      const requestData = redirectUrl ? { redirectUrl } : {};
+      
       // Chiamata all'API per iniziare il processo di onboarding
-      const response = await fetch('/api/stripe/create-account-link', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(requestData)
       })
       
       if (!response.ok) {
@@ -96,10 +103,10 @@ export default function StripeConnectClient() {
         throw new Error(error.message || 'Error connecting to Stripe')
       }
       
-      const { url } = await response.json()
+      const { url: stripeUrl } = await response.json()
       
       // Reindirizza l'utente al flow di onboarding di Stripe
-      window.location.href = url
+      window.location.href = stripeUrl
     } catch (error: any) {
       console.error('Error connecting to Stripe:', error)
       toast.error(error.message || 'Error connecting to Stripe')

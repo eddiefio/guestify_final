@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import Stripe from 'stripe'
-import { redirect } from 'next/navigation'
 
 // Inizializza il client Stripe con la chiave segreta
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { session } } = await supabase.auth.getSession()
 
     if (!session) {
@@ -25,7 +25,7 @@ export async function GET() {
     const { data: stripeAccount } = await supabase
       .from('host_stripe_accounts')
       .select()
-      .eq('host_uid', userUid)
+      .eq('host_id', userUid)
       .single()
 
     if (!stripeAccount) {
@@ -47,12 +47,13 @@ export async function GET() {
         stripe_account_status: account.details_submitted ? 'active' : 'pending',
         updated_at: new Date().toISOString()
       })
-      .eq('host_uid', userUid)
+      .eq('host_id', userUid)
 
-    // Redirect alla dashboard
-    return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect`
-    )
+    // Restituisci lo stato dell'account aggiornato
+    return NextResponse.json({
+      success: true,
+      status: account.details_submitted ? 'active' : 'pending'
+    })
   } catch (error: any) {
     console.error('Error completing onboarding:', error)
     return NextResponse.json(

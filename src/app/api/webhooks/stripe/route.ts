@@ -30,7 +30,8 @@ export async function POST(req: Request) {
   try {
     // Verifica la firma Stripe
     const event = await verifyStripeSignature(req)
-    const supabase = createRouteHandlerClient({ cookies })
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     
     // Gestisci gli eventi in base al tipo
     switch (event.type) {

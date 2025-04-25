@@ -8,7 +8,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Ottieni i dati dalla richiesta, incluso un eventuale URL di redirect
+    const requestData = await req.json().catch(() => ({}))
+    const redirectUrl = requestData.redirectUrl || ''
+    
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
 
     // Verifica che il chiamante sia autenticato
     const { data: { session } } = await supabase.auth.getSession()
@@ -25,8 +30,15 @@ export async function POST(req: Request) {
     const { data: stripeAccount } = await supabase
       .from('host_stripe_accounts')
       .select()
-      .eq('host_uid', userUid)
+      .eq('host_id', userUid)
       .single()
+    
+    // URL di base per il reindirizzamento
+    const baseRedirectUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/stripe-connect`;
+    // Aggiungi il parametro redirect se disponibile
+    const successUrl = redirectUrl 
+      ? `${baseRedirectUrl}/success?redirect=${encodeURIComponent(redirectUrl)}` 
+      : `${baseRedirectUrl}/success`;
     
     if (!stripeAccount) {
       // Crea un nuovo account Stripe Connect per l'host
@@ -42,7 +54,7 @@ export async function POST(req: Request) {
       await supabase
         .from('host_stripe_accounts')
         .insert({
-          host_uid: userUid,
+          host_id: userUid,
           stripe_account_id: account.id,
           stripe_account_status: 'pending'
         })
@@ -50,8 +62,8 @@ export async function POST(req: Request) {
       // Crea il link di onboarding
       const accountLink = await stripe.accountLinks.create({
         account: account.id,
-        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/refresh`,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/success`,
+        refresh_url: `${baseRedirectUrl}/refresh`,
+        return_url: successUrl,
         type: 'account_onboarding',
       })
       
@@ -60,8 +72,8 @@ export async function POST(req: Request) {
       // Se l'account esiste già, crea solo un nuovo link
       const accountLink = await stripe.accountLinks.create({
         account: stripeAccount.stripe_account_id,
-        refresh_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/refresh`,
-        return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/connect/success`,
+        refresh_url: `${baseRedirectUrl}/refresh`,
+        return_url: successUrl,
         type: 'account_onboarding',
       })
       
