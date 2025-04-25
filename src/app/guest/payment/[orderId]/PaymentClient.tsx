@@ -19,30 +19,29 @@ const formatEuro = (price: number) => {
 }
 
 // Dichiarazione ma non inizializzazione dello stripe Promise 
-// perché ora abbiamo bisogno dell'ID dell'account host
 let stripePromise: Promise<any> | null = null;
 
 export default function PaymentClient({ orderId }: { orderId: string }) {
   const [stripePromiseState, setStripePromiseState] = useState<Promise<any> | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [order, setOrder] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [orderData, setOrderData] = useState<any>(null);
 
   useEffect(() => {
-    const initializePayment = async () => {
+    const loadOrderAndInitializeStripe = async () => {
       try {
         setLoading(true);
         
-        // Prima otteniamo i dettagli dell'ordine
-        const orderResponse = await fetch(`/api/orders/${orderId}`)
+        // 1. Carica i dettagli dell'ordine
+        const orderResponse = await fetch(`/api/orders/${orderId}`);
         if (!orderResponse.ok) {
           throw new Error('Ordine non trovato');
         }
-        const orderDetails = await orderResponse.json();
-        setOrderData(orderDetails);
+        const orderData = await orderResponse.json();
+        setOrder(orderData);
         
-        // Ora creiamo il payment intent con l'importo corretto dall'ordine
+        // 2. Crea un singolo payment intent che useremo sia per l'inizializzazione che per il pagamento
         const paymentResponse = await fetch('/api/create-payment-intent', {
           method: 'POST',
           headers: {
@@ -50,7 +49,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           },
           body: JSON.stringify({ 
             orderId: orderId,
-            amount: orderDetails.total_amount || 0
+            amount: orderData.total_amount || 0
           }),
         });
         
@@ -61,7 +60,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         const { clientSecret, stripeAccountId } = await paymentResponse.json();
         setClientSecret(clientSecret);
         
-        // Inizializza Stripe con l'ID dell'account dell'host
+        // 3. Inizializza Stripe con l'account dell'host
         if (stripeAccountId) {
           console.log("Inizializzazione Stripe con account:", stripeAccountId);
           stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
@@ -69,19 +68,18 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           });
           setStripePromiseState(stripePromise);
         } else {
-          console.warn("ID account Stripe host non trovato. Utilizzo dell'account principale");
           stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
           setStripePromiseState(stripePromise);
         }
-      } catch (error: any) {
-        console.error("Errore nell'inizializzazione del pagamento:", error);
-        setError(error.message || "Si è verificato un errore nell'inizializzazione del pagamento");
+      } catch (error) {
+        console.error("Errore:", error);
+        setError(error instanceof Error ? error.message : "Si è verificato un errore");
       } finally {
         setLoading(false);
       }
     };
     
-    initializePayment();
+    loadOrderAndInitializeStripe();
   }, [orderId]);
 
   if (loading) {
@@ -104,7 +102,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
     );
   }
 
-  if (!stripePromiseState || !clientSecret || !orderData) {
+  if (!stripePromiseState || !clientSecret || !order) {
     return (
       <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
@@ -115,12 +113,20 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
 
   return (
     <Elements stripe={stripePromiseState} options={{ clientSecret }}>
-      <CheckoutForm orderId={orderId} order={orderData} />
+      <CheckoutForm orderId={orderId} clientSecret={clientSecret} order={order} />
     </Elements>
   )
 }
 
-function CheckoutForm({ orderId, order }: { orderId: string, order: any }) {
+function CheckoutForm({ 
+  orderId, 
+  clientSecret,
+  order
+}: { 
+  orderId: string, 
+  clientSecret: string,
+  order: any
+}) {
   const stripe = useStripe()
   const elements = useElements()
   const router = useRouter()
@@ -145,18 +151,18 @@ function CheckoutForm({ orderId, order }: { orderId: string, order: any }) {
     setProcessing(true)
     
     try {
-      // Nota: quando passiamo il clientSecret tramite options all'elemento Elements,
-      // non dobbiamo passarlo qui - usiamo una stringa vuota al posto di undefined
-      const { error, paymentIntent } = await stripe.confirmCardPayment('', {
+      console.log("Confermo il pagamento con clientSecret:", clientSecret);
+      
+      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
         },
       })
       
       if (error) {
-        console.error('Errore nel pagamento:', error);
-        setPaymentError(`Pagamento fallito: ${error.message}`)
-        setProcessing(false)
+        console.error("Errore di pagamento:", error);
+        setPaymentError(`Pagamento fallito: ${error.message}`);
+        setProcessing(false);
       } else if (paymentIntent.status === 'succeeded') {
         setSucceeded(true)
         setPaymentError(null)
@@ -167,7 +173,7 @@ function CheckoutForm({ orderId, order }: { orderId: string, order: any }) {
         // Reindirizza alla pagina di successo
         router.push(`/guest/checkout/success?orderId=${orderId}`)
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Errore durante la conferma del pagamento:", error)
       setPaymentError("Si è verificato un errore durante l'elaborazione del pagamento")
       setProcessing(false)
