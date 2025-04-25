@@ -34,7 +34,17 @@ export async function POST(req: Request) {
     console.log('Stripe webhook event received:', event.type)
     
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({
+      cookies: () => cookieStore
+    }, {
+      cookieOptions: {
+        name: 'sb-auth-token',
+        domain: '',
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    })
     
     // Gestisci gli eventi in base al tipo
     switch (event.type) {

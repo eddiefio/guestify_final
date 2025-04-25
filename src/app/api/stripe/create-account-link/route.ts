@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server'
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
-
-import { Database } from '@/types/database.types'
 
 // Inizializza il client Stripe con la chiave segreta
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -15,7 +13,7 @@ export async function POST(req: Request) {
     console.log('Creazione di un account link iniziata')
     
     // Inizializza il client Supabase con opzioni cookie esplicite
-    const supabase = createRouteHandlerClient<Database>({
+    const supabase = createRouteHandlerClient({
       cookies,
     }, {
       cookieOptions: {

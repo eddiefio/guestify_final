@@ -9,7 +9,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 export async function GET() {
   try {
     const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    const supabase = createRouteHandlerClient({ 
+      cookies: () => cookieStore 
+    }, {
+      // Imposta esplicitamente la configurazione dei cookie per evitare problemi di parsing
+      cookieOptions: {
+        name: 'sb-auth-token',
+        domain: '',  // Lasciamo vuoto per usare il dominio corrente
+        path: '/',
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+      }
+    })
     
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
