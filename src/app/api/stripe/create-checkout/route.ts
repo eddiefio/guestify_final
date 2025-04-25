@@ -37,11 +37,11 @@ export async function POST(request: Request) {
       console.error('Errore nel recupero dell\'ordine:', orderError)
       // Se l'errore è PGRST116 (nessuna riga trovata), trattiamolo come "ordine non trovato"
       if (orderError.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Order not found' },
-          { status: 404 }
-        )
-      }
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
       return NextResponse.json(
         { error: `Failed to fetch order: ${orderError.message}` },
         { status: 500 }

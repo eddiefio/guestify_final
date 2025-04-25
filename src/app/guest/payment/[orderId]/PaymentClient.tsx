@@ -2,297 +2,220 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { loadStripe } from '@stripe/stripe-js'
-import { supabase } from '@/lib/supabase'
+import {
+  CardElement,
+  Elements,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js'
 
-// Inizializza Stripe fuori dal componente per evitare re-inizializzazioni
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY || '')
+// Funzione per formattare i prezzi in Euro
+const formatEuro = (price: number) => {
+  return new Intl.NumberFormat('it-IT', {
+    style: 'currency',
+    currency: 'EUR'
+  }).format(price);
+}
 
-// Componente del form di pagamento separato per usare gli hooks correttamente
-function CheckoutForm({ clientSecret, orderDetails }: { clientSecret: string, orderDetails: any }) {
+// Inizializzazione Stripe fuori dal componente per evitare reinizializzazioni
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
+
+export default function PaymentClient({ orderId }: { orderId: string }) {
+  return (
+    <Elements stripe={stripePromise}>
+      <CheckoutForm orderId={orderId} />
+    </Elements>
+  )
+}
+
+function CheckoutForm({ orderId }: { orderId: string }) {
   const stripe = useStripe()
   const elements = useElements()
+  const router = useRouter()
+  
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
-  const router = useRouter()
+  const [succeeded, setSucceeded] = useState(false)
+  const [clientSecret, setClientSecret] = useState('')
+  const [order, setOrder] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Carica i dettagli dell'ordine e crea un payment intent
+    const fetchOrderAndCreateIntent = async () => {
+      try {
+        setLoading(true)
+        // Carica i dettagli dell'ordine
+        const orderResponse = await fetch(`/api/orders/${orderId}`)
+        if (!orderResponse.ok) {
+          throw new Error('Ordine non trovato')
+        }
+        const orderData = await orderResponse.json()
+        setOrder(orderData)
+        
+        // Crea un intent di pagamento
+        const paymentResponse = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: orderData.totalAmount 
+          }),
+        })
+        
+        if (!paymentResponse.ok) {
+          throw new Error('Errore nella creazione del payment intent')
+        }
+        
+        const { clientSecret } = await paymentResponse.json()
+        setClientSecret(clientSecret)
+      } catch (error) {
+        console.error('Errore:', error)
+        setPaymentError(error instanceof Error ? error.message : "Si è verificato un errore")
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchOrderAndCreateIntent()
+  }, [orderId])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     
     if (!stripe || !elements) {
+      // Stripe.js non è ancora caricato
       return
     }
-
+    
+    const cardElement = elements.getElement(CardElement)
+    if (!cardElement) {
+      return
+    }
+    
     setProcessing(true)
-    setPaymentError(null)
-
+    
     try {
-      // Completa il pagamento quando il pulsante submit viene cliccato
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
-          card: elements.getElement(CardElement)!,
+          card: cardElement,
         },
       })
-
+      
       if (error) {
-        setPaymentError(error.message || 'Si è verificato un errore durante il pagamento')
+        setPaymentError(`Pagamento fallito: ${error.message}`)
         setProcessing(false)
-      } else {
-        handlePaymentSuccess(paymentIntent!)
+      } else if (paymentIntent.status === 'succeeded') {
+        setSucceeded(true)
+        setPaymentError(null)
+        
+        // Aggiorna lo stato dell'ordine nel database
+        await updateOrderStatus()
+        
+        // Reindirizza alla pagina di successo
+        router.push(`/guest/order-success/${orderId}`)
       }
-    } catch (err: any) {
-      console.error('Errore nell\'invio del pagamento:', err)
-      setPaymentError('Il pagamento non è andato a buon fine. Riprova.')
+    } catch (error) {
+      console.error("Errore durante la conferma del pagamento:", error)
+      setPaymentError("Si è verificato un errore durante l'elaborazione del pagamento")
       setProcessing(false)
     }
   }
-
-  const handlePaymentSuccess = async (paymentIntent: any) => {
+  
+  const updateOrderStatus = async () => {
     try {
-      // Aggiorna lo stato dell'ordine nel database
-      const response = await fetch('/api/payment/confirm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: orderDetails.id,
-          paymentIntentId: paymentIntent.id,
-        }),
+      const response = await fetch(`/api/orders/${orderId}/update-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'PAID' }),
       })
       
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Errore dalla API di conferma:', errorData)
-        throw new Error(errorData.error || 'Errore nella conferma del pagamento')
+        console.error('Errore nell\'aggiornamento dello stato dell\'ordine')
       }
-      
-      const result = await response.json()
-      console.log('Risultato conferma pagamento:', result)
-      
-      if (!result.success) {
-        throw new Error('Impossibile aggiornare lo stato dell\'ordine')
-      }
-
-      // Reindirizza alla pagina di successo
-      router.push(`/guest/checkout/success?orderId=${orderDetails.id}`)
-    } catch (err: any) {
-      console.error('Errore nella conferma del pagamento:', err)
-      setPaymentError('Il pagamento è stato elaborato ma abbiamo avuto problemi ad aggiornare il tuo ordine. Contatta il supporto.')
-      setProcessing(false)
+    } catch (error) {
+      console.error('Errore:', error)
     }
   }
-
-  // Formatta il prezzo in valuta
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(price)
+  
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-gray-600">Caricamento...</p>
+        </div>
+      </div>
+    )
+  }
+  
+  if (!order) {
+    return (
+      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
+        <p>Impossibile caricare i dettagli dell'ordine. Riprova più tardi.</p>
+      </div>
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Riepilogo Ordine</h3>
-        <div className="flex justify-between mb-2">
-          <span>Subtotale:</span>
-          <span>{formatPrice(orderDetails?.total_amount * 0.9 || 0)}</span>
-        </div>
-        <div className="flex justify-between mb-2">
-          <span>Commissione (10%):</span>
-          <span>{formatPrice(orderDetails?.total_amount * 0.1 || 0)}</span>
-        </div>
-        <div className="flex justify-between font-semibold">
-          <span>Totale:</span>
-          <span>{formatPrice(orderDetails?.total_amount || 0)}</span>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold mb-6 text-center text-primary">Completa il tuo pagamento</h2>
+      
+      <div className="mb-6 p-4 bg-gray-50 rounded-md">
+        <h3 className="font-semibold mb-2">Riepilogo ordine</h3>
+        <p className="text-sm text-gray-600 mb-1">ID ordine: {orderId}</p>
+        <p className="text-sm text-gray-600 mb-1">Ristorante: {order.restaurant?.name || 'N/A'}</p>
+        <p className="text-sm text-gray-600 mb-3">Data: {new Date(order.createdAt).toLocaleDateString()}</p>
+        <div className="border-t border-gray-200 pt-2 mt-2">
+          <p className="font-semibold text-lg">Totale: {formatEuro(order.totalAmount)}</p>
         </div>
       </div>
-
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Metodo di Pagamento</h3>
-        
-        {/* Input carta standard */}
-        <div className="mb-4">
+      
+      <form onSubmit={handleSubmit}>
+        <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Dettagli Carta
+            Dati carta di credito
           </label>
-          <CardElement
-            options={{
-              style: {
-                base: {
-                  fontSize: '16px',
-                  color: '#424770',
-                  '::placeholder': {
-                    color: '#aab7c4',
+          <div className="p-3 border border-gray-300 rounded-md">
+            <CardElement 
+              options={{
+                style: {
+                  base: {
+                    fontSize: '16px',
+                    color: '#424770',
+                    '::placeholder': {
+                      color: '#aab7c4',
+                    },
+                  },
+                  invalid: {
+                    color: '#9e2146',
                   },
                 },
-                invalid: {
-                  color: '#9e2146',
-                },
-              },
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
-
+        
         {paymentError && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
             {paymentError}
           </div>
         )}
-
+        
         <button
           type="submit"
-          disabled={!stripe || processing}
-          className="bg-[#ffde59] text-black px-4 py-2 rounded-full font-semibold hover:opacity-90 transition w-full"
+          disabled={!stripe || processing || succeeded}
+          className="w-full px-4 py-2 text-white font-semibold rounded-md bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {processing ? 'Elaborazione...' : 'Paga Ora'}
+          {processing ? 'Elaborazione...' : 'Paga ora'}
         </button>
-      </div>
-    </form>
-  )
-}
-
-// Componente client per la pagina di pagamento
-export default function PaymentClient({ orderId }: { orderId: string }) {
-  const router = useRouter()
-  const [clientSecret, setClientSecret] = useState('')
-  const [orderDetails, setOrderDetails] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
-
-  useEffect(() => {
-    if (!orderId) return
-
-    const fetchOrderAndCreateIntent = async () => {
-      try {
-        setLoading(true)
-        
-        // 1. Recupera i dettagli dell'ordine
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .select('*')
-          .eq('id', orderId)
-          .single()
-
-        // Se c'è un errore e siamo ancora entro il limite di tentativi
-        if (orderError && retryCount < 3) {
-          console.log(`Tentativo ${retryCount + 1}: Errore nel recupero dell'ordine, riprovo tra 1s...`)
-          
-          // Ritenta dopo un secondo
-          setTimeout(() => {
-            setRetryCount(prev => prev + 1)
-          }, 1000)
-          return // Esci e aspetta il prossimo tentativo
-        }
-
-        if (orderError) {
-          throw orderError
-        }
-
-        console.log('Dettagli ordine recuperati:', order)
-        setOrderDetails(order)
-
-        // 2. Crea payment intent
-        const response = await fetch('/api/stripe/create-intent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            orderId: orderId,
-            amount: order.total_amount,
-            propertyId: order.property_id
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Impossibile creare il payment intent')
-        }
-
-        const data = await response.json()
-        if (!data.clientSecret) {
-          throw new Error('Nessun client secret restituito dal payment intent')
-        }
-        
-        setClientSecret(data.clientSecret)
-        setLoading(false)
-      } catch (err: any) {
-        console.error('Errore nel recupero dell\'ordine o nella creazione del payment intent:', err)
-        setError(err.message || 'Si è verificato un errore durante la preparazione del pagamento')
-        setLoading(false)
-      }
-    }
-
-    fetchOrderAndCreateIntent()
-  }, [orderId, retryCount])
-
-  const options = clientSecret ? {
-    clientSecret,
-    appearance: {
-      theme: 'stripe' as const,
-    },
-  } : {}
-
-  if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#ffde59] mx-auto"></div>
-        <p className="text-center mt-4">Caricamento dettagli pagamento...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          <p>{error}</p>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 bg-[#5E2BFF] text-white px-3 py-1 rounded"
-          >
-            Torna al Carrello
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  if (!clientSecret) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
-          <p>Impossibile inizializzare il pagamento. Riprova.</p>
-          <button
-            onClick={() => router.back()}
-            className="mt-4 bg-[#5E2BFF] text-white px-3 py-1 rounded"
-          >
-            Torna al Carrello
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-lg mx-auto">
-        {orderDetails && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold mb-2">Riepilogo Ordine</h2>
-            <p className="text-gray-600">ID Ordine: {orderDetails.id}</p>
-            <p className="text-gray-600">Importo Totale: €{orderDetails.total_amount.toFixed(2)}</p>
-          </div>
-        )}
-        
-        {clientSecret && (
-          <Elements stripe={stripePromise} options={options}>
-            <CheckoutForm clientSecret={clientSecret} orderDetails={orderDetails} />
-          </Elements>
-        )}
-      </div>
+      </form>
     </div>
   )
 } 
