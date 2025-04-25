@@ -2,11 +2,10 @@
 import PaymentClient from './PaymentClient';
 
 type PageParams = {
-  params: {
-    orderId: string;
-  };
+  params: Promise<{ orderId: string }>;
 };
 
 export default async function Page({ params }: PageParams) {
-  return <PaymentClient orderId={params.orderId} />;
+  const { orderId } = await params;
+  return <PaymentClient orderId={orderId} />;
 } 
