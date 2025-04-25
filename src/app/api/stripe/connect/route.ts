@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     } else {
       // Create a new Stripe account for the user
       const account = await stripe.accounts.create({
-        type: 'express',
+        type: 'standard',
         email: userEmail,
         capabilities: {
           card_payments: { requested: true },

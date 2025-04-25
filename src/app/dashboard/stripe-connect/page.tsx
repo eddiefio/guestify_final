@@ -5,12 +5,14 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import Layout from '@/components/layout/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { supabase } from '@/lib/supabase'
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 
 // Componente che utilizza useSearchParams
 function StripeConnectContent() {
   const [loading, setLoading] = useState(false)
+  const [checkingStatus, setCheckingStatus] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -18,6 +20,45 @@ function StripeConnectContent() {
   
   // Get the redirect URL from query params
   const redirectUrl = searchParams?.get('redirect') || '/dashboard'
+
+  // Check if the user already has an active Stripe account
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      if (!user) return
+      
+      try {
+        // Check if user already has a Stripe account
+        const { data: stripeAccount, error } = await supabase
+          .from('host_stripe_accounts')
+          .select('stripe_account_id, stripe_account_status')
+          .eq('host_id', user.id)
+          .single()
+          
+        if (error && error.code !== 'PGRST116') { // PGRST116 is "not found" error
+          console.error('Error checking Stripe account:', error)
+          toast.error('Failed to check your Stripe account status')
+        }
+        
+        // If user has an active Stripe account, redirect to the destination page
+        if (stripeAccount && stripeAccount.stripe_account_status === 'active') {
+          console.log('User already has an active Stripe account, redirecting')
+          router.push(redirectUrl)
+          return
+        }
+        
+        // If user has a pending account, show appropriate message
+        if (stripeAccount && stripeAccount.stripe_account_status === 'pending') {
+          setError('Your Stripe account setup is incomplete. Please complete the setup to start offering extra services.')
+        }
+      } catch (err) {
+        console.error('Error in checkStripeStatus:', err)
+      } finally {
+        setCheckingStatus(false)
+      }
+    }
+    
+    checkStripeStatus()
+  }, [user, router, redirectUrl])
 
   // Store the redirect URL in localStorage to use it after Stripe redirect
   useEffect(() => {
@@ -66,6 +107,14 @@ function StripeConnectContent() {
   const handleSkip = () => {
     toast.success('You can connect Stripe later from your dashboard')
     router.push(redirectUrl)
+  }
+
+  if (checkingStatus) {
+    return (
+      <div className="flex justify-center items-center min-h-[50vh]">
+        <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin"></div>
+      </div>
+    )
   }
 
   return (

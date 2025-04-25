@@ -46,11 +46,35 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
         
         setIsStripeEnabled(hasActiveStripeAccount);
 
-        if (!hasActiveStripeAccount) {
-          // Se l'account Stripe non è abilitato, reindirizza alla pagina di connessione
-          router.push('/dashboard/stripe-connect');
-          toast.error('You need to set up your Stripe account to access Extra Services');
+        if (!stripeAccount) {
+          // Se l'utente non ha un account Stripe, reindirizza alla pagina di connessione
+          toast.error('You need to connect your Stripe account to offer Extra Services');
+          router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`);
+          return;
         }
+        
+        if (stripeAccount.stripe_account_status === 'pending') {
+          // Se l'account è in stato di attesa, informa l'utente che deve completare la configurazione
+          toast.error('You need to complete your Stripe account setup first');
+          router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`);
+          return;
+        }
+        
+        if (stripeAccount.stripe_account_status === 'error') {
+          // Se c'è stato un errore con l'account, suggerisce di riprovare
+          toast.error('There was an error with your Stripe account. Please try connecting again.');
+          router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`);
+          return;
+        }
+        
+        if (!hasActiveStripeAccount) {
+          // Se l'account Stripe non è attivo, reindirizza alla pagina di connessione
+          router.push(`/dashboard/stripe-connect?redirect=/dashboard/property/${propertyId}/extra-services`);
+          toast.error('You need to set up your Stripe account to access Extra Services');
+          return;
+        }
+        
+        console.log('Stripe account is active, allowing access to Extra Services');
       } catch (error) {
         console.error('Error checking Stripe status:', error);
         toast.error('Error verifying your account');

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Layout from '@/components/layout/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { useAuth } from '@/contexts/AuthContext'
+import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 // Componente che utilizza useSearchParams
@@ -50,25 +51,34 @@ function StripeRedirectContent() {
         
         if (!verifyResponse.ok || !verifyData.isValid) {
           console.error('Stripe account validation failed:', verifyData.message)
+          
+          // Update account status to 'error' in database
+          await supabase
+            .from('host_stripe_accounts')
+            .update({
+              stripe_account_status: 'error',
+              updated_at: new Date().toISOString()
+            })
+            .eq('host_id', user.id)
+            .eq('stripe_account_id', accountId)
+          
           setStatus('error')
           setMessage(`Stripe account setup failed: ${verifyData.message}. Please try again.`)
           return
         }
         
         // Update the host_stripe_accounts table
-        const updateResponse = await fetch('/api/stripe/update-account-status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: user.id,
-            accountId: accountId,
-            status: 'active'
+        const { error: updateError } = await supabase
+          .from('host_stripe_accounts')
+          .update({
+            stripe_account_status: 'active',
+            updated_at: new Date().toISOString()
           })
-        })
+          .eq('host_id', user.id)
+          .eq('stripe_account_id', accountId)
         
-        if (!updateResponse.ok) {
-          const updateData = await updateResponse.json()
-          console.error('Error updating Stripe account status:', updateData.error)
+        if (updateError) {
+          console.error('Error updating Stripe account status:', updateError)
           setStatus('error')
           setMessage('There was an error updating your account status. Please try again.')
           return
