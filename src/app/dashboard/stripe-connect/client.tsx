@@ -28,6 +28,23 @@ export default function StripeConnectClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadingButton, setLoadingButton] = useState(false)
   const [stripeAccount, setStripeAccount] = useState<StripeAccount | null>(null)
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null)
+
+  // Estrai il parametro di redirect dall'URL, se presente
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    const redirect = searchParams.get('redirect')
+    if (redirect) {
+      setRedirectUrl(redirect)
+    }
+  }, [])
+
+  // Reindirizza alla pagina desiderata se l'account è attivo e c'è un URL di redirect
+  useEffect(() => {
+    if (stripeAccount?.stripe_account_status === 'active' && redirectUrl) {
+      router.push(redirectUrl)
+    }
+  }, [stripeAccount, redirectUrl, router])
 
   // Recupera informazioni sull'account Stripe dell'host
   useEffect(() => {
