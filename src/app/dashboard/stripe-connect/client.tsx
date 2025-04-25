@@ -84,7 +84,7 @@ export default function StripeConnectClient() {
       setLoadingButton(true)
       
       // Costruisci l'URL della richiesta
-      let url = '/api/stripe/create-account-link';
+      const url = '/api/stripe/create-account-link';
       
       // Prepara i dati con il redirect se presente
       const requestData = redirectUrl ? { redirectUrl } : {};
