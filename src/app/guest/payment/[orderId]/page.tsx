@@ -233,7 +233,7 @@ function PaymentClient({ orderId }: { orderId: string }) {
   const options = clientSecret ? {
     clientSecret,
     appearance: {
-      theme: 'stripe' as 'stripe',
+      theme: 'stripe' as const,
     },
   } : {}
 
