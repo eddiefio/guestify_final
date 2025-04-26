@@ -347,7 +347,7 @@ export default function BookAgain() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`Book Again - ${property?.name || 'Property'}`} hasBackButton backUrl="/house-info">
+      <Layout title={`Book Again - ${property?.name || 'Property'}`} hasBackButton backUrl={`/dashboard/property/${propertyId}/house-info`}>
         <div className="container mx-auto px-4 py-6 font-spartan">
           {/* Header con nome proprietà */}
           <div className="mb-6">
