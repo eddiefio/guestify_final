@@ -158,26 +158,26 @@ export default function DashboardClient() {
     <ProtectedRoute>
       <Layout title="Dashboard - Guestify">
         <div className="container mx-auto px-4 pt-1 pb-6 font-spartan">
-          <div className="flex flex-col md:flex-row justify-between mb-8 items-start">
-            <div className="flex flex-col justify-between w-full mb-4 md:mb-0 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg shadow-sm">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mb-1 sm:mb-0">
-                <h1 className="text-xl sm:text-2xl font-bold text-[#5E2BFF] mb-1 sm:mb-0">
+          <div className="flex flex-col md:flex-row justify-between mb-5 items-start">
+            <div className="flex flex-col justify-between w-full mb-3 md:mb-0">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full">
+                <h1 className="text-lg sm:text-xl font-bold text-[#5E2BFF]">
                   Welcome back, <span className="text-[#5E2BFF] border-b-2 border-[#ffde59]">{hostName}</span>!
                 </h1>
-                <div className="text-sm sm:text-base text-gray-600 font-medium">
+                <div className="text-sm text-gray-600 font-medium mt-1 sm:mt-0">
                   {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-600 font-medium mt-2">
+              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
                 Your dashboard is ready.
               </p>
             </div>
-            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 mt-2 md:mt-0">
+            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 mt-2 md:mt-0">
               <div className="relative w-full md:w-60">
                 <input
                   type="text"
                   placeholder="Search properties..."
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -188,7 +188,7 @@ export default function DashboardClient() {
                 </div>
               </div>
               <Link href="/dashboard/add-property">
-                <button className="bg-[#ffde59] text-black px-4 py-2.5 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto">
+                <button className="bg-[#ffde59] text-black px-4 py-2 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto">
                   <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                   </svg>
