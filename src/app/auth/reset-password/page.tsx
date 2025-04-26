@@ -213,7 +213,25 @@ function ResetPasswordContent() {
     setDebugInfo(prev => prev + '\nTentativo di aggiornamento password...');
     
     try {
-      // Aggiorniamo la password tramite Supabase
+      // Recupera il token hash e il tipo dall'URL
+      const token_hash = searchParams.get('token_hash');
+      const type = searchParams.get('type');
+      
+      if (!token_hash || !type) {
+        throw new Error('Token mancante. Impossibile aggiornare la password.');
+      }
+      
+      // Prima rieffettua la verifica OTP (per essere sicuri che la sessione sia attiva)
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash,
+        type: type as any,
+      });
+      
+      if (verifyError) {
+        throw verifyError;
+      }
+      
+      // Poi aggiorna la password
       const { data, error } = await supabase.auth.updateUser({ password });
       
       if (error) {
