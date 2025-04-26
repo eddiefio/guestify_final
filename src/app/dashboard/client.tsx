@@ -24,7 +24,33 @@ export default function DashboardClient() {
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [hostName, setHostName] = useState('')
   const router = useRouter()
+
+  // Load user profile and get full name
+  useEffect(() => {
+    if (!user) return
+
+    const fetchUserProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single()
+
+        if (error) throw error
+        
+        // Set host name, default to 'Host' if not found
+        setHostName(data?.full_name || 'Host')
+      } catch (error) {
+        console.error('Error fetching user profile:', error)
+        setHostName('Host') // Default fallback
+      }
+    }
+
+    fetchUserProfile()
+  }, [user])
 
   // Load user properties
   useEffect(() => {
@@ -132,14 +158,21 @@ export default function DashboardClient() {
     <ProtectedRoute>
       <Layout title="Dashboard - Guestify">
         <div className="container mx-auto px-4 pt-1 pb-6 font-spartan">
-          <div className="flex flex-col md:flex-row justify-between mb-8 items-center">
-            <div className="flex justify-between items-center w-full mb-4 md:mb-0">
-              <h1 className="text-2xl font-bold text-[#5E2BFF]">Dashboard</h1>
-              <div className="text-sm sm:text-base text-gray-600 font-medium">
-                {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
+          <div className="flex flex-col md:flex-row justify-between mb-8 items-start">
+            <div className="flex flex-col justify-between w-full mb-4 md:mb-0 bg-gradient-to-r from-purple-50 to-indigo-50 p-4 rounded-lg shadow-sm">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center w-full mb-1 sm:mb-0">
+                <h1 className="text-xl sm:text-2xl font-bold text-[#5E2BFF] mb-1 sm:mb-0">
+                  Welcome back, <span className="text-[#5E2BFF] border-b-2 border-[#ffde59]">{hostName}</span>!
+                </h1>
+                <div className="text-sm sm:text-base text-gray-600 font-medium">
+                  {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
+                </div>
               </div>
+              <p className="text-sm sm:text-base text-gray-600 font-medium mt-2">
+                Your dashboard is ready.
+              </p>
             </div>
-            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
+            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3 mt-2 md:mt-0">
               <div className="relative w-full md:w-60">
                 <input
                   type="text"
