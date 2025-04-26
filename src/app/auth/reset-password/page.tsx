@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Head from 'next/head';
 
-// Componente che utilizza useSearchParams e deve essere avvolto in Suspense
+// Component that uses useSearchParams and must be wrapped in Suspense
 function ResetPasswordContent() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -20,83 +20,83 @@ function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  // Cambia qui per utilizzare createBrowserClient
+  // Client created with createBrowserClient
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  // Verifica se l'utente ha una sessione (dovrebbe essere creata quando clicca sul link nell'email)
+  // Check if the user has a session (should be created when clicking the link in the email)
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Aggiungiamo informazioni di debug
-        setDebugInfo(prev => prev + '\nControllo sessione iniziato...');
+        // Add debug information
+        setDebugInfo(prev => prev + '\nStarting session check...');
         
-        // Recupera la sessione dell'utente
+        // Get the user's session
         try {
           const { data, error: sessionError } = await supabase.auth.getSession();
           
           if (sessionError) {
-            setDebugInfo(prev => prev + `\nErrore nel recupero della sessione: ${sessionError.message}`);
+            setDebugInfo(prev => prev + `\nError retrieving session: ${sessionError.message}`);
             throw sessionError;
           }
           
           const session = data?.session;
           
-          // Verifica se abbiamo una sessione
+          // Check if we have a session
           if (session && session.user) {
-            setDebugInfo(prev => prev + `\nSessione trovata. User ID: ${session.user.id.slice(0, 8)}...`);
+            setDebugInfo(prev => prev + `\nSession found. User ID: ${session.user.id.slice(0, 8)}...`);
             setUserSession(session);
-            // Se abbiamo una sessione, otteniamo anche l'email dell'utente
+            // If we have a session, also get the user's email
             setEmail(session.user?.email || null);
             return;
           } else {
-            setDebugInfo(prev => prev + '\nNessuna sessione trovata nell\'oggetto data');
+            setDebugInfo(prev => prev + '\nNo session found in data object');
           }
         } catch (err: any) {
-          setDebugInfo(prev => prev + `\nEccezione durante il recupero della sessione: ${err.message || 'Errore sconosciuto'}`);
+          setDebugInfo(prev => prev + `\nException during session retrieval: ${err.message || 'Unknown error'}`);
         }
         
-        // Se arriviamo qui, non abbiamo trovato una sessione, proviamo con getUser
-        setDebugInfo(prev => prev + '\nProvo a recuperare l\'utente direttamente...');
+        // If we get here, we didn't find a session, try with getUser
+        setDebugInfo(prev => prev + '\nTrying to retrieve user directly...');
         
         try {
           const { data, error: userError } = await supabase.auth.getUser();
           
           if (userError) {
-            setDebugInfo(prev => prev + `\nErrore nel recupero dell'utente: ${userError.message}`);
+            setDebugInfo(prev => prev + `\nError retrieving user: ${userError.message}`);
             throw userError;
           }
           
           const user = data?.user;
           
           if (user) {
-            setDebugInfo(prev => prev + `\nUtente trovato senza sessione. User ID: ${user.id.slice(0, 8)}...`);
+            setDebugInfo(prev => prev + `\nUser found without session. User ID: ${user.id.slice(0, 8)}...`);
             setEmail(user.email || null);
           } else {
-            // Se non c'è né una sessione né un utente, visualizziamo un messaggio di errore
-            setDebugInfo(prev => prev + '\nNessun utente trovato nell\'oggetto data');
-            setError('Nessuna sessione attiva. Assicurati di aver cliccato sul link di recupero password nella tua email.');
+            // If there's neither a session nor a user, display an error message
+            setDebugInfo(prev => prev + '\nNo user found in data object');
+            setError('No active session. Make sure you have clicked on the password recovery link in your email.');
           }
         } catch (err: any) {
-          setDebugInfo(prev => prev + `\nEccezione durante il recupero dell'utente: ${err.message || 'Errore sconosciuto'}`);
+          setDebugInfo(prev => prev + `\nException during user retrieval: ${err.message || 'Unknown error'}`);
         }
       } catch (error: any) {
-        console.error('Errore non gestito nel recupero della sessione:', error);
-        setDebugInfo(prev => prev + `\nErrore non gestito: ${error.message || 'Errore sconosciuto'}`);
-        setError('Si è verificato un errore nel recupero della sessione: ' + (error.message || 'Errore sconosciuto'));
+        console.error('Unhandled error during session retrieval:', error);
+        setDebugInfo(prev => prev + `\nUnhandled error: ${error.message || 'Unknown error'}`);
+        setError('An error occurred during session retrieval: ' + (error.message || 'Unknown error'));
       }
     };
     
-    // Recupera il token hash e il tipo dall'URL
+    // Get token hash and type from URL
     const token_hash = searchParams.get('token_hash');
     const type = searchParams.get('type');
     
     if (token_hash && type) {
-      setDebugInfo(`Parametri URL trovati: token_hash=${token_hash.slice(0, 8)}... type=${type}`);
+      setDebugInfo(`URL parameters found: token_hash=${token_hash.slice(0, 8)}... type=${type}`);
       
-      // Verifica l'OTP direttamente
+      // Verify OTP directly
       const verifyOtp = async () => {
         try {
           const { error } = await supabase.auth.verifyOtp({
@@ -105,93 +105,93 @@ function ResetPasswordContent() {
           });
           
           if (error) {
-            setDebugInfo(prev => prev + `\nErrore nella verifica OTP: ${error.message}`);
-            setError(`Errore nella verifica del token: ${error.message}`);
+            setDebugInfo(prev => prev + `\nError verifying OTP: ${error.message}`);
+            setError(`Error verifying token: ${error.message}`);
           } else {
-            setDebugInfo(prev => prev + '\nToken OTP verificato con successo!');
-            // Dopo aver verificato l'OTP, controlla la sessione
+            setDebugInfo(prev => prev + '\nOTP token verified successfully!');
+            // After verifying the OTP, check the session
             checkSession();
           }
         } catch (err: any) {
-          setDebugInfo(prev => prev + `\nEccezione durante la verifica OTP: ${err.message || 'Errore sconosciuto'}`);
-          setError(`Eccezione durante la verifica del token: ${err.message || 'Errore sconosciuto'}`);
+          setDebugInfo(prev => prev + `\nException during OTP verification: ${err.message || 'Unknown error'}`);
+          setError(`Exception during token verification: ${err.message || 'Unknown error'}`);
         }
       };
       
       verifyOtp();
     } else {
-      // Se non ci sono parametri di query, controlla comunque la sessione
-      setDebugInfo('Nessun parametro token_hash trovato nell\'URL');
+      // If there are no query parameters, still check the session
+      setDebugInfo('No token_hash parameter found in URL');
       checkSession();
     }
   }, [supabase, searchParams]);
 
-  // Funzione per tentare di acquisire manualmente la sessione
+  // Function to attempt to manually acquire the session
   const handleManualVerify = async () => {
-    setDebugInfo(prev => prev + '\n\n--- TENTATIVO MANUALE DI VERIFICA ---');
+    setDebugInfo(prev => prev + '\n\n--- MANUAL VERIFICATION ATTEMPT ---');
     
-    // Recupera il token hash e il tipo dall'URL
+    // Get token hash and type from URL
     const token_hash = searchParams.get('token_hash');
     const type = searchParams.get('type');
     
     if (!token_hash || !type) {
-      setDebugInfo(prev => prev + '\nNessun token_hash o type trovato nell\'URL');
-      setError('Link non valido. Assicurati di utilizzare il link di recupero password completo dalla tua email.');
+      setDebugInfo(prev => prev + '\nNo token_hash or type found in URL');
+      setError('Invalid link. Make sure you use the complete password recovery link from your email.');
       return;
     }
     
-    setDebugInfo(prev => prev + `\nParametri URL: token_hash=${token_hash.slice(0, 8)}... type=${type}`);
+    setDebugInfo(prev => prev + `\nURL parameters: token_hash=${token_hash.slice(0, 8)}... type=${type}`);
     
     try {
-      // Tenta di verificare il token OTP
+      // Attempt to verify the OTP token
       const { error } = await supabase.auth.verifyOtp({
         token_hash,
         type: type as any,
       });
       
       if (error) {
-        setDebugInfo(prev => prev + `\nErrore nella verifica manuale OTP: ${error.message}`);
-        setError(`Errore nella verifica del token: ${error.message}`);
+        setDebugInfo(prev => prev + `\nError in manual OTP verification: ${error.message}`);
+        setError(`Error verifying token: ${error.message}`);
         return;
       }
       
-      setDebugInfo(prev => prev + '\nVerifica manuale OTP completata con successo!');
+      setDebugInfo(prev => prev + '\nManual OTP verification completed successfully!');
       
-      // Prova a recuperare la sessione
+      // Try to retrieve the session
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
         
         if (sessionError) {
-          setDebugInfo(prev => prev + `\nErrore nel recupero della sessione dopo verifica manuale: ${sessionError.message}`);
+          setDebugInfo(prev => prev + `\nError retrieving session after manual verification: ${sessionError.message}`);
           throw sessionError;
         }
         
         if (data?.session) {
-          setDebugInfo(prev => prev + `\nSessione acquisita manualmente! User ID: ${data.session.user.id.slice(0, 8)}...`);
+          setDebugInfo(prev => prev + `\nSession acquired manually! User ID: ${data.session.user.id.slice(0, 8)}...`);
           setUserSession(data.session);
           setEmail(data.session.user?.email || null);
         } else {
-          setDebugInfo(prev => prev + '\nNessuna sessione trovata dopo verifica manuale');
+          setDebugInfo(prev => prev + '\nNo session found after manual verification');
           
-          // Ultimo tentativo: recupera direttamente l'utente
+          // Last attempt: retrieve the user directly
           const { data: userData, error: userError } = await supabase.auth.getUser();
           
           if (userError) {
-            setDebugInfo(prev => prev + `\nErrore nel recupero dell'utente dopo verifica manuale: ${userError.message}`);
+            setDebugInfo(prev => prev + `\nError retrieving user after manual verification: ${userError.message}`);
           } else if (userData?.user) {
-            setDebugInfo(prev => prev + `\nUtente recuperato manualmente! User ID: ${userData.user.id.slice(0, 8)}...`);
+            setDebugInfo(prev => prev + `\nUser retrieved manually! User ID: ${userData.user.id.slice(0, 8)}...`);
             setEmail(userData.user.email || null);
           } else {
-            setDebugInfo(prev => prev + '\nNessun utente trovato dopo verifica manuale');
-            setError('Impossibile acquisire la sessione. Prova a richiedere un nuovo link di reset password.');
+            setDebugInfo(prev => prev + '\nNo user found after manual verification');
+            setError('Unable to acquire session. Try requesting a new password reset link.');
           }
         }
       } catch (err: any) {
-        setDebugInfo(prev => prev + `\nEccezione durante la verifica manuale: ${err.message || 'Errore sconosciuto'}`);
+        setDebugInfo(prev => prev + `\nException during manual verification: ${err.message || 'Unknown error'}`);
       }
     } catch (err: any) {
-      setDebugInfo(prev => prev + `\nEccezione durante la verifica manuale OTP: ${err.message || 'Errore sconosciuto'}`);
-      setError(`Eccezione durante la verifica del token: ${err.message || 'Errore sconosciuto'}`);
+      setDebugInfo(prev => prev + `\nException during manual OTP verification: ${err.message || 'Unknown error'}`);
+      setError(`Exception during token verification: ${err.message || 'Unknown error'}`);
     }
   };
 
@@ -199,54 +199,54 @@ function ResetPasswordContent() {
     e.preventDefault();
     
     if (!password || !confirmPassword) {
-      setError('Entrambi i campi sono necessari');
+      setError('Both fields are required');
       return;
     }
     
     if (password !== confirmPassword) {
-      setError('Le password non corrispondono');
+      setError('Passwords do not match');
       return;
     }
     
     if (password.length < 6) {
-      setError('La password deve essere di almeno 6 caratteri');
+      setError('Password must be at least 6 characters');
       return;
     }
     
     setLoading(true);
     setError(null);
-    setDebugInfo(prev => prev + '\nTentativo di aggiornamento password...');
+    setDebugInfo(prev => prev + '\nAttempting password update...');
     
     try {
-      // Otteniamo l'email dell'utente (che dovremmo già avere se siamo arrivati a questo punto)
+      // Get the user's email (which we should already have if we've reached this point)
       if (!email) {
-        throw new Error('Email utente non trovata. Impossibile aggiornare la password.');
+        throw new Error('User email not found. Unable to update password.');
       }
 
-      // Questo è un approccio alternativo che evita problemi di sessione
-      // Aggiorna la password usando come riferimento l'email
-      setDebugInfo(prev => prev + `\nAggiornamento password per: ${email}`);
+      // This is an alternative approach that avoids session issues
+      // Update the password using the email as a reference
+      setDebugInfo(prev => prev + `\nUpdating password for: ${email}`);
       
       const { data, error } = await supabase.auth.updateUser({ 
         password,
       });
       
       if (error) {
-        setDebugInfo(prev => prev + `\nErrore nell'aggiornamento: ${error.message}`);
+        setDebugInfo(prev => prev + `\nError during update: ${error.message}`);
         throw error;
       }
       
-      setDebugInfo(prev => prev + `\nPassword aggiornata con successo! Dati utente: ${JSON.stringify(data).slice(0, 100)}...`);
+      setDebugInfo(prev => prev + `\nPassword updated successfully! User data: ${JSON.stringify(data).slice(0, 100)}...`);
       setSuccess(true);
       
-      // Reindirizza alla pagina di login dopo 3 secondi
+      // Redirect to login page after 3 seconds
       setTimeout(() => {
         router.push('/auth/signin');
       }, 3000);
     } catch (error: any) {
-      console.error('Errore durante l\'aggiornamento della password:', error);
-      setDebugInfo(prev => prev + `\nErrore durante l'aggiornamento: ${error.message || 'Errore sconosciuto'}`);
-      setError(error.message || 'Si è verificato un errore durante l\'aggiornamento della password');
+      console.error('Error during password update:', error);
+      setDebugInfo(prev => prev + `\nError during update: ${error.message || 'Unknown error'}`);
+      setError(error.message || 'An error occurred while updating the password');
     } finally {
       setLoading(false);
     }
@@ -260,10 +260,10 @@ function ResetPasswordContent() {
       <div className="flex min-h-screen flex-col items-center justify-center p-4">
         <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Reimposta la tua password</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Reset Your Password</h1>
             {email && (
               <p className="mt-2 text-gray-600">
-                Per l'account: {email}
+                For account: {email}
               </p>
             )}
           </div>
@@ -271,14 +271,14 @@ function ResetPasswordContent() {
           {success ? (
             <div className="text-center">
               <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700">
-                La tua password è stata reimpostata con successo! Verrai reindirizzato alla pagina di login...
+                Your password has been reset successfully! You will be redirected to the login page...
               </div>
               <Link 
                 href="/auth/signin"
                 className="text-indigo-600 hover:text-indigo-500"
                 prefetch={false}
               >
-                Torna alla pagina di login
+                Return to Login Page
               </Link>
             </div>
           ) : (
@@ -291,14 +291,14 @@ function ResetPasswordContent() {
               
               {!email ? (
                 <div className="rounded-md bg-yellow-50 p-4 text-sm text-yellow-700">
-                  Sessione non rilevata. Assicurati di aver cliccato sul link nell'email di recupero password.
+                  No session detected. Make sure you have clicked on the password recovery link in your email.
                   <div className="mt-2">
                     <button
                       type="button"
                       onClick={handleManualVerify}
                       className="mt-2 inline-flex items-center rounded-md border border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
                     >
-                      Tenta verifica manuale
+                      Try Manual Verification
                     </button>
                     <div className="mt-3">
                       <Link 
@@ -306,7 +306,7 @@ function ResetPasswordContent() {
                         className="font-medium text-indigo-600 hover:text-indigo-500"
                         prefetch={false}
                       >
-                        Richiedi un nuovo link di recupero password
+                        Request a new password recovery link
                       </Link>
                     </div>
                   </div>
@@ -315,7 +315,7 @@ function ResetPasswordContent() {
                 <>
                   <div>
                     <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                      Nuova Password
+                      New Password
                     </label>
                     <div className="mt-1">
                       <input
@@ -326,14 +326,14 @@ function ResetPasswordContent() {
                         required
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
                       />
                     </div>
                   </div>
                   
                   <div>
                     <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                      Conferma Nuova Password
+                      Confirm New Password
                     </label>
                     <div className="mt-1">
                       <input
@@ -344,7 +344,7 @@ function ResetPasswordContent() {
                         required
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
                       />
                     </div>
                   </div>
@@ -355,7 +355,7 @@ function ResetPasswordContent() {
                       disabled={loading}
                       className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
                     >
-                      {loading ? 'Aggiornamento in corso...' : 'Aggiorna Password'}
+                      {loading ? 'Updating...' : 'Update Password'}
                     </button>
                   </div>
                 </>
@@ -367,18 +367,8 @@ function ResetPasswordContent() {
                   className="text-indigo-600 hover:text-indigo-500"
                   prefetch={false}
                 >
-                  Torna alla pagina di login
+                  Return to Login Page
                 </Link>
-              </div>
-              
-              {/* Area di debug - sempre visibile */}
-              <div className="mt-6 border-t pt-4">
-                <details>
-                  <summary className="cursor-pointer text-sm text-gray-500">Informazioni di Debug</summary>
-                  <pre className="mt-2 max-h-64 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-800">
-                    {debugInfo || 'Nessuna informazione di debug disponibile'}
-                  </pre>
-                </details>
               </div>
             </form>
           )}
@@ -388,7 +378,7 @@ function ResetPasswordContent() {
   );
 }
 
-// Componente di caricamento semplice
+// Simple loading component
 function LoadingState() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -400,7 +390,7 @@ function LoadingState() {
   );
 }
 
-// Componente principale che avvolge il contenuto in Suspense
+// Main component that wraps the content in Suspense
 export default function ResetPassword() {
   return (
     <Suspense fallback={<LoadingState />}>

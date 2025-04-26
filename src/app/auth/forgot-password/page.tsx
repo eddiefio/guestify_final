@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import Link from 'next/link';
 
 export default function ForgotPassword() {
@@ -10,7 +10,10 @@ export default function ForgotPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,6 +72,7 @@ export default function ForgotPassword() {
             <Link 
               href="/auth/signin"
               className="text-indigo-600 hover:text-indigo-500"
+              prefetch={false}
             >
               Return to Login Page
             </Link>
@@ -94,7 +98,7 @@ export default function ForgotPassword() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                  className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
                   placeholder="nome@esempio.it"
                 />
               </div>
@@ -106,14 +110,15 @@ export default function ForgotPassword() {
                 disabled={loading}
                 className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
               >
-                {loading ? 'Invio in corso...' : 'Invia link di recupero'}
+                {loading ? 'Sending...' : 'Send recovery link'}
               </button>
             </div>
 
             <div className="text-center text-sm">
               <Link 
-                href="/auth/login" 
+                href="/auth/signin" 
                 className="text-indigo-600 hover:text-indigo-500"
+                prefetch={false}
               >
                 Return to Login Page
               </Link>
