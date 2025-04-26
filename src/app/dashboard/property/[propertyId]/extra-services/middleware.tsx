@@ -26,6 +26,28 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
           return;
         }
 
+        // Controlliamo se questa è una proprietà template con bypass_stripe abilitato
+        const { data: property, error: propertyError } = await supabase
+          .from('properties')
+          .select('bypass_stripe')
+          .eq('id', propertyId)
+          .single();
+          
+        if (propertyError) {
+          console.error('Error checking property:', propertyError);
+          toast.error('Error verifying the property');
+          router.push('/dashboard');
+          return;
+        }
+        
+        // Se la proprietà ha bypass_stripe a true, consentiamo l'accesso diretto
+        if (property && property.bypass_stripe === true) {
+          console.log('Property has bypass_stripe flag enabled, allowing direct access');
+          setIsStripeEnabled(true);
+          setIsLoading(false);
+          return;
+        }
+
         // Controlliamo se l'utente ha un account Stripe e il suo stato
         const { data: stripeAccount, error } = await supabase
           .from('host_stripe_accounts')

@@ -217,6 +217,7 @@ export const createTemplateProperty = async (userId: string) => {
           state: "Greater London",
           zip: "W1A 1AA",
           country: "United Kingdom",
+          bypass_stripe: true,
         }
       ])
       .select()
