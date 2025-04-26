@@ -191,6 +191,13 @@ export const createTemplateProperty = async (userId: string) => {
   try {
     console.log(`Creating template property for user ${userId}...`)
     
+    // Definizione delle interfacce
+    interface HowThingsWorkItem {
+      title: string;
+      description: string;
+      display_order: number;
+    }
+    
     // 1. Create base property
     const { data: property, error: propertyError } = await supabase
       .from('properties')
@@ -331,7 +338,7 @@ export const createTemplateProperty = async (userId: string) => {
       const categoryId = categoryData.id
       
       // Add items for each category
-      let itemsForCategory = []
+      let itemsForCategory: HowThingsWorkItem[] = []
       
       switch (category.name) {
         case "Kitchen":

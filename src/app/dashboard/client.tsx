@@ -156,19 +156,19 @@ export default function DashboardClient() {
     
     try {
       setCreatingTemplate(true)
-      toast.loading('Creating template property...')
+      toast.loading('Creating example property...')
       
       const { success, propertyId, error } = await createTemplateProperty(user.id)
       
       if (!success || error) {
         toast.dismiss()
-        toast.error('Error creating template property')
+        toast.error('Error creating example property')
         console.error('Error:', error)
         return
       }
       
       toast.dismiss()
-      toast.success('Template property created successfully!')
+      toast.success('Example property created successfully!')
       
       // Refresh properties list
       const { data, error: fetchError } = await supabase
@@ -307,11 +307,11 @@ export default function DashboardClient() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                     </svg>
                   )}
-                  Create Template Property
+                  Create Example Property
                 </button>
               </div>
               <p className="text-gray-500 mt-4 text-sm">
-                The template property includes pre-configured rules, services, and WiFi settings.
+                The example property includes pre-configured rules, services, and WiFi settings.
               </p>
             </div>
           ) : (
