@@ -510,15 +510,12 @@ export default function HouseInfo() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`House Info - ${property?.name || 'Property'}`}>
+      <Layout title={`House Info - ${property?.name || 'Property'}`} hasBackButton backUrl="/dashboard">
         <div className="container mx-auto px-4 py-6 font-spartan">
           {/* Header con nome proprietà */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <Link href="/dashboard" className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
-                <ArrowLeftIcon size={16} className="mr-1" />
-                Back to Dashboard
-              </Link>
+              <div></div> {/* Elemento vuoto per bilanciare la navbar */}
               <h1 className="text-2xl font-bold text-gray-800">
                 House Info for {property?.name || 'Loading...'}
               </h1>

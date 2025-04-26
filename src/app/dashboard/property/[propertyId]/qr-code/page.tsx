@@ -322,12 +322,9 @@ export default function PrintQR() {
   }
 
   return (
-    <Layout title={`QR Code - ${propertyName}`}>
+    <Layout title={`QR Code - ${propertyName}`} hasBackButton backUrl="/dashboard">
       <div className="max-w-4xl mx-auto px-4">
-        <div className="flex items-center mb-6">
-          <Link href={`/dashboard/property/${propertyId}/house-info`} className="text-indigo-600 hover:text-indigo-800 mr-4">
-            &larr; Back to Dashboard
-          </Link>
+        <div className="flex justify-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">QR Code for {propertyName}</h1>
         </div>
 
