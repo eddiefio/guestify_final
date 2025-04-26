@@ -44,9 +44,13 @@ export default function GuestHomePage() {
     houseRules: Array<{title: string}>;
     extraServices: Array<{title: string, description: string}>;
     cityGuideTitle?: string;
+    howThingsWork: Array<{title: string, description: string}>;
+    beforeLeaving: Array<{title: string, description: string}>;
   }>({
     houseRules: [],
     extraServices: [],
+    howThingsWork: [],
+    beforeLeaving: [],
   })
 
   // List of essential categories with SVG icons
@@ -400,6 +404,32 @@ export default function GuestHomePage() {
           extraServices: extraServices
         }));
       }
+
+      // Fetch how things work articles
+      const { data: howThingsWork, error: howThingsWorkError } = await supabase
+        .from('how_things_work')
+        .select('title, description')
+        .eq('property_id', propertyId)
+      
+      if (!howThingsWorkError && howThingsWork) {
+        setPropertyDetails(prev => ({
+          ...prev,
+          howThingsWork: howThingsWork
+        }));
+      }
+
+      // Fetch before leaving articles
+      const { data: beforeLeaving, error: beforeLeavingError } = await supabase
+        .from('before_leaving')
+        .select('title, description')
+        .eq('property_id', propertyId)
+      
+      if (!beforeLeavingError && beforeLeaving) {
+        setPropertyDetails(prev => ({
+          ...prev,
+          beforeLeaving: beforeLeaving
+        }));
+      }
     } catch (error) {
       console.error('Error fetching property content for search:', error);
     }
@@ -479,6 +509,50 @@ export default function GuestHomePage() {
           title: rule.title,
           description: 'House rule set by the host',
           path: `/guest/${propertyId}/house-rules`
+        })
+      }
+    })
+
+    // Search in host's "How Things Work" articles
+    if ('how things work'.includes(query) || 'appliances'.includes(query) || 'how to use'.includes(query)) {
+      results.push({
+        title: 'How Things Work',
+        description: 'Help with appliances and home equipment',
+        path: `/guest/${propertyId}/how-things-work`
+      })
+    }
+
+    propertyDetails.howThingsWork.forEach(article => {
+      if (
+        article.title.toLowerCase().includes(query) || 
+        (article.description && article.description.toLowerCase().includes(query))
+      ) {
+        results.push({
+          title: article.title,
+          description: article.description || 'How to use appliances in this property',
+          path: `/guest/${propertyId}/how-things-work`
+        })
+      }
+    })
+
+    // Search in host's "Before You Leave Home" articles
+    if ('before leaving'.includes(query) || 'check out'.includes(query) || 'departure'.includes(query)) {
+      results.push({
+        title: 'Before You Leave Home',
+        description: 'Essential information for your departure',
+        path: `/guest/${propertyId}/before-leaving`
+      })
+    }
+
+    propertyDetails.beforeLeaving.forEach(article => {
+      if (
+        article.title.toLowerCase().includes(query) || 
+        (article.description && article.description.toLowerCase().includes(query))
+      ) {
+        results.push({
+          title: article.title,
+          description: article.description || 'Information for before your departure',
+          path: `/guest/${propertyId}/before-leaving`
         })
       }
     })
@@ -597,13 +671,13 @@ export default function GuestHomePage() {
                 <input
                   type="text"
                   placeholder="Search for information, services or rules..."
-                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
+                  className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm text-gray-800"
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     // Auto-search while typing with a small delay
-                    if (e.target.value.trim().length > 2) {
-                      // Only search if 3+ characters
+                    if (e.target.value.trim().length > 1) {
+                      // Only search if 2+ characters (modificato da 3+ a 2+)
                       handleSearch(e as any);
                     } else if (e.target.value.trim().length === 0) {
                       setShowSearchResults(false);
