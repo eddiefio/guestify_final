@@ -122,20 +122,6 @@ export default function DashboardClient() {
     if (!user) return
     
     try {
-      // Verifica prima se questa proprietà ha il flag bypass_stripe impostato a true
-      const { data: property, error: propertyError } = await supabase
-        .from('properties')
-        .select('bypass_stripe')
-        .eq('id', propertyId)
-        .single()
-      
-      // Se la proprietà ha bypass_stripe a true, vai direttamente alla pagina extra-services
-      if (!propertyError && property && property.bypass_stripe === true) {
-        console.log('Property has bypass_stripe flag enabled, accessing extra services directly')
-        router.push(`/dashboard/property/${propertyId}/extra-services`)
-        return
-      }
-      
       // Check if the user has an active Stripe account
       const { data: stripeAccount, error } = await supabase
         .from('host_stripe_accounts')
