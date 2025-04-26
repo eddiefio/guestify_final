@@ -202,20 +202,42 @@ export default function CheckinInformationGuest() {
             </div>
 
             {/* Tab navigation */}
-            <div className="mb-6 flex overflow-x-auto scrollbar-hide border-b border-gray-200">
-              {(['access_and_keys', 'checkin_time', 'parking_info'] as const).map((section) => (
-                <button
-                  key={section}
-                  onClick={() => setActiveSection(section)}
-                  className={`flex-shrink-0 px-5 py-3 font-semibold text-sm rounded-t-lg mr-1 ${
-                    activeSection === section
-                      ? 'bg-[#5E2BFF] text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {getSectionTitle(section)}
-                </button>
-              ))}
+            <div className="grid grid-cols-3 gap-2 md:gap-6 mb-8">
+              <div 
+                className={`rounded-xl shadow hover:shadow-md transition p-2 md:p-4 cursor-pointer h-full flex flex-col items-center justify-center ${activeSection === 'access_and_keys' ? 'bg-blue-100' : 'bg-blue-50 hover:bg-blue-100'}`}
+                onClick={() => setActiveSection('access_and_keys')}
+              >
+                <div className="text-blue-500 mb-1 md:mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                  </svg>
+                </div>
+                <h2 className="text-xs md:text-sm font-bold text-gray-800 text-center">Access & Keys</h2>
+              </div>
+
+              <div 
+                className={`rounded-xl shadow hover:shadow-md transition p-2 md:p-4 cursor-pointer h-full flex flex-col items-center justify-center ${activeSection === 'checkin_time' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
+                onClick={() => setActiveSection('checkin_time')}
+              >
+                <div className="text-yellow-500 mb-1 md:mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h2 className="text-xs md:text-sm font-bold text-gray-800 text-center">Check-in Time</h2>
+              </div>
+
+              <div 
+                className={`rounded-xl shadow hover:shadow-md transition p-2 md:p-4 cursor-pointer h-full flex flex-col items-center justify-center ${activeSection === 'parking_info' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
+                onClick={() => setActiveSection('parking_info')}
+              >
+                <div className="text-green-500 mb-1 md:mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+                  </svg>
+                </div>
+                <h2 className="text-xs md:text-sm font-bold text-gray-800 text-center">Parking Information</h2>
+              </div>
             </div>
 
             {/* Section content */}
