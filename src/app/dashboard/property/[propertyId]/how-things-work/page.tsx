@@ -937,13 +937,10 @@ export default function HowThingsWork() {
   // Rendering UI
   return (
     <ProtectedRoute>
-      <Layout>
+      <Layout hasBackButton backUrl="/dashboard">
         <div className="container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-6">
-            <Link href={`/dashboard/property/${propertyId}/house-info`} className="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
-              <ArrowLeftIcon size={16} className="mr-1" />
-              Back to House Info
-            </Link>
+            <div></div> {/* Elemento vuoto per bilanciare la navbar */}
             <h1 className="text-3xl font-bold">How Things Work</h1>
             <div></div> {/* Elemento vuoto per bilanciare la navbar */}
           </div>

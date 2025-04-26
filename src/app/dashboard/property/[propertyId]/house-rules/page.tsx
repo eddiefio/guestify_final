@@ -164,19 +164,10 @@ export default function HouseRules() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`House Rules - ${propertyName}`}>
+      <Layout title={`House Rules - ${propertyName}`} hasBackButton backUrl="/dashboard">
         <div className="container mx-auto px-4 py-6 font-spartan">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
             <div>
-              <Link 
-                href="/dashboard" 
-                className="inline-flex items-center text-[#5E2BFF] hover:underline mb-4"
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path>
-                </svg>
-                Back to Dashboard
-              </Link>
               <h1 className="text-2xl md:text-3xl font-bold text-gray-800">House Rules for {propertyName}</h1>
               <p className="text-gray-600 mt-1">Manage the rules for your property</p>
             </div>
