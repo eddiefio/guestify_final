@@ -25,7 +25,6 @@ export default function WifiConnectionGuest() {
   const [wifiCredentials, setWifiCredentials] = useState<WifiCredentials | null>(null)
   const [propertyName, setPropertyName] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
-  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'connecting' | 'connected' | 'failed'>('idle')
 
   useEffect(() => {
     if (!propertyId) return
@@ -94,26 +93,6 @@ export default function WifiConnectionGuest() {
     } catch (error) {
       console.error('Error generating QR code:', error)
       setError('Failed to generate QR code')
-    }
-  }
-  
-  const connectToWifi = async () => {
-    if (!wifiCredentials) return
-    
-    setConnectionStatus('connecting')
-    
-    try {
-      // For web, we cannot directly connect to WiFi, so we show instructions
-      // and pretend to connect after a delay for demonstration purposes
-      
-      setTimeout(() => {
-        // In a real implementation, this would happen when the user manually connects
-        // using the provided credentials
-        setConnectionStatus('connected')
-      }, 2000)
-    } catch (error) {
-      console.error('Error connecting to WiFi:', error)
-      setConnectionStatus('failed')
     }
   }
 
@@ -195,38 +174,9 @@ export default function WifiConnectionGuest() {
                     )}
 
                     <div className="text-center">
-                      <p className="text-gray-600 text-sm mb-4">
+                      <p className="text-gray-600 text-sm">
                         Scan the QR code with your device's camera to connect automatically, or use the credentials above to connect manually.
                       </p>
-                      
-                      <button
-                        onClick={connectToWifi}
-                        disabled={connectionStatus === 'connecting' || connectionStatus === 'connected'}
-                        className={`w-full py-3 px-4 rounded-lg font-bold transition duration-200 ${
-                          connectionStatus === 'connected' 
-                            ? 'bg-green-500 text-white' 
-                            : connectionStatus === 'connecting'
-                              ? 'bg-gray-300 text-gray-700 cursor-not-allowed'
-                              : 'bg-[#5E2BFF] text-white hover:bg-opacity-90'
-                        }`}
-                      >
-                        {connectionStatus === 'connected' && 'Connected to WiFi'}
-                        {connectionStatus === 'connecting' && 'Connecting...'}
-                        {connectionStatus === 'failed' && 'Connection Failed - Try Again'}
-                        {connectionStatus === 'idle' && 'Connect to WiFi'}
-                      </button>
-                      
-                      {connectionStatus === 'connected' && (
-                        <p className="text-green-600 text-sm mt-2">
-                          Successfully connected to {wifiCredentials.network_name}
-                        </p>
-                      )}
-                      
-                      {connectionStatus === 'failed' && (
-                        <p className="text-red-600 text-sm mt-2">
-                          Could not connect to WiFi. Please try connecting manually.
-                        </p>
-                      )}
                     </div>
                   </>
                 ) : (

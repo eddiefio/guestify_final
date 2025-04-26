@@ -63,8 +63,8 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       setDrivingPhotos(driving)
       setTrainPhotos(train)
     } catch (error) {
-      console.error('Errore durante il caricamento delle foto delle direzioni:', error)
-      toast.error('Impossibile caricare le foto delle direzioni')
+      console.error('Error loading direction photos:', error)
+      toast.error('Unable to load direction photos')
     } finally {
       setLoading(false)
     }
@@ -80,28 +80,28 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       const fileName = `${propertyId}-${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `directions/${fileName}`
       
-      // Carica il file in storage
+      // Upload file to storage
       const { error: uploadError } = await supabase.storage
         .from('property-photos')
         .upload(filePath, file)
       
       if (uploadError) throw uploadError
       
-      // Ottieni l'URL pubblico
+      // Get public URL
       const { data: urlData } = supabase.storage
         .from('property-photos')
         .getPublicUrl(filePath)
       
-      if (!urlData || !urlData.publicUrl) throw new Error('Impossibile ottenere l\'URL pubblico')
+      if (!urlData || !urlData.publicUrl) throw new Error('Unable to get public URL')
       
-      // Calcola display_order (max + 1)
+      // Calculate display_order (max + 1)
       const photos = activeTab === 'driving' ? drivingPhotos : trainPhotos
       const maxOrder = photos.length > 0 
         ? Math.max(...photos.map(p => p.display_order)) 
         : -1
       const newOrder = maxOrder + 1
       
-      // Inserisci record nella tabella directions_photos
+      // Insert record in directions_photos table
       const { data, error } = await supabase
         .from('directions_photos')
         .insert({
@@ -115,33 +115,33 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       
       if (error) throw error
       
-      toast.success('Foto caricata con successo')
+      toast.success('Photo uploaded successfully')
       
-      // Aggiorna lo stato
+      // Update state
       loadDirectionsPhotos()
       
-      // Resetta input file
+      // Reset file input
       if (fileInputRef.current) fileInputRef.current.value = ''
       
     } catch (error) {
-      console.error('Errore durante il caricamento della foto:', error)
-      toast.error('Impossibile caricare la foto')
+      console.error('Error uploading photo:', error)
+      toast.error('Unable to upload photo')
     } finally {
       setUploading(false)
     }
   }
 
   const handleDeletePhoto = async (photoId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questa foto?')) return
+    if (!confirm('Are you sure you want to delete this photo?')) return
     
     try {
-      // Troviamo prima la foto da eliminare per ottenere l'URL
+      // Find the photo to delete first to get the URL
       const photos = activeTab === 'driving' ? drivingPhotos : trainPhotos
       const photoToDelete = photos.find(p => p.id === photoId)
       
       if (!photoToDelete) return
       
-      // Eliminiamo prima il record dal database
+      // Delete the record from the database first
       const { error } = await supabase
         .from('directions_photos')
         .delete()
@@ -149,32 +149,32 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       
       if (error) throw error
       
-      // Estraiamo il percorso dell'immagine dall'URL
-      // L'URL è del tipo: https://fqjjivwdubseuwjonufk.supabase.co/storage/v1/object/public/property-photos/directions/FILE_NAME
+      // Extract the image path from the URL
+      // URL format: https://fqjjivwdubseuwjonufk.supabase.co/storage/v1/object/public/property-photos/directions/FILE_NAME
       const photoUrl = photoToDelete.photo_url
       const filePathMatch = photoUrl.match(/\/property-photos\/(.+)$/)
       
       if (filePathMatch && filePathMatch[1]) {
-        // Eliminiamo l'immagine dallo storage
+        // Delete the image from storage
         try {
           const { error: storageError } = await supabase.storage
             .from('property-photos')
             .remove([filePathMatch[1]])
           
           if (storageError) {
-            console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
+            console.error('Error deleting image from storage:', storageError)
           }
         } catch (storageError) {
-          console.error('Errore durante l\'eliminazione dell\'immagine dallo storage:', storageError)
-          // Non interrumpiamo il flusso se l'eliminazione dallo storage fallisce
+          console.error('Error deleting image from storage:', storageError)
+          // Don't interrupt the flow if storage deletion fails
         }
       }
       
-      toast.success('Foto eliminata con successo')
+      toast.success('Photo deleted successfully')
       loadDirectionsPhotos()
     } catch (error) {
-      console.error('Errore durante l\'eliminazione della foto:', error)
-      toast.error('Impossibile eliminare la foto')
+      console.error('Error deleting photo:', error)
+      toast.error('Unable to delete photo')
     }
   }
 
@@ -189,12 +189,12 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       
       if (error) throw error
       
-      toast.success('Descrizione aggiornata con successo')
+      toast.success('Description updated successfully')
       setEditingPhoto(null)
       loadDirectionsPhotos()
     } catch (error) {
-      console.error('Errore durante l\'aggiornamento della descrizione:', error)
-      toast.error('Impossibile aggiornare la descrizione')
+      console.error('Error updating description:', error)
+      toast.error('Unable to update description')
     }
   }
 
@@ -212,7 +212,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       const currentPhoto = photos[index]
       const targetPhoto = photos[targetIndex]
       
-      // Scambia gli ordini
+      // Swap orders
       const { error: error1 } = await supabase
         .from('directions_photos')
         .update({ display_order: targetPhoto.display_order })
@@ -229,8 +229,8 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       
       loadDirectionsPhotos()
     } catch (error) {
-      console.error('Errore durante lo spostamento della foto:', error)
-      toast.error('Impossibile modificare l\'ordine delle foto')
+      console.error('Error moving photo:', error)
+      toast.error('Unable to change photo order')
     }
   }
 
@@ -256,7 +256,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
           }`}
         >
           <Car size={16} className="mr-2" />
-          Indicazioni in Auto
+          Auto Directions
         </button>
         <button
           onClick={() => setActiveTab('train')}
@@ -267,7 +267,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
           }`}
         >
           <Train size={16} className="mr-2" />
-          Arrivo in Treno
+          Train Arrival
         </button>
       </div>
 
@@ -275,8 +275,8 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-medium">
             {activeTab === 'driving' 
-              ? 'Indicazioni per Arrivare in Auto' 
-              : 'Indicazioni per Arrivare in Treno'}
+              ? 'Auto Directions' 
+              : 'Train Arrival Directions'}
           </h3>
           <div>
             <input
@@ -295,12 +295,12 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
               {uploading ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                  Caricamento...
+                  Uploading...
                 </>
               ) : (
                 <>
                   <Upload size={16} className="mr-2" />
-                  Carica Foto
+                  Upload Photo
                 </>
               )}
             </button>
@@ -311,10 +311,10 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
           <div className="text-center py-10 bg-gray-100 rounded-lg">
             <MapPin size={40} className="mx-auto text-gray-400 mb-3" />
             <p className="text-gray-600 mb-2">
-              Nessuna foto {activeTab === 'driving' ? 'per indicazioni stradali' : 'per arrivo in treno'} disponibile
+              No photos {activeTab === 'driving' ? 'for driving directions' : 'for train arrival'} available
             </p>
             <p className="text-gray-500 text-sm">
-              Carica foto per aiutare i tuoi ospiti a trovare facilmente la tua proprietà
+              Upload photos to help your guests easily find your property
             </p>
           </div>
         ) : (
@@ -326,7 +326,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                     <div className="relative aspect-[4/3] w-full">
                       <Image
                         src={photo.photo_url}
-                        alt={`Direzione ${index + 1}`}
+                        alt={`Direction ${index + 1}`}
                         layout="fill"
                         objectFit="cover"
                         className="rounded-md"
@@ -338,7 +338,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                           onClick={() => movePhotoOrder(photo.id, 'up')}
                           disabled={index === 0}
                           className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
-                          title="Sposta in alto"
+                          title="Move up"
                         >
                           <ArrowUp size={18} />
                         </button>
@@ -346,7 +346,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                           onClick={() => movePhotoOrder(photo.id, 'down')}
                           disabled={index === activePhotos.length - 1}
                           className="p-1 text-gray-500 hover:text-[#5E2BFF] disabled:opacity-30"
-                          title="Sposta in basso"
+                          title="Move down"
                         >
                           <ArrowDown size={18} />
                         </button>
@@ -354,7 +354,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                       <button
                         onClick={() => handleDeletePhoto(photo.id)}
                         className="p-1 text-red-500 hover:text-red-700"
-                        title="Elimina foto"
+                        title="Delete photo"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -368,7 +368,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                           value={editDescription}
                           onChange={(e) => setEditDescription(e.target.value)}
                           className="w-full h-32 p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
-                          placeholder="Aggiungi una descrizione per questa foto..."
+                          placeholder="Add a description for this photo..."
                         />
                         <div className="flex justify-end space-x-2">
                           <button
@@ -376,14 +376,14 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                             className="px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <X size={16} className="inline mr-1" />
-                            Annulla
+                            Cancel
                           </button>
                           <button
                             onClick={handleEditDescription}
                             className="px-3 py-1 bg-[#5E2BFF] text-white rounded-md text-sm hover:bg-[#4a21cc]"
                           >
                             <Save size={16} className="inline mr-1" />
-                            Salva
+                            Save
                           </button>
                         </div>
                       </div>
@@ -391,7 +391,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                       <div>
                         <div className="flex justify-between items-start mb-2">
                           <h4 className="text-sm text-gray-500">
-                            Foto {index + 1}
+                            Photo {index + 1}
                           </h4>
                           <button
                             onClick={() => {
@@ -399,7 +399,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                               setEditDescription(photo.description || '')
                             }}
                             className="p-1 text-[#5E2BFF] hover:text-[#4a21cc]"
-                            title="Modifica descrizione"
+                            title="Edit description"
                           >
                             <PenLine size={18} />
                           </button>
@@ -409,7 +409,7 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
                           <p className="text-gray-700">{photo.description}</p>
                         ) : (
                           <p className="text-gray-400 italic">
-                            Nessuna descrizione. Clicca sull'icona della penna per aggiungerne una.
+                            No description. Click the pen icon to add one.
                           </p>
                         )}
                       </div>
@@ -423,13 +423,13 @@ export default function DirectionsSection({ propertyId }: DirectionsSectionProps
       </div>
       
       <div className="mt-4 bg-blue-50 p-4 rounded-md">
-        <h4 className="text-sm font-medium text-blue-700 mb-2">Suggerimenti:</h4>
+        <h4 className="text-sm font-medium text-blue-700 mb-2">Tips:</h4>
         <ul className="list-disc pl-5 text-sm text-blue-600 space-y-1">
-          <li>Carica foto chiare che mostrino punti di riferimento facilmente identificabili</li>
-          <li>Aggiungi descrizioni dettagliate per ogni foto per facilitare l'orientamento</li>
-          <li>Per le indicazioni in auto, includi foto di incroci importanti o segnali stradali</li>
-          <li>Per l'arrivo in treno, mostra il percorso dalla stazione alla proprietà</li>
-          <li>Organizza le foto in ordine cronologico usando le frecce su/giù</li>
+          <li>Upload clear photos that show easily identifiable landmarks</li>
+          <li>Add detailed descriptions for each photo to facilitate orientation</li>
+          <li>For driving directions, include photos of important intersections or road signs</li>
+          <li>For train arrival, show the route from the station to the property</li>
+          <li>Organize photos in chronological order using the up/down arrows</li>
         </ul>
       </div>
     </div>

@@ -41,8 +41,8 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
           setInfoId(data.id)
         }
       } catch (error) {
-        console.error('Errore durante il caricamento delle informazioni:', error)
-        toast.error('Impossibile caricare le informazioni richieste')
+        console.error('Error loading information:', error)
+        toast.error('Unable to load requested information')
       } finally {
         setLoading(false)
       }
@@ -83,10 +83,10 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
       }
       
       setIsEditing(false)
-      toast.success('Informazioni salvate con successo')
+      toast.success('Information saved successfully')
     } catch (error) {
-      console.error('Errore durante il salvataggio delle informazioni:', error)
-      toast.error('Impossibile salvare le informazioni')
+      console.error('Error saving information:', error)
+      toast.error('Unable to save information')
     } finally {
       setSaving(false)
     }
@@ -102,22 +102,22 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-4">
         <div>
           <h3 className="text-lg font-medium text-gray-800">
-            Informazioni richieste agli ospiti
+            Information required from guests
           </h3>
           <p className="text-sm text-gray-500">
-            Specifica quali informazioni desideri ricevere dai tuoi ospiti prima del loro arrivo
+            Specify what information you want to receive from your guests before their arrival
           </p>
         </div>
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
+            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF] w-full sm:w-auto justify-center"
           >
             <Edit size={16} className="mr-2" />
-            Modifica
+            Edit
           </button>
         )}
       </div>
@@ -128,7 +128,7 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
             value={content}
             onChange={(e) => setContent(e.target.value)}
             className="w-full h-64 p-4 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#5E2BFF] focus:border-[#5E2BFF]"
-            placeholder="Inserisci qui le informazioni che desideri ricevere dai tuoi ospiti (es. orario di arrivo, esigenze speciali, accessibilità, bambini, ecc.)"
+            placeholder="Enter the information you want to receive from your guests (e.g., arrival time, special needs, accessibility, children, etc.)"
           />
           
           <div className="flex justify-end">
@@ -140,12 +140,12 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
               {saving ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
-                  Salvataggio...
+                  Saving...
                 </>
               ) : (
                 <>
                   <Save size={16} className="mr-2" />
-                  Salva
+                  Save
                 </>
               )}
             </button>
@@ -161,8 +161,8 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500">
-              <p>Nessuna informazione richiesta specificata.</p>
-              <p className="mt-2">Clicca su "Modifica" per aggiungere le informazioni che desideri ricevere dai tuoi ospiti.</p>
+              <p>No requested information specified.</p>
+              <p className="mt-2">Click "Edit" to add the information you want to receive from your guests.</p>
             </div>
           )}
         </div>
@@ -170,8 +170,8 @@ export default function InformationNeededSection({ propertyId }: InformationNeed
       
       <div className="mt-6 text-sm text-gray-500">
         <p>
-          <strong>Suggerimento:</strong> Specifica chiaramente quali informazioni desideri ricevere dai tuoi ospiti prima del loro arrivo.
-          Ad esempio: orario di arrivo, esigenze particolari, accessibilità, presenza di bambini piccoli, allergie, ecc.
+          <strong>Tip:</strong> Clearly specify what information you want to receive from your guests before their arrival.
+          For example: arrival time, special needs, accessibility requirements, presence of young children, allergies, etc.
         </p>
       </div>
     </div>

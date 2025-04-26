@@ -186,7 +186,7 @@ export default function BeforeYouLeave() {
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">What's Provided</h2>
                     <p className="text-gray-600 mb-6">
-                      Gestione delle categorie e degli articoli forniti nella tua proprietà.
+                      Manage the categories and items provided in your property.
                     </p>
                     <ProvidedItemsSection propertyId={propertyId as string} />
                   </div>
@@ -196,7 +196,7 @@ export default function BeforeYouLeave() {
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">Information We Need to Know</h2>
                     <p className="text-gray-600 mb-6">
-                      Fai sapere ai tuoi ospiti quali informazioni ti servono prima del loro arrivo.
+                      Let your guests know what information you need before their arrival.
                     </p>
                     <InformationNeededSection propertyId={propertyId as string} />
                   </div>
@@ -206,7 +206,7 @@ export default function BeforeYouLeave() {
                   <div className="p-6">
                     <h2 className="text-xl font-bold text-gray-800 mb-4">How To Get There</h2>
                     <p className="text-gray-600 mb-6">
-                      Fornisci indicazioni per raggiungere la tua proprietà in auto o in treno.
+                      Provide directions to reach your property by car or train.
                     </p>
                     <DirectionsSection propertyId={propertyId as string} />
                   </div>

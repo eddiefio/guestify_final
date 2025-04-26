@@ -87,8 +87,8 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
         })
         setExpandedCategories(expanded)
       } catch (error) {
-        console.error('Errore durante il caricamento delle categorie:', error)
-        toast.error('Impossibile caricare le categorie')
+        console.error('Error loading categories:', error)
+        toast.error('Unable to load categories')
       } finally {
         setLoading(false)
       }
@@ -102,7 +102,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
   // Aggiungi una nuova categoria
   const handleAddCategory = async () => {
     if (!newCategoryName.trim()) {
-      toast.error('Inserisci un nome per la categoria')
+      toast.error('Please enter a category name')
       return
     }
 
@@ -129,17 +129,17 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
         setExpandedCategories({...expandedCategories, [newCategory.id]: true})
         setNewCategoryName('')
         setAddingCategory(false)
-        toast.success('Categoria aggiunta con successo')
+        toast.success('Category added successfully')
       }
     } catch (error) {
-      console.error('Errore durante l\'aggiunta della categoria:', error)
-      toast.error('Impossibile aggiungere la categoria')
+      console.error('Error adding category:', error)
+      toast.error('Unable to add category')
     }
   }
 
   // Elimina una categoria
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questa categoria? Tutti gli articoli associati verranno eliminati.')) {
+    if (!confirm('Are you sure you want to delete this category? All associated items will be deleted.')) {
       return
     }
 
@@ -161,17 +161,17 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
       if (error) throw error
 
       setCategories(categories.filter(c => c.id !== categoryId))
-      toast.success('Categoria eliminata con successo')
+      toast.success('Category deleted successfully')
     } catch (error) {
-      console.error('Errore durante l\'eliminazione della categoria:', error)
-      toast.error('Impossibile eliminare la categoria')
+      console.error('Error deleting category:', error)
+      toast.error('Unable to delete category')
     }
   }
 
   // Aggiungi un nuovo articolo a una categoria
   const handleAddItem = async (categoryId: string) => {
     if (!editingItem || !editingItem.name.trim()) {
-      toast.error('Inserisci un nome per l\'articolo')
+      toast.error('Please enter an item name')
       return
     }
 
@@ -208,18 +208,18 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
         setCategories(updatedCategories)
         setAddingItem(null)
         setEditingItem(null)
-        toast.success('Articolo aggiunto con successo')
+        toast.success('Item added successfully')
       }
     } catch (error) {
-      console.error('Errore durante l\'aggiunta dell\'articolo:', error)
-      toast.error('Impossibile aggiungere l\'articolo')
+      console.error('Error adding item:', error)
+      toast.error('Unable to add item')
     }
   }
 
   // Modifica un articolo esistente
   const handleUpdateItem = async () => {
     if (!editingItem || !editingItem.id || !editingItem.name.trim()) {
-      toast.error('Inserisci un nome per l\'articolo')
+      toast.error('Please enter an item name')
       return
     }
 
@@ -249,17 +249,17 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
         
         setCategories(updatedCategories)
         setEditingItem(null)
-        toast.success('Articolo aggiornato con successo')
+        toast.success('Item updated successfully')
       }
     } catch (error) {
-      console.error('Errore durante l\'aggiornamento dell\'articolo:', error)
-      toast.error('Impossibile aggiornare l\'articolo')
+      console.error('Error updating item:', error)
+      toast.error('Unable to update item')
     }
   }
 
   // Elimina un articolo
   const handleDeleteItem = async (categoryId: string, itemId: string) => {
-    if (!confirm('Sei sicuro di voler eliminare questo articolo?')) {
+    if (!confirm('Are you sure you want to delete this item?')) {
       return
     }
 
@@ -279,10 +279,10 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
       })
       
       setCategories(updatedCategories)
-      toast.success('Articolo eliminato con successo')
+      toast.success('Item deleted successfully')
     } catch (error) {
-      console.error('Errore durante l\'eliminazione dell\'articolo:', error)
-      toast.error('Impossibile eliminare l\'articolo')
+      console.error('Error deleting item:', error)
+      toast.error('Unable to delete item')
     }
   }
 
@@ -455,85 +455,186 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
                   {/* Elenco degli articoli */}
                   {category.items.length > 0 && (
                     <div className="mb-4">
-                      <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                          <tr>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Nome
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Descrizione
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Quantità
-                            </th>
-                            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                              Azioni
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                      {/* Desktop table - hidden on mobile */}
+                      <div className="hidden md:block">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Name
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Description
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Quantity
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {category.items.map((item) => (
+                              <tr key={item.id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                  {editingItem && editingItem.id === item.id ? (
+                                    <input
+                                      type="text"
+                                      value={editingItem.name}
+                                      onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded-md"
+                                    />
+                                  ) : (
+                                    item.name
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-normal text-sm text-gray-500">
+                                  {editingItem && editingItem.id === item.id ? (
+                                    <input
+                                      type="text"
+                                      value={editingItem.description || ''}
+                                      onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
+                                      className="w-full px-2 py-1 border border-gray-300 rounded-md"
+                                      placeholder="Descrizione (opzionale)"
+                                    />
+                                  ) : (
+                                    item.description || '-'
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                  {editingItem && editingItem.id === item.id ? (
+                                    <input
+                                      type="number"
+                                      value={editingItem.quantity}
+                                      onChange={(e) => setEditingItem({
+                                        ...editingItem, 
+                                        quantity: parseInt(e.target.value) || 1
+                                      })}
+                                      className="w-20 px-2 py-1 border border-gray-300 rounded-md"
+                                      min="1"
+                                    />
+                                  ) : (
+                                    item.quantity
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                  {editingItem && editingItem.id === item.id ? (
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={handleUpdateItem}
+                                        className="text-[#5E2BFF] hover:text-[#4a21cc]"
+                                      >
+                                        <Save size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingItem(null)}
+                                        className="text-gray-500 hover:text-gray-700"
+                                      >
+                                        <X size={16} />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex justify-end gap-2">
+                                      <button
+                                        onClick={() => setEditingItem({
+                                          id: item.id,
+                                          categoryId: category.id,
+                                          name: item.name,
+                                          description: item.description || '',
+                                          quantity: item.quantity
+                                        })}
+                                        className="text-blue-600 hover:text-blue-900"
+                                      >
+                                        <Edit size={16} />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteItem(category.id, item.id)}
+                                        className="text-red-500 hover:text-red-700"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile view - shown only on mobile devices */}
+                      <div className="md:hidden">
+                        <div className="space-y-3">
                           {category.items.map((item) => (
-                            <tr key={item.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                {editingItem && editingItem.id === item.id ? (
-                                  <input
-                                    type="text"
-                                    value={editingItem.name}
-                                    onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded-md"
-                                  />
-                                ) : (
-                                  item.name
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-normal text-sm text-gray-500">
-                                {editingItem && editingItem.id === item.id ? (
-                                  <input
-                                    type="text"
-                                    value={editingItem.description || ''}
-                                    onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                                    className="w-full px-2 py-1 border border-gray-300 rounded-md"
-                                    placeholder="Descrizione (opzionale)"
-                                  />
-                                ) : (
-                                  item.description || '-'
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {editingItem && editingItem.id === item.id ? (
-                                  <input
-                                    type="number"
-                                    value={editingItem.quantity}
-                                    onChange={(e) => setEditingItem({
-                                      ...editingItem, 
-                                      quantity: parseInt(e.target.value) || 1
-                                    })}
-                                    className="w-20 px-2 py-1 border border-gray-300 rounded-md"
-                                    min="1"
-                                  />
-                                ) : (
-                                  item.quantity
-                                )}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                {editingItem && editingItem.id === item.id ? (
-                                  <div className="flex justify-end gap-2">
+                            <div key={item.id} className="border rounded-lg p-3 bg-white">
+                              {editingItem && editingItem.id === item.id ? (
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="block text-xs text-gray-500 uppercase font-medium mb-1">Name</label>
+                                    <input
+                                      type="text"
+                                      value={editingItem.name}
+                                      onChange={(e) => setEditingItem({...editingItem, name: e.target.value})}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 uppercase font-medium mb-1">Description</label>
+                                    <input
+                                      type="text"
+                                      value={editingItem.description || ''}
+                                      onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                      placeholder="Description (optional)"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-500 uppercase font-medium mb-1">Quantity</label>
+                                    <input
+                                      type="number"
+                                      value={editingItem.quantity}
+                                      onChange={(e) => setEditingItem({
+                                        ...editingItem, 
+                                        quantity: parseInt(e.target.value) || 1
+                                      })}
+                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                                      min="1"
+                                    />
+                                  </div>
+                                  <div className="flex justify-end gap-2 pt-2">
                                     <button
                                       onClick={handleUpdateItem}
-                                      className="text-[#5E2BFF] hover:text-[#4a21cc]"
+                                      className="px-3 py-1 bg-[#5E2BFF] text-white rounded"
+                                      title="Save"
                                     >
-                                      <Save size={16} />
+                                      <Save size={16} className="mr-1 inline-block" />
+                                      Save
                                     </button>
                                     <button
                                       onClick={() => setEditingItem(null)}
-                                      className="text-gray-500 hover:text-gray-700"
+                                      className="px-3 py-1 border border-gray-300 text-gray-700 rounded"
+                                      title="Cancel"
                                     >
-                                      <X size={16} />
+                                      <X size={16} className="mr-1 inline-block" />
+                                      Cancel
                                     </button>
                                   </div>
-                                ) : (
-                                  <div className="flex justify-end gap-2">
+                                </div>
+                              ) : (
+                                <>
+                                  <div className="flex justify-between items-start">
+                                    <div>
+                                      <h4 className="font-medium text-gray-900">{item.name}</h4>
+                                      {item.description && (
+                                        <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                                      )}
+                                    </div>
+                                    <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                                      Qty: {item.quantity}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-end gap-2 mt-3">
                                     <button
                                       onClick={() => setEditingItem({
                                         id: item.id,
@@ -542,23 +643,25 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
                                         description: item.description || '',
                                         quantity: item.quantity
                                       })}
-                                      className="text-blue-600 hover:text-blue-900"
+                                      className="p-1 text-blue-600 hover:text-blue-900"
+                                      title="Edit item"
                                     >
-                                      <Edit size={16} />
+                                      <Edit size={18} />
                                     </button>
                                     <button
                                       onClick={() => handleDeleteItem(category.id, item.id)}
-                                      className="text-red-500 hover:text-red-700"
+                                      className="p-1 text-red-500 hover:text-red-700"
+                                      title="Delete item"
                                     >
-                                      <Trash2 size={16} />
+                                      <Trash2 size={18} />
                                     </button>
                                   </div>
-                                )}
-                              </td>
-                            </tr>
+                                </>
+                              )}
+                            </div>
                           ))}
-                        </tbody>
-                      </table>
+                        </div>
+                      </div>
                     </div>
                   )}
 
@@ -621,20 +724,18 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
                       <div className="flex justify-end gap-2">
                         <button
                           onClick={() => handleAddItem(category.id)}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
+                          className="px-4 py-2 bg-[#5E2BFF] text-white rounded-md hover:bg-[#4a21cc] transition"
                         >
-                          <Save size={16} className="mr-2" />
-                          Salva
+                          Add Item
                         </button>
                         <button
                           onClick={() => {
                             setAddingItem(null)
                             setEditingItem(null)
                           }}
-                          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                          className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition"
                         >
-                          <X size={16} className="mr-2" />
-                          Annulla
+                          Cancel
                         </button>
                       </div>
                     </div>
@@ -650,10 +751,10 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
                           quantity: 1
                         })
                       }}
-                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
+                      className="flex items-center text-[#5E2BFF] hover:text-[#4a21cc] transition"
                     >
-                      <PlusCircle size={16} className="mr-2" />
-                      Aggiungi Articolo
+                      <PlusCircle size={18} className="mr-1" />
+                      <span>Add Item</span>
                     </button>
                   )}
                 </div>
