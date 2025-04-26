@@ -485,11 +485,22 @@ export const createTemplateProperty = async (userId: string) => {
       },
       {
         section_type: "useful_contacts",
-        content: "Host: John Smith (+44 7123 456789)\nEmergency: 999\nLocal Police: +44 20 1234 5678\nNearest Hospital: St Mary's Hospital, Praed St, London (+44 20 8765 4321)"
+        content: JSON.stringify({
+          email: "host@templatehouse.com",
+          phoneNumber: "+44 7123 456789",
+          textNumber: "+44 7123 456789",
+          policeNumber: "101 (non-emergency) or 999 (emergency)",
+          ambulanceNumber: "999 or 112",
+          fireNumber: "999 or 112",
+          additionalInfo: "Local doctor: Dr. Smith at London Medical Centre - +44 20 1234 5678\nNearest pharmacy: Central Pharmacy - 125 High Street (open 24/7)\nProperty manager: Sarah Johnson - +44 7890 123456\nLocal taxi service: London Cabs - +44 20 8765 4321\nNearest tube station: Baker Street (5 min walk)"
+        })
       },
       {
         section_type: "book_again",
-        content: "Enjoyed your stay? Book directly with us for your next visit to receive 10% off! Contact us via email at bookings@templatehouse.com or through our website at www.templatehouse.com."
+        content: JSON.stringify({
+          text: "Thank you for choosing Template House for your stay in London! We'd be delighted to welcome you back on your next visit. Book directly with us to receive 10% off your next stay! We also offer special rates for returning guests and extended stays.\n\nFor direct bookings, contact us at: bookings@templatehouse.com or call/text +44 7123 456789.\n\nYou can also book through our partner websites using the links below.",
+          image_url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aG90ZWwlMjBib29raW5nfGVufDB8fDB8fHww&auto=format&fit=crop&w=800&q=60"
+        })
       }
     ]
     
@@ -506,6 +517,38 @@ export const createTemplateProperty = async (userId: string) => {
       
       if (infoError) {
         console.error(`Error creating house info section ${section.section_type}:`, infoError)
+        // Continue anyway
+      }
+    }
+    
+    // Add property listing links for "Book Again"
+    const propertyLinks = [
+      {
+        name: "Airbnb",
+        url: "https://www.airbnb.com/template-house",
+        logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Airbnb_logo_bélo.svg/2560px-Airbnb_logo_bélo.svg.png"
+      },
+      {
+        name: "Booking.com",
+        url: "https://www.booking.com/template-house",
+        logo_url: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Booking.com_logo.svg/2560px-Booking.com_logo.svg.png"
+      }
+    ]
+    
+    for (const link of propertyLinks) {
+      const { error: linkError } = await supabase
+        .from('property_listing_links')
+        .insert([
+          {
+            property_id: propertyId,
+            name: link.name,
+            url: link.url,
+            logo_url: link.logo_url
+          }
+        ])
+      
+      if (linkError) {
+        console.error(`Error creating property listing link ${link.name}:`, linkError)
         // Continue anyway
       }
     }
@@ -598,7 +641,7 @@ export const createTemplateProperty = async (userId: string) => {
       .insert([
         {
           property_id: propertyId,
-          content: "Please let us know the following before your departure:\n\n1. Your departure time so we can schedule cleaning\n2. Any issues or damages to report\n3. Feedback about your stay to help us improve\n4. The appliances you've used (dishwasher, washing machine, etc.)\n5. If you've moved any furniture (please return to original position)\n\nYou can contact us at checkout@templatehouse.com or via WhatsApp at +44 7123 456789."
+          content: "# IMPORTANT INFORMATION WE NEED BEFORE YOUR DEPARTURE\n\nDear Guest,\n\nTo ensure a smooth checkout process and to better prepare for future guests, please provide us with the following information before your departure:\n\n## Required Information:\n\n1. **Exact Departure Time**: Please confirm your checkout time so we can schedule cleaning appropriately. Standard checkout is 11:00 AM.\n\n2. **Lost Items**: Have you misplaced anything during your stay that we should look for?\n\n3. **Maintenance Issues**: Please report any issues with appliances, plumbing, electrical, or structural elements that need our attention.\n\n4. **Damage Report**: Please inform us of any accidental damage (we understand accidents happen!).\n\n5. **Used Amenities**: Which appliances did you use (washing machine, dishwasher, oven, etc.)? This helps us check their condition.\n\n## Optional Feedback:\n\n- What did you enjoy most about your stay?\n- Any suggestions for improvements?\n- Would you recommend our property to others?\n- Anything specific about the neighborhood you found helpful?\n\n## How to Provide This Information:\n\n- **Email**: checkout@templatehouse.com\n- **WhatsApp/Text**: +44 7123 456789\n- **Guest Portal**: Log in to your booking account\n\nThank you for choosing our property for your stay!\n\n— The Template House Team"
         }
       ])
     
