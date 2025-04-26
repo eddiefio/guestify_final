@@ -413,32 +413,32 @@ export const createTemplateProperty = async (userId: string) => {
         
         switch (item.title) {
           case "Coffee Machine":
-            imagePath = "https://images.unsplash.com/photo-1505275350441-83dcda8eeef5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1505275350441-83dcda8eeef5?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Dishwasher":
-            imagePath = "https://images.unsplash.com/photo-1581622558663-b2e33377dfb2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1581622558663-b2e33377dfb2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Smart TV":
-            imagePath = "https://images.unsplash.com/photo-1539786774573-1a6452239be7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1539786774573-1a6452239be7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Air Conditioning":
-            imagePath = "https://images.unsplash.com/photo-1652645607746-474d1636be68?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1652645607746-474d1636be68?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Shower":
-            imagePath = "https://images.unsplash.com/photo-1584622781564-1d987f7333c1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1584622781564-1d987f7333c1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Washing Machine":
-            imagePath = "https://images.unsplash.com/photo-1595831377229-8039cf198b3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1595831377229-8039cf198b3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Safe":
-            imagePath = "https://images.unsplash.com/photo-1601760561441-16420502c7e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1601760561441-16420502c7e0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           case "Heating Control":
-            imagePath = "https://images.unsplash.com/photo-1613204124306-daec3676d63b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1613204124306-daec3676d63b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
             break
           default:
             // Fallback image if none of the specific items match
-            imagePath = "https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60"
+            imagePath = `/api/image-proxy?url=${encodeURIComponent("https://images.unsplash.com/photo-1556761175-b413da4baf72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=60")}`
         }
         
         const { error: itemError } = await supabase
