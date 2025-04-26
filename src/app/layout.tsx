@@ -4,8 +4,9 @@ import Providers from './providers'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
-  title: 'Guestify - La piattaforma per gli host di affitti brevi',
-  description: 'Guestify è un\'applicazione web che permette agli host di affitti brevi di integrare all\'interno del proprio appartamento una stampa con un QR code per offrire servizi extra ai propri ospiti.',
+  title: 'Guestify',
+  description: '',
+  themeColor: '#5E2BFF',
 }
 
 export default function RootLayout({
@@ -21,6 +22,11 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <meta name="theme-color" content="#5E2BFF" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="font-sans">
         <Providers>

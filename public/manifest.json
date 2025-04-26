@@ -1,0 +1,16 @@
+{
+  "name": "Guestify",
+  "short_name": "Guestify",
+  "description": "Guestify App per host di affitti brevi",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5E2BFF",
+  "icons": [
+    {
+      "src": "/images/guestify_icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+} 
