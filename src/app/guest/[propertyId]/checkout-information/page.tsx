@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import Image from 'next/image'
 
 interface CheckoutInfo {
   id: string
@@ -38,10 +37,7 @@ export default function CheckoutInformationGuest() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [propertyName, setPropertyName] = useState('')
-  const [checkoutInfo, setCheckoutInfo] = useState<{
-    checkout_time?: string
-    checkout_process?: string
-  }>({})
+  const [checkoutInfo, setCheckoutInfo] = useState<{[key: string]: string}>({})
   const [photos, setPhotos] = useState<{
     checkout_time: CheckoutPhoto[]
     checkout_process: CheckoutPhoto[]
@@ -194,20 +190,30 @@ export default function CheckoutInformationGuest() {
             </div>
 
             {/* Tab navigation */}
-            <div className="mb-6 flex overflow-x-auto scrollbar-hide border-b border-gray-200">
-              {(['checkout_time', 'checkout_process'] as const).map((section) => (
-                <button
-                  key={section}
-                  onClick={() => setActiveSection(section)}
-                  className={`flex-shrink-0 px-5 py-3 font-semibold text-sm rounded-t-lg mr-1 ${
-                    activeSection === section
-                      ? 'bg-[#5E2BFF] text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {getSectionTitle(section)}
-                </button>
-              ))}
+            <div className="grid grid-cols-2 gap-2 md:gap-6 mb-8">
+              <div 
+                className={`rounded-xl shadow hover:shadow-md transition p-2 md:p-4 cursor-pointer h-full flex flex-col items-center justify-center ${activeSection === 'checkout_time' ? 'bg-yellow-100' : 'bg-yellow-50 hover:bg-yellow-100'}`}
+                onClick={() => setActiveSection('checkout_time')}
+              >
+                <div className="text-yellow-500 mb-1 md:mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h2 className="text-xs md:text-sm font-bold text-gray-800 text-center">Check-out Time</h2>
+              </div>
+
+              <div 
+                className={`rounded-xl shadow hover:shadow-md transition p-2 md:p-4 cursor-pointer h-full flex flex-col items-center justify-center ${activeSection === 'checkout_process' ? 'bg-green-100' : 'bg-green-50 hover:bg-green-100'}`}
+                onClick={() => setActiveSection('checkout_process')}
+              >
+                <div className="text-green-500 mb-1 md:mb-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 md:w-8 md:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                  </svg>
+                </div>
+                <h2 className="text-xs md:text-sm font-bold text-gray-800 text-center">Check-out Process</h2>
+              </div>
             </div>
 
             {/* Section content */}
