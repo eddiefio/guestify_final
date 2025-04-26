@@ -54,23 +54,23 @@ export default function ForgotPassword() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Recupera la tua password</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Reset your password</h1>
           <p className="mt-2 text-gray-600">
-            Inserisci la tua email per ricevere un link di recupero
+          Enter your email to receive a recovery link
           </p>
         </div>
 
         {success ? (
           <div className="text-center">
             <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700">
-              Abbiamo inviato un link di recupero all'indirizzo {email}. 
-              Controlla la tua email e segui le istruzioni per reimpostare la password.
+            We have sent a recovery link to {email}.
+            Please check your email and follow the instructions to reset your password.
             </div>
             <Link 
-              href="/auth/login"
+              href="/auth/signin"
               className="text-indigo-600 hover:text-indigo-500"
             >
-              Torna alla pagina di login
+              Return to Login Page
             </Link>
           </div>
         ) : (
@@ -115,7 +115,7 @@ export default function ForgotPassword() {
                 href="/auth/login" 
                 className="text-indigo-600 hover:text-indigo-500"
               >
-                Torna alla pagina di login
+                Return to Login Page
               </Link>
             </div>
           </form>

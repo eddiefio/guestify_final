@@ -43,12 +43,19 @@ export async function middleware(request: NextRequest) {
   // Debug per tracciare i cookie
   console.log('Cookie disponibili:', request.cookies.getAll().map(c => c.name))
   
-  // Proteggiamo le rotte che iniziano con /dashboard
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/dashboard')
+  // Percorso attuale
+  const pathname = request.nextUrl.pathname
   
-  if (isAuthRoute && !user) {
+  // Proteggiamo le rotte che iniziano con /dashboard
+  const isAuthRoute = pathname.startsWith('/dashboard')
+  
+  // Rotte pubbliche che non richiedono autenticazione
+  const isPublicAuthRoute = pathname.startsWith('/auth/reset-password') || 
+                           pathname.startsWith('/auth/callback')
+  
+  if (isAuthRoute && !user && !isPublicAuthRoute) {
     // Reindirizza alla pagina di login se l'utente non è autenticato
-    return NextResponse.redirect(new URL('/auth/login', request.url))
+    return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
   
   return response
