@@ -301,26 +301,197 @@ export const createTemplateProperty = async (userId: string) => {
       // Continue anyway
     }
     
-    // 6. Add how things work items
-    const howThingsWorkItems = [
-      { title: "Heating System", description: "The heating control is located in the hallway. Turn the dial clockwise to increase temperature." },
-      { title: "Smart TV", description: "Use the black remote to turn on the TV. Netflix and other streaming services are available." },
-      { title: "Washing Machine", description: "The washing machine is in the bathroom. Please use only the provided detergent." }
+    // 6. Add room categories for "How Things Work"
+    const roomCategories = [
+      { name: "Kitchen", display_order: 0 },
+      { name: "Living Room", display_order: 1 },
+      { name: "Bathroom", display_order: 2 },
+      { name: "Bedroom", display_order: 3 }
     ]
     
-    for (const item of howThingsWorkItems) {
-      const { error } = await supabase
-        .from('how_things_work')
+    // Create room categories and their items
+    for (const [index, category] of roomCategories.entries()) {
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('room_categories')
         .insert([
           {
             property_id: propertyId,
-            title: item.title,
-            description: item.description
+            name: category.name,
+            display_order: index
+          }
+        ])
+        .select()
+        .single()
+      
+      if (categoryError) {
+        console.error(`Error creating room category ${category.name}:`, categoryError)
+        continue // Continue with next category
+      }
+      
+      const categoryId = categoryData.id
+      
+      // Add items for each category
+      let itemsForCategory = []
+      
+      switch (category.name) {
+        case "Kitchen":
+          itemsForCategory = [
+            { 
+              title: "Coffee Machine", 
+              description: "Use only compatible pods. Add water to the tank, insert pod, and press the button.",
+              display_order: 0
+            },
+            { 
+              title: "Dishwasher", 
+              description: "Add detergent to the dispenser, select program and press start. Please run only when full.",
+              display_order: 1
+            }
+          ]
+          break
+        case "Living Room":
+          itemsForCategory = [
+            { 
+              title: "Smart TV", 
+              description: "Use the black remote. Netflix and other streaming services are already logged in.",
+              display_order: 0
+            },
+            { 
+              title: "Air Conditioning", 
+              description: "Use the remote on the coffee table. Set between 20-24°C for optimal comfort.",
+              display_order: 1
+            }
+          ]
+          break
+        case "Bathroom":
+          itemsForCategory = [
+            { 
+              title: "Shower", 
+              description: "Turn the left handle for temperature and right handle for water pressure.",
+              display_order: 0
+            },
+            { 
+              title: "Washing Machine", 
+              description: "Use program 2 for regular wash. Detergent is provided under the sink.",
+              display_order: 1
+            }
+          ]
+          break
+        case "Bedroom":
+          itemsForCategory = [
+            { 
+              title: "Safe", 
+              description: "Located in the wardrobe. Set your own 4-digit code by pressing 'set' followed by your code.",
+              display_order: 0
+            },
+            { 
+              title: "Heating Control", 
+              description: "Adjust the thermostat on the wall. Please turn off when opening windows.",
+              display_order: 1
+            }
+          ]
+          break
+      }
+      
+      // Add items for this category
+      for (const [itemIndex, item] of itemsForCategory.entries()) {
+        const { error: itemError } = await supabase
+          .from('how_things_work_items')
+          .insert([
+            {
+              category_id: categoryId,
+              title: item.title,
+              description: item.description,
+              display_order: itemIndex,
+              image_path: "default-item.jpg" // Default placeholder image
+            }
+          ])
+        
+        if (itemError) {
+          console.error(`Error creating how things work item ${item.title}:`, itemError)
+          // Continue anyway
+        }
+      }
+    }
+    
+    // 7. Add check-in information sections
+    const checkinSections = [
+      {
+        section_type: "access_and_keys",
+        content: JSON.stringify({
+          subtype: "access_and_keys",
+          content: "The keys are in a lockbox next to the main entrance. The code to access the lockbox is 1234. Once you retrieve the keys, the main door key is the silver one, while the gold one is for your apartment door (3rd floor). There is also a small key for the mailbox in the lobby."
+        })
+      },
+      {
+        section_type: "checkin_time",
+        content: JSON.stringify({
+          subtype: "checkin_time",
+          content: "Check-in is available from 3:00 PM to 8:00 PM. If you need to check in outside these hours, please contact us at least 24 hours in advance. Late check-in after 8:00 PM incurs a fee of €20, and check-ins after 11:00 PM might not be possible. Please provide your estimated arrival time so we can ensure someone is available to assist you."
+        })
+      },
+      {
+        section_type: "parking_info",
+        content: JSON.stringify({
+          subtype: "parking_info",
+          content: "There is a public parking garage two blocks away on Baker Street (£25/day). Street parking is also available with restrictions (free from 8:00 PM to 8:00 AM, paid during the day). We recommend using the underground as the station is just a 5-minute walk from the apartment. If you need a parking permit for your stay, please let us know in advance."
+        })
+      }
+    ]
+    
+    for (const section of checkinSections) {
+      const { error: sectionError } = await supabase
+        .from('house_info')
+        .insert([
+          {
+            property_id: propertyId,
+            section_type: "checkin_information", // Using standard section type
+            content: section.content // Store subtype in content as JSON
           }
         ])
       
-      if (error) {
-        console.error('Error creating how things work item:', error)
+      if (sectionError) {
+        console.error(`Error creating checkin information section ${section.section_type}:`, sectionError)
+        // Continue anyway
+      }
+    }
+    
+    // 8. Add general house info sections
+    const houseInfoSections = [
+      {
+        section_type: "checkin_information",
+        content: "Please arrive during check-in hours (3:00 PM - 8:00 PM). The keys are in a lockbox by the entrance. You'll find detailed instructions in the Check-in Information section."
+      },
+      {
+        section_type: "before_you_leave",
+        content: "Before leaving, please ensure all windows are closed, turn off all lights and appliances. Dispose of any garbage in the designated bins outside. Return the keys to the lockbox using the same code."
+      },
+      {
+        section_type: "checkout_information",
+        content: "Check-out time is 11:00 AM. Late check-out may be possible depending on our schedule - please inquire at least 24 hours in advance. Leave the keys in the lockbox when you depart."
+      },
+      {
+        section_type: "useful_contacts",
+        content: "Host: John Smith (+44 7123 456789)\nEmergency: 999\nLocal Police: +44 20 1234 5678\nNearest Hospital: St Mary's Hospital, Praed St, London (+44 20 8765 4321)"
+      },
+      {
+        section_type: "book_again",
+        content: "Enjoyed your stay? Book directly with us for your next visit to receive 10% off! Contact us via email at bookings@templatehouse.com or through our website at www.templatehouse.com."
+      }
+    ]
+    
+    for (const section of houseInfoSections) {
+      const { error: infoError } = await supabase
+        .from('house_info')
+        .insert([
+          {
+            property_id: propertyId,
+            section_type: section.section_type,
+            content: section.content
+          }
+        ])
+      
+      if (infoError) {
+        console.error(`Error creating house info section ${section.section_type}:`, infoError)
         // Continue anyway
       }
     }
