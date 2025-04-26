@@ -6,13 +6,23 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { ReactNode } from 'react'
+import BackButton from '@/components/BackButton'
 
 interface LayoutProps {
   children: ReactNode
   title?: string
+  hasBackButton?: boolean
+  backUrl?: string
+  backLabel?: string
 }
 
-export default function Layout({ children, title = 'Guestify' }: LayoutProps) {
+export default function Layout({ 
+  children, 
+  title = 'Guestify', 
+  hasBackButton = false,
+  backUrl,
+  backLabel = 'Back'
+}: LayoutProps) {
   const { user, signOut } = useAuth()
   const router = useRouter()
   
@@ -115,6 +125,11 @@ export default function Layout({ children, title = 'Guestify' }: LayoutProps) {
       
       {/* Main content */}
       <main className="max-w-6xl w-full mx-auto my-6 p-4 sm:p-6 flex-grow">
+        {hasBackButton && (
+          <div className="mb-6">
+            <BackButton label={backLabel} url={backUrl} />
+          </div>
+        )}
         {children}
       </main>
       

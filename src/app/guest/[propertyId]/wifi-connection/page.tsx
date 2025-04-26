@@ -101,11 +101,11 @@ export default function WifiConnectionGuest() {
   const copyToClipboard = (text: string, type: 'network' | 'password') => {
     navigator.clipboard.writeText(text)
       .then(() => {
-        setCopyFeedback(type === 'network' ? 'Nome rete copiato!' : 'Password copiata!')
+        setCopyFeedback(type === 'network' ? 'Network name copied!' : 'Password copied!')
         setTimeout(() => setCopyFeedback(null), 2000)
       })
       .catch(err => {
-        console.error('Errore durante la copia: ', err)
+        console.error('Error: ', err)
       })
   }
 

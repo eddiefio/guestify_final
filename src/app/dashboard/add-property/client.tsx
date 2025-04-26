@@ -196,7 +196,7 @@ export default function AddPropertyClient() {
   if (success) {
     return (
       <ProtectedRoute>
-        <Layout title="Property Added - Guestify">
+        <Layout title="Property Added - Guestify" hasBackButton backUrl="/dashboard">
           <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
             <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
               Property added successfully! Redirecting to dashboard...
@@ -209,17 +209,17 @@ export default function AddPropertyClient() {
 
   return (
     <ProtectedRoute>
-      <Layout title="Add Property - Guestify">
-        <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
-          <h2 className="text-xl font-bold mb-4">Add Property</h2>
+      <Layout title="Add Property - Guestify" hasBackButton backUrl="/dashboard">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold text-gray-800 mb-6">Add New Property</h1>
           
           {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-              {error}
+            <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
+              <p className="text-red-700">{error}</p>
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-md shadow-md">
             <div>
               <label htmlFor="rental_name" className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
               <input

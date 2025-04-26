@@ -221,7 +221,7 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
   return (
     <ProtectedRoute>
-      <Layout title="Edit Property - Guestify">
+      <Layout title="Edit Property - Guestify" hasBackButton backUrl="/dashboard">
         <div className="max-w-md mx-auto bg-white p-6 rounded-md shadow mt-10">
           <h2 className="text-xl font-bold mb-4">Edit Property</h2>
           
