@@ -119,26 +119,116 @@ export default function GuestHomePage() {
     }
   ])
 
-  // Function to get simulated weather data
+  // Function to get weather data from OpenWeatherMap API
   const fetchWeatherData = async (city: string) => {
-    // In a real app, you would call a weather API
-    // For now we create simulated data
-    const mockWeatherData: WeatherData = {
-      temperature: 23,
-      condition: 'Sunny',
-      icon: '☀️',
-      city: city,
-      date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
-      forecast: [
-        { day: 'Tue', temperature: 25, icon: '☀️' },
-        { day: 'Wed', temperature: 22, icon: '⛅' },
-        { day: 'Thu', temperature: 20, icon: '🌧️' },
-        { day: 'Fri', temperature: 18, icon: '🌧️' },
-        { day: 'Sat', temperature: 21, icon: '⛅' },
-      ]
+    try {
+      const apiKey = 'ecf9903b2edd9ef9d93ac875709b5357'; // API key gratuita per OpenWeatherMap
+      
+      // Chiamata per ottenere il meteo corrente
+      const currentResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`
+      );
+      
+      if (!currentResponse.ok) {
+        throw new Error('Errore nella richiesta meteo corrente');
+      }
+      
+      const currentData = await currentResponse.json();
+      
+      // Chiamata per ottenere la previsione per 5 giorni
+      const forecastResponse = await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?q=${city}&units=metric&appid=${apiKey}`
+      );
+      
+      if (!forecastResponse.ok) {
+        throw new Error('Errore nella richiesta previsioni meteo');
+      }
+      
+      const forecastData = await forecastResponse.json();
+      
+      // Ottieni il giorno attuale e altri giorni della settimana in italiano
+      const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+      const today = new Date();
+      
+      // Estrai previsioni per i prossimi 5 giorni (prendendo la previsione alle 12:00)
+      const dailyForecasts = [];
+      const processedDates = new Set();
+      
+      for (const item of forecastData.list) {
+        const date = new Date(item.dt * 1000);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // Salta il giorno corrente e prendi solo una previsione per giorno
+        if (!processedDates.has(dateStr) && date.getDate() !== today.getDate()) {
+          processedDates.add(dateStr);
+          
+          const dayIndex = date.getDay();
+          
+          dailyForecasts.push({
+            day: days[dayIndex],
+            temperature: Math.round(item.main.temp),
+            icon: getWeatherIcon(item.weather[0].id),
+          });
+          
+          // Ferma dopo 5 giorni
+          if (dailyForecasts.length >= 5) break;
+        }
+      }
+      
+      // Formatta la data corrente
+      const options: Intl.DateTimeFormatOptions = { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long' 
+      };
+      const currentDate = today.toLocaleDateString('it-IT', options);
+      
+      // Costruisci l'oggetto WeatherData
+      const weatherData: WeatherData = {
+        temperature: Math.round(currentData.main.temp),
+        condition: currentData.weather[0].description,
+        icon: getWeatherIcon(currentData.weather[0].id),
+        city: currentData.name,
+        date: currentDate,
+        forecast: dailyForecasts
+      };
+      
+      return weatherData;
+    } catch (error) {
+      console.error('Errore nel recupero dei dati meteo:', error);
+      // In caso di errore, ritorna dati simulati
+      const mockWeatherData: WeatherData = {
+        temperature: 23,
+        condition: 'Soleggiato',
+        icon: '☀️',
+        city: city,
+        date: new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }),
+        forecast: [
+          { day: 'Mar', temperature: 25, icon: '☀️' },
+          { day: 'Mer', temperature: 22, icon: '⛅' },
+          { day: 'Gio', temperature: 20, icon: '🌧️' },
+          { day: 'Ven', temperature: 18, icon: '🌧️' },
+          { day: 'Sab', temperature: 21, icon: '⛅' },
+        ]
+      };
+      
+      return mockWeatherData;
     }
-    
-    return mockWeatherData
+  }
+
+  // Helper function to get weather icon based on OpenWeatherMap condition code
+  const getWeatherIcon = (code: number): string => {
+    // Converti i codici condizioni meteo in emoji
+    if (code >= 200 && code < 300) return '⚡'; // Temporale
+    if (code >= 300 && code < 400) return '🌧️'; // Pioviggine
+    if (code >= 500 && code < 600) return '🌧️'; // Pioggia
+    if (code >= 600 && code < 700) return '❄️'; // Neve
+    if (code >= 700 && code < 800) return '🌫️'; // Foschia/Nebbia
+    if (code === 800) return '☀️'; // Cielo sereno
+    if (code === 801) return '🌤️'; // Poche nuvole
+    if (code === 802) return '⛅'; // Nubi sparse
+    if (code === 803 || code === 804) return '☁️'; // Nuvoloso
+    return '☀️'; // Default
   }
 
   const handleSearch = (e: React.FormEvent) => {
@@ -402,15 +492,15 @@ export default function GuestHomePage() {
             {/* Weather Information */}
             {weatherData && (
               <div className="w-full mt-auto">
-                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Weather in {weatherData.city}</h2>
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Meteo a {weatherData.city}</h2>
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
                   <div className="p-3">
                     <div className="flex justify-between items-center">
                       <div>
-                        <h3 className="text-sm font-bold">Tuesday 22 April</h3>
+                        <h3 className="text-sm font-bold">{weatherData.date}</h3>
                         <p className="text-xs opacity-90">{weatherData.city}</p>
                       </div>
-                      <div className="text-3xl">☀️</div>
+                      <div className="text-3xl">{weatherData.icon}</div>
                     </div>
                     <div className="mt-1 flex items-end">
                       <span className="text-3xl font-bold">{weatherData.temperature}°C</span>
