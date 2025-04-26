@@ -158,8 +158,8 @@ export default function PrintQR() {
       // Draw the WiFi QR code if available
       if (wifiImg && wifiQrCodeURL) {
         const wifiQrSize = qrSize * 0.6 // WiFi QR is 40% the size of the main QR
-        const wifiQrX = canvas.width * 0.6 // Moved more to the left (was 0.65)
-        const wifiQrY = canvas.height * 0.75 // Moved more to the top (was 0.85)
+        const wifiQrX = canvas.width * 0.60 // Moved more to the left (was 0.65)
+        const wifiQrY = canvas.height * 0.7 // Moved more to the top (was 0.85)
         ctx.drawImage(wifiImg, wifiQrX, wifiQrY, wifiQrSize, wifiQrSize)
       }
       

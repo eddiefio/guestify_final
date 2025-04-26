@@ -353,10 +353,10 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
           <h3 className="text-lg font-medium text-gray-800">
-            Categorie degli articoli ({categories.length})
+             Items Categories ({categories.length})
           </h3>
           <p className="text-sm text-gray-500">
-            Gestisci le categorie e gli articoli che fornisci nella tua proprietà
+          Manage the categories and items you provide in your property
           </p>
         </div>
         <div className="flex gap-2">
@@ -365,7 +365,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
               onClick={addDefaultCategories}
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
             >
-              Aggiungi categorie predefinite
+              Add suggested categories
             </button>
           )}
           <button
@@ -373,7 +373,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
           >
             <PlusCircle size={16} className="mr-2" />
-            Nuova Categoria
+            New Category
           </button>
         </div>
       </div>
@@ -381,13 +381,13 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
       {/* Form per aggiungere una nuova categoria */}
       {addingCategory && (
         <div className="bg-blue-50 p-4 rounded-lg mb-6">
-          <h4 className="font-medium text-gray-800 mb-2">Aggiungi Categoria</h4>
+          <h4 className="font-medium text-gray-800 mb-2">Add Category</h4>
           <div className="flex gap-2">
             <input
               type="text"
               value={newCategoryName}
               onChange={(e) => setNewCategoryName(e.target.value)}
-              placeholder="Nome categoria"
+              placeholder="Category Name"
               className="flex-grow px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-[#5E2BFF] focus:border-[#5E2BFF]"
             />
             <button
@@ -395,7 +395,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#5E2BFF] hover:bg-[#4a21cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
             >
               <Save size={16} className="mr-2" />
-              Salva
+              Save
             </button>
             <button
               onClick={() => {
@@ -405,7 +405,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
               className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
             >
               <X size={16} className="mr-2" />
-              Annulla
+              Cancel
             </button>
           </div>
         </div>
@@ -415,7 +415,7 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
       {categories.length === 0 ? (
         <div className="text-center p-12 bg-gray-50 rounded-lg">
           <p className="text-gray-500 mb-4">
-            Non hai ancora aggiunto categorie. Aggiungi categorie per definire gli articoli forniti nella tua proprietà.
+          You have not added any categories yet. Add categories to define the items provided in your property.
           </p>
         </div>
       ) : (
@@ -437,13 +437,13 @@ export default function ProvidedItemsSection({ propertyId }: ProvidedItemsSectio
                   </button>
                   <h3 className="font-medium text-gray-800">{category.name}</h3>
                   <span className="ml-2 text-sm text-gray-500">
-                    ({category.items.length} {category.items.length === 1 ? 'articolo' : 'articoli'})
+                    ({category.items.length} {category.items.length === 1 ? 'item' : 'items'})
                   </span>
                 </div>
                 <button
                   onClick={() => handleDeleteCategory(category.id)}
                   className="p-1 text-red-500 hover:text-red-700"
-                  title="Elimina categoria"
+                  title="Delete category"
                 >
                   <Trash2 size={18} />
                 </button>
