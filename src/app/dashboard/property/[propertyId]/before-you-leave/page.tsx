@@ -107,7 +107,7 @@ export default function BeforeYouLeave() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`Before You Leave Home - ${property?.name || 'Property'}`} hasBackButton backUrl="/dashboard/property/${propertyId}/house-info">
+      <Layout title={`Before You Leave Home - ${property?.name || 'Property'}`} hasBackButton backUrl="/house-info">
         <div className="container mx-auto px-4 py-6 font-spartan">
           {/* Header con nome proprietà */}
           <div className="mb-6">
