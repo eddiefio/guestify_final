@@ -164,7 +164,8 @@ export default function HouseRules() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`House Rules - ${propertyName}`} hasBackButton backUrl="/dashboard">
+      <Layout title={`House Rules - ${propertyName}`} hasBackButton backUrl="/dashboard/property/${propertyId}/house-info">
+      
         <div className="container mx-auto px-4 py-6 font-spartan">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
             <div>

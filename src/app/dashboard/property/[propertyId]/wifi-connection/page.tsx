@@ -209,7 +209,7 @@ export default function WifiConnection() {
 
   return (
     <ProtectedRoute>
-      <Layout title={`WiFi Connection - ${propertyName}`} hasBackButton backUrl="/dashboard">
+      <Layout title={`WiFi Connection - ${propertyName}`} hasBackButton backUrl="/dashboard/property/${propertyId}/house-info">
         <div className="container mx-auto px-4 py-6 font-spartan">
           <div className="flex flex-col md:flex-row items-center justify-between mb-8">
             <div>
