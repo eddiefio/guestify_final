@@ -38,6 +38,16 @@ export default function GuestHomePage() {
   const [error, setError] = useState<string | null>(null)
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Array<{title: string, description: string, path: string}>>([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
+  const [propertyDetails, setPropertyDetails] = useState<{
+    houseRules: Array<{title: string}>;
+    extraServices: Array<{title: string, description: string}>;
+    cityGuideTitle?: string;
+  }>({
+    houseRules: [],
+    extraServices: [],
+  })
 
   // List of essential categories with SVG icons
   const essentials = [
@@ -147,7 +157,7 @@ export default function GuestHomePage() {
       const forecastData = await forecastResponse.json();
       
       // Ottieni il giorno attuale e altri giorni della settimana in italiano
-      const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const today = new Date();
       
       // Estrai previsioni per i prossimi 5 giorni (prendendo la previsione alle 12:00)
@@ -181,7 +191,7 @@ export default function GuestHomePage() {
         day: 'numeric', 
         month: 'long' 
       };
-      const currentDate = today.toLocaleDateString('it-IT', options);
+      const currentDate = today.toLocaleDateString('en-US', options);
       
       // Costruisci l'oggetto WeatherData
       const weatherData: WeatherData = {
@@ -199,16 +209,16 @@ export default function GuestHomePage() {
       // In caso di errore, ritorna dati simulati
       const mockWeatherData: WeatherData = {
         temperature: 23,
-        condition: 'Soleggiato',
+        condition: 'Sunny',
         icon: '☀️',
         city: city,
-        date: new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }),
+        date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
         forecast: [
-          { day: 'Mar', temperature: 25, icon: '☀️' },
-          { day: 'Mer', temperature: 22, icon: '⛅' },
-          { day: 'Gio', temperature: 20, icon: '🌧️' },
-          { day: 'Ven', temperature: 18, icon: '🌧️' },
-          { day: 'Sab', temperature: 21, icon: '⛅' },
+          { day: 'Tue', temperature: 25, icon: '☀️' },
+          { day: 'Wed', temperature: 22, icon: '⛅' },
+          { day: 'Thu', temperature: 20, icon: '🌧️' },
+          { day: 'Fri', temperature: 18, icon: '🌧️' },
+          { day: 'Sat', temperature: 21, icon: '⛅' },
         ]
       };
       
@@ -229,12 +239,6 @@ export default function GuestHomePage() {
     if (code === 802) return '⛅'; // Nubi sparse
     if (code === 803 || code === 804) return '☁️'; // Nuvoloso
     return '☀️'; // Default
-  }
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Implement search functionality here
-    console.log('Searching:', searchQuery)
   }
 
   useEffect(() => {
@@ -259,7 +263,7 @@ export default function GuestHomePage() {
         // Fetch property details - modifica per evitare errori con .single()
         const { data: properties, error: propError } = await supabase
           .from('properties')
-          .select('name, city')
+          .select('name, city, id')
           .eq('id', normalizedId)
         
         // Debug: log della risposta
@@ -277,7 +281,7 @@ export default function GuestHomePage() {
           // Prova una query ilike (case insensitive)
           const { data: propertiesAlt, error: errorAlt } = await supabase
             .from('properties')
-            .select('name, city')
+            .select('name, city, id')
             .ilike('id', `%${normalizedId}%`)
             .limit(1);
           
@@ -292,6 +296,9 @@ export default function GuestHomePage() {
               const weather = await fetchWeatherData(property.city);
               setWeatherData(weather);
             }
+            
+            // Fetch additional property content for search
+            await fetchPropertyContentForSearch(property.id);
             
             // Continua con il resto del codice...
             const updatedCategories = [...categories];
@@ -328,18 +335,29 @@ export default function GuestHomePage() {
           setWeatherData(weather);
         }
 
+        // Fetch additional property content for search
+        await fetchPropertyContentForSearch(property.id);
+
         // Check which sections are available for this property
         const updatedCategories = [...categories]
 
         // Check city_guides
         const { count: cityGuideCount } = await supabase
           .from('city_guides')
-          .select('id', { count: 'exact', head: true })
+          .select('id, title', { count: 'exact', head: false })
           .eq('property_id', property.id)
         
         if (cityGuideCount && cityGuideCount > 0) {
           const index = updatedCategories.findIndex(cat => cat.id === 'host-guides')
           if (index >= 0) updatedCategories[index].available = true
+          
+          // Save city guide title for search
+          if (Array.isArray(cityGuideCount) && cityGuideCount.length > 0 && cityGuideCount[0].title) {
+            setPropertyDetails(prev => ({
+              ...prev,
+              cityGuideTitle: cityGuideCount[0].title
+            }));
+          }
         }
 
         setCategories(updatedCategories)
@@ -353,6 +371,197 @@ export default function GuestHomePage() {
 
     fetchPropertyData()
   }, [propertyId])
+
+  // Function to fetch property content for search
+  const fetchPropertyContentForSearch = async (propertyId: string) => {
+    try {
+      // Fetch house rules
+      const { data: houseRules, error: rulesError } = await supabase
+        .from('house_rules')
+        .select('title')
+        .eq('property_id', propertyId)
+      
+      if (!rulesError && houseRules) {
+        setPropertyDetails(prev => ({
+          ...prev,
+          houseRules: houseRules
+        }));
+      }
+      
+      // Fetch extra services
+      const { data: extraServices, error: servicesError } = await supabase
+        .from('extra_services')
+        .select('title, description')
+        .eq('property_id', propertyId)
+      
+      if (!servicesError && extraServices) {
+        setPropertyDetails(prev => ({
+          ...prev,
+          extraServices: extraServices
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching property content for search:', error);
+    }
+  }
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    // If search query is empty, don't show results
+    if (!searchQuery.trim()) {
+      setShowSearchResults(false)
+      return
+    }
+    
+    // Search pages and data
+    const query = searchQuery.toLowerCase()
+    const results = []
+    
+    // Search in essentials
+    essentials.forEach(item => {
+      if (item.name.toLowerCase().includes(query)) {
+        results.push({
+          title: item.name,
+          description: `Essential service for guests`,
+          path: item.path
+        })
+      }
+    })
+    
+    // Search in main categories
+    categories.forEach(category => {
+      if (category.name.toLowerCase().includes(query) && category.available) {
+        results.push({
+          title: category.name,
+          description: `Category with useful information`,
+          path: category.path
+        })
+      }
+    })
+    
+    // Add extra services with descriptions
+    if ('extra services'.includes(query) || 'additional services'.includes(query)) {
+      results.push({
+        title: 'Extra Services',
+        description: 'Discover available additional services',
+        path: `/guest/${propertyId}/extra-services`
+      })
+    }
+    
+    // Search in host's extra services
+    propertyDetails.extraServices.forEach(service => {
+      if (
+        service.title.toLowerCase().includes(query) || 
+        (service.description && service.description.toLowerCase().includes(query))
+      ) {
+        results.push({
+          title: service.title,
+          description: service.description || 'Additional service provided by host',
+          path: `/guest/${propertyId}/extra-services`
+        })
+      }
+    })
+    
+    // Add house rules
+    if ('house rules'.includes(query) || 'rules'.includes(query)) {
+      results.push({
+        title: 'House Rules',
+        description: 'Important guidelines for your stay',
+        path: `/guest/${propertyId}/house-rules`
+      })
+    }
+    
+    // Search in host's house rules
+    propertyDetails.houseRules.forEach(rule => {
+      if (rule.title.toLowerCase().includes(query)) {
+        results.push({
+          title: rule.title,
+          description: 'House rule set by the host',
+          path: `/guest/${propertyId}/house-rules`
+        })
+      }
+    })
+    
+    // Add property info
+    if (propertyName.toLowerCase().includes(query) || 'accommodation'.includes(query) || 'stay'.includes(query)) {
+      results.push({
+        title: propertyName,
+        description: 'Information about your accommodation',
+        path: `/guest/${propertyId}/house-info`
+      })
+    }
+    
+    // Add map
+    if ('map'.includes(query) || 'location'.includes(query) || 'directions'.includes(query)) {
+      results.push({
+        title: 'Map & Location',
+        description: 'Find your way around',
+        path: `/guest/${propertyId}/map`
+      })
+    }
+    
+    // Add contacts
+    if ('contacts'.includes(query) || 'host'.includes(query) || 'contact'.includes(query) || 'call'.includes(query)) {
+      results.push({
+        title: 'Contact Host',
+        description: 'Get in touch with your host',
+        path: `/guest/${propertyId}/contacts`
+      })
+    }
+    
+    // Add wifi
+    if ('wifi'.includes(query) || 'internet'.includes(query) || 'connection'.includes(query)) {
+      results.push({
+        title: 'Wifi Connection',
+        description: 'Connect to the internet',
+        path: `/guest/${propertyId}/wifi-connection`
+      })
+    }
+    
+    // City guide
+    if ('city'.includes(query) || 'guide'.includes(query) || 'attractions'.includes(query) || 'tourism'.includes(query)) {
+      results.push({
+        title: propertyDetails.cityGuideTitle || 'City Guide',
+        description: 'Explore the city with local recommendations',
+        path: `/guest/${propertyId}/city-guide`
+      })
+    }
+    
+    // Weather related
+    if ('weather'.includes(query) || 'forecast'.includes(query) || 'temperature'.includes(query)) {
+      results.push({
+        title: 'Weather Information',
+        description: 'Current weather and forecast',
+        path: `/guest/${propertyId}`
+      })
+    }
+    
+    // If city name is included in search
+    if (propertyCity.toLowerCase().includes(query)) {
+      results.push({
+        title: `${propertyCity} Information`,
+        description: 'Information about the city',
+        path: `/guest/${propertyId}/city-guide`
+      })
+      
+      results.push({
+        title: `Weather in ${propertyCity}`,
+        description: 'Current weather and forecast',
+        path: `/guest/${propertyId}`
+      })
+    }
+    
+    // Set search results and show them
+    setSearchResults(results)
+    setShowSearchResults(true)
+  }
+  
+  // Function to clear search results
+  const clearSearch = () => {
+    setSearchQuery('')
+    setShowSearchResults(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
@@ -387,17 +596,62 @@ export default function GuestHomePage() {
               <form onSubmit={handleSearch} className="w-full">
                 <input
                   type="text"
-                  placeholder="Search information..."
+                  placeholder="Search for information, services or rules..."
                   className="w-full p-2.5 pl-10 pr-4 rounded-xl bg-white shadow-sm focus:outline-none focus:ring-1 focus:ring-[#5E2BFF] text-sm"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    // Auto-search while typing with a small delay
+                    if (e.target.value.trim().length > 2) {
+                      // Only search if 3+ characters
+                      handleSearch(e as any);
+                    } else if (e.target.value.trim().length === 0) {
+                      setShowSearchResults(false);
+                    }
+                  }}
                 />
                 <button type="submit" className="absolute inset-y-0 left-0 pl-3 flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </button>
+                {searchQuery && (
+                  <button 
+                    type="button" 
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                    onClick={clearSearch}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
               </form>
+              
+              {/* Search Results */}
+              {showSearchResults && (
+                <div className="absolute z-10 mt-2 w-full bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+                  {searchResults.length > 0 ? (
+                    <div className="max-h-72 overflow-y-auto">
+                      {searchResults.map((result, index) => (
+                        <Link 
+                          href={result.path} 
+                          key={index}
+                          className="block hover:bg-gray-50 p-3 border-b border-gray-100 last:border-b-0"
+                          onClick={clearSearch}
+                        >
+                          <div className="text-sm font-bold text-gray-800">{result.title}</div>
+                          <div className="text-xs text-gray-500">{result.description}</div>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-sm text-gray-500">
+                      No results found for "{searchQuery}"
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Essentials section */}
@@ -492,7 +746,7 @@ export default function GuestHomePage() {
             {/* Weather Information */}
             {weatherData && (
               <div className="w-full mt-auto">
-                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Meteo a {weatherData.city}</h2>
+                <h2 className="text-base font-bold text-[#5E2BFF] mb-2">Weather in {weatherData.city}</h2>
                 <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden text-white shadow-sm w-full">
                   <div className="p-3">
                     <div className="flex justify-between items-center">
