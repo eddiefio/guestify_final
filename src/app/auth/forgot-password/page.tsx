@@ -27,8 +27,10 @@ export default function ForgotPassword() {
       // Ottieni l'URL base
       const baseUrl = window.location.origin;
       
-      // Genera URL di callback con parametri espliciti
-      const callbackUrl = `${baseUrl}/auth/reset-password`;
+      // Genera URL di callback con parametri espliciti per il tipo di recupero
+      const callbackUrl = `${baseUrl}/auth/callback?type=recovery`;
+      
+      console.log('URL di callback:', callbackUrl);
       
       // Invia email di reset password
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
