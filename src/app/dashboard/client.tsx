@@ -122,6 +122,20 @@ export default function DashboardClient() {
     if (!user) return
     
     try {
+      // Prima controlla se questa è la Template House
+      const { data: property, error: propertyError } = await supabase
+        .from('properties')
+        .select('name')
+        .eq('id', propertyId)
+        .single()
+      
+      // Se è la Template House, reindirizza direttamente alla pagina extra-services
+      if (!propertyError && property && property.name === "Template House") {
+        router.push(`/dashboard/property/${propertyId}/extra-services`)
+        return
+      }
+      
+      // Per le altre proprietà, continua con il controllo dell'account Stripe
       // Check if the user has an active Stripe account
       const { data: stripeAccount, error } = await supabase
         .from('host_stripe_accounts')

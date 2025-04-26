@@ -18,6 +18,21 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
   useEffect(() => {
     const checkStripeStatus = async () => {
       try {
+        // Prima controlla se questa è la Template House
+        const { data: property, error: propertyError } = await supabase
+          .from('properties')
+          .select('name')
+          .eq('id', propertyId)
+          .single();
+          
+        // Se è la Template House, consenti l'accesso senza controllo Stripe
+        if (!propertyError && property && property.name === "Template House") {
+          console.log('Template property detected, bypassing Stripe check');
+          setIsStripeEnabled(true);
+          setIsLoading(false);
+          return;
+        }
+        
         // Otteniamo l'utente corrente
         const { data: { user } } = await supabase.auth.getUser();
         
