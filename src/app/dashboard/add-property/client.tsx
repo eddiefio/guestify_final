@@ -219,8 +219,8 @@ export default function AddPropertyClient() {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-md shadow-md">
-            <div>
+          <form onSubmit={handleSubmit} className="bg-white p-6 rounded-md shadow-md mb-20">
+            <div className="mb-4">
               <label htmlFor="rental_name" className="block text-sm font-medium text-gray-700 mb-1">Property Name</label>
               <input
                 type="text"
@@ -228,14 +228,14 @@ export default function AddPropertyClient() {
                 name="rental_name"
                 value={formData.rental_name}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 placeholder="Beach House"
                 required
                 disabled={loading}
               />
             </div>
             
-            <div>
+            <div className="mb-4">
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input
                 type="text"
@@ -244,14 +244,14 @@ export default function AddPropertyClient() {
                 ref={addressInputRef}
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 placeholder="123 Main Street"
                 required
                 disabled={loading}
               />
             </div>
             
-            <div>
+            <div className="mb-4">
               <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">City</label>
               <input
                 type="text"
@@ -259,14 +259,14 @@ export default function AddPropertyClient() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 placeholder="New York"
                 required
                 disabled={loading}
               />
             </div>
             
-            <div>
+            <div className="mb-4">
               <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">State/Province</label>
               <input
                 type="text"
@@ -274,13 +274,13 @@ export default function AddPropertyClient() {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 placeholder="NY"
                 disabled={loading}
               />
             </div>
             
-            <div>
+            <div className="mb-4">
               <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-1">ZIP/Postal Code</label>
               <input
                 type="text"
@@ -288,20 +288,20 @@ export default function AddPropertyClient() {
                 name="zip"
                 value={formData.zip}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 placeholder="10001"
                 disabled={loading}
               />
             </div>
             
-            <div>
+            <div className="mb-8">
               <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">Select Country</label>
               <CountrySelect
                 id="country"
                 name="country" 
                 value={formData.country}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
+                className="w-full border-gray-200 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#5E2BFF]"
                 required
                 disabled={loading}
               />
