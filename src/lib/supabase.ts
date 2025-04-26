@@ -198,6 +198,13 @@ export const createTemplateProperty = async (userId: string) => {
       display_order: number;
     }
     
+    interface ProvidedItem {
+      name: string;
+      description: string;
+      quantity: number;
+      display_order: number;
+    }
+    
     // 1. Create base property
     const { data: property, error: propertyError } = await supabase
       .from('properties')
@@ -499,6 +506,138 @@ export const createTemplateProperty = async (userId: string) => {
       
       if (infoError) {
         console.error(`Error creating house info section ${section.section_type}:`, infoError)
+        // Continue anyway
+      }
+    }
+    
+    // 9. Add provided categories and items for "Before You Leave"
+    const providedCategories = [
+      {
+        name: "Cleaning Supplies",
+        display_order: 0,
+        items: [
+          {
+            name: "Vacuum Cleaner",
+            description: "Located in the utility closet. Please vacuum all floors except bathroom.",
+            quantity: 1,
+            display_order: 0
+          },
+          {
+            name: "Disinfectant Spray",
+            description: "Please use on kitchen countertops and bathroom surfaces before leaving.",
+            quantity: 2,
+            display_order: 1
+          }
+        ]
+      },
+      {
+        name: "Keys & Access",
+        display_order: 1,
+        items: [
+          {
+            name: "Key Set",
+            description: "Please leave all keys in the lockbox using code 1234.",
+            quantity: 1,
+            display_order: 0
+          },
+          {
+            name: "Parking Permit",
+            description: "Return the parking permit to the folder in the entry table drawer.",
+            quantity: 1,
+            display_order: 1
+          }
+        ]
+      }
+    ]
+    
+    // Create provided categories and their items
+    for (const [index, category] of providedCategories.entries()) {
+      const { data: categoryData, error: categoryError } = await supabase
+        .from('provided_categories')
+        .insert([
+          {
+            property_id: propertyId,
+            name: category.name,
+            display_order: index
+          }
+        ])
+        .select()
+        .single()
+      
+      if (categoryError) {
+        console.error(`Error creating provided category ${category.name}:`, categoryError)
+        continue // Continue with next category
+      }
+      
+      const categoryId = categoryData.id
+      
+      // Add items for this category
+      for (const [itemIndex, item] of category.items.entries()) {
+        const { error: itemError } = await supabase
+          .from('provided_items')
+          .insert([
+            {
+              category_id: categoryId,
+              name: item.name,
+              description: item.description,
+              quantity: item.quantity,
+              display_order: itemIndex
+            }
+          ])
+        
+        if (itemError) {
+          console.error(`Error creating provided item ${item.name}:`, itemError)
+          // Continue anyway
+        }
+      }
+    }
+    
+    // 10. Add information needed for "Before You Leave"
+    const { error: infoNeededError } = await supabase
+      .from('information_needed')
+      .insert([
+        {
+          property_id: propertyId,
+          content: "Please let us know the following before your departure:\n\n1. Your departure time so we can schedule cleaning\n2. Any issues or damages to report\n3. Feedback about your stay to help us improve\n4. The appliances you've used (dishwasher, washing machine, etc.)\n5. If you've moved any furniture (please return to original position)\n\nYou can contact us at checkout@templatehouse.com or via WhatsApp at +44 7123 456789."
+        }
+      ])
+    
+    if (infoNeededError) {
+      console.error('Error creating information needed:', infoNeededError)
+      // Continue anyway
+    }
+    
+    // 11. Add checkout information sections
+    const checkoutSections = [
+      {
+        section_type: "checkout_time",
+        content: JSON.stringify({
+          subtype: "checkout_time",
+          content: "Standard checkout time is 11:00 AM. Please respect this time as we need to prepare the property for the next guests. Late checkout (until 1:00 PM maximum) may be possible depending on availability. Please request late checkout at least 24 hours in advance. A fee of £20 applies for late checkout. If you need to leave very early in the morning, please let us know in advance so we can provide instructions for secure key drop-off."
+        })
+      },
+      {
+        section_type: "checkout_process",
+        content: JSON.stringify({
+          subtype: "checkout_process",
+          content: "Before leaving the property, please follow these steps:\n\n1. Strip beds and place used linens in the provided laundry bags\n2. Empty all trash bins and place bags in the designated area\n3. Wash and put away all dishes or load and start the dishwasher\n4. Turn off all lights, heating/AC, and electronic devices\n5. Close and lock all windows\n6. Check all drawers and closets for personal belongings\n7. Leave the keys in the lockbox (code: 1234)\n8. Send us a message when you've left\n\nThank you for your cooperation!"
+        })
+      }
+    ]
+    
+    for (const section of checkoutSections) {
+      const { error: sectionError } = await supabase
+        .from('house_info')
+        .insert([
+          {
+            property_id: propertyId,
+            section_type: "checkout_information", // Using standard section type
+            content: section.content // Store subtype in content as JSON
+          }
+        ])
+      
+      if (sectionError) {
+        console.error(`Error creating checkout information section ${section.section_type}:`, sectionError)
         // Continue anyway
       }
     }
