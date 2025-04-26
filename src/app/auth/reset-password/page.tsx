@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Head from 'next/head';
 
 // Componente che utilizza useSearchParams e deve essere avvolto in Suspense
 function ResetPasswordContent() {
@@ -237,130 +238,138 @@ function ResetPasswordContent() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Reimposta la tua password</h1>
-          {email && (
-            <p className="mt-2 text-gray-600">
-              Per l'account: {email}
-            </p>
-          )}
-        </div>
-
-        {success ? (
+    <>
+      <Head>
+        <meta name="next-router-prefetch" content="false" />
+      </Head>
+      <div className="flex min-h-screen flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md">
           <div className="text-center">
-            <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700">
-              La tua password è stata reimpostata con successo! Verrai reindirizzato alla pagina di login...
-            </div>
-            <Link 
-              href="/auth/signin"
-              className="text-indigo-600 hover:text-indigo-500"
-            >
-              Torna alla pagina di login
-            </Link>
+            <h1 className="text-3xl font-bold text-gray-900">Reimposta la tua password</h1>
+            {email && (
+              <p className="mt-2 text-gray-600">
+                Per l'account: {email}
+              </p>
+            )}
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            {error && (
-              <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-            
-            {!email ? (
-              <div className="rounded-md bg-yellow-50 p-4 text-sm text-yellow-700">
-                Sessione non rilevata. Assicurati di aver cliccato sul link nell'email di recupero password.
-                <div className="mt-2">
-                  <button
-                    type="button"
-                    onClick={handleManualVerify}
-                    className="mt-2 inline-flex items-center rounded-md border border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
-                  >
-                    Tenta verifica manuale
-                  </button>
-                  <div className="mt-3">
-                    <Link 
-                      href="/auth/forgot-password" 
-                      className="font-medium text-indigo-600 hover:text-indigo-500"
-                    >
-                      Richiedi un nuovo link di recupero password
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                    Nuova Password
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autoComplete="new-password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                    Conferma Nuova Password
-                  </label>
-                  <div className="mt-1">
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      autoComplete="new-password"
-                      required
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
 
-                <div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
-                  >
-                    {loading ? 'Aggiornamento in corso...' : 'Aggiorna Password'}
-                  </button>
-                </div>
-              </>
-            )}
-
-            <div className="text-center text-sm">
+          {success ? (
+            <div className="text-center">
+              <div className="mb-4 rounded-md bg-green-50 p-4 text-sm text-green-700">
+                La tua password è stata reimpostata con successo! Verrai reindirizzato alla pagina di login...
+              </div>
               <Link 
-                href="/auth/signin" 
+                href="/auth/signin"
                 className="text-indigo-600 hover:text-indigo-500"
+                prefetch={false}
               >
                 Torna alla pagina di login
               </Link>
             </div>
-            
-            {/* Area di debug - sempre visibile */}
-            <div className="mt-6 border-t pt-4">
-              <details>
-                <summary className="cursor-pointer text-sm text-gray-500">Informazioni di Debug</summary>
-                <pre className="mt-2 max-h-64 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-800">
-                  {debugInfo || 'Nessuna informazione di debug disponibile'}
-                </pre>
-              </details>
-            </div>
-          </form>
-        )}
+          ) : (
+            <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+              {error && (
+                <div className="rounded-md bg-red-50 p-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              
+              {!email ? (
+                <div className="rounded-md bg-yellow-50 p-4 text-sm text-yellow-700">
+                  Sessione non rilevata. Assicurati di aver cliccato sul link nell'email di recupero password.
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      onClick={handleManualVerify}
+                      className="mt-2 inline-flex items-center rounded-md border border-indigo-600 px-3 py-2 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+                    >
+                      Tenta verifica manuale
+                    </button>
+                    <div className="mt-3">
+                      <Link 
+                        href="/auth/forgot-password" 
+                        className="font-medium text-indigo-600 hover:text-indigo-500"
+                        prefetch={false}
+                      >
+                        Richiedi un nuovo link di recupero password
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                      Nuova Password
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="password"
+                        name="password"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                      Conferma Nuova Password
+                    </label>
+                    <div className="mt-1">
+                      <input
+                        id="confirmPassword"
+                        name="confirmPassword"
+                        type="password"
+                        autoComplete="new-password"
+                        required
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="group relative flex w-full justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400"
+                    >
+                      {loading ? 'Aggiornamento in corso...' : 'Aggiorna Password'}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <div className="text-center text-sm">
+                <Link 
+                  href="/auth/signin" 
+                  className="text-indigo-600 hover:text-indigo-500"
+                  prefetch={false}
+                >
+                  Torna alla pagina di login
+                </Link>
+              </div>
+              
+              {/* Area di debug - sempre visibile */}
+              <div className="mt-6 border-t pt-4">
+                <details>
+                  <summary className="cursor-pointer text-sm text-gray-500">Informazioni di Debug</summary>
+                  <pre className="mt-2 max-h-64 overflow-auto rounded bg-gray-100 p-2 text-xs text-gray-800">
+                    {debugInfo || 'Nessuna informazione di debug disponibile'}
+                  </pre>
+                </details>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

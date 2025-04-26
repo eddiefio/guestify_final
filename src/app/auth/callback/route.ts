@@ -19,6 +19,20 @@ export async function GET(req: NextRequest) {
   const cookieStore = cookies();
   const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
   
+  // Garantisce la coerenza del dominio tra richiesta e redirect
+  // Questo è importante perché i browser non impostano i cookie per i redirect cross-origin
+  const getConsistentOrigin = (url: string) => {
+    const originalHost = requestUrl.hostname;
+    const targetUrl = new URL(url);
+    
+    // Se l'host originale è localhost o 127.0.0.1, mantieni lo stesso per il redirect
+    if (originalHost === 'localhost' || originalHost === '127.0.0.1') {
+      targetUrl.hostname = originalHost;
+    }
+    
+    return targetUrl.toString();
+  };
+  
   // Primo caso: abbiamo un token_hash (flusso OTP) 
   if (token_hash && type) {
     try {
@@ -47,12 +61,16 @@ export async function GET(req: NextRequest) {
         resetUrl.searchParams.set('token_hash', token_hash);
         resetUrl.searchParams.set('type', type);
         
-        console.log('Reindirizzamento a:', resetUrl.pathname + resetUrl.search);
-        return NextResponse.redirect(resetUrl);
+        // Assicurati che l'URL di destinazione abbia lo stesso hostname (localhost o 127.0.0.1)
+        const consistentResetUrl = getConsistentOrigin(resetUrl.toString());
+        
+        console.log('Reindirizzamento a:', consistentResetUrl);
+        return NextResponse.redirect(consistentResetUrl);
       }
       
       // Per altri tipi (signup, ecc.), reindirizza alla dashboard
-      return NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+      const dashboardUrl = getConsistentOrigin(new URL('/dashboard', requestUrl.origin).toString());
+      return NextResponse.redirect(dashboardUrl);
     } catch (error: any) {
       console.error('Errore non gestito nella verifica OTP:', error);
       return NextResponse.redirect(
@@ -79,13 +97,13 @@ export async function GET(req: NextRequest) {
       
       // Per il recupero password, reindirizza alla pagina reset-password
       if (type === 'recovery') {
-        return NextResponse.redirect(
-          new URL('/auth/reset-password', requestUrl.origin)
-        );
+        const resetUrl = getConsistentOrigin(new URL('/auth/reset-password', requestUrl.origin).toString());
+        return NextResponse.redirect(resetUrl);
       }
       
       // Per altri tipi, reindirizza alla dashboard
-      return NextResponse.redirect(new URL('/dashboard', requestUrl.origin));
+      const dashboardUrl = getConsistentOrigin(new URL('/dashboard', requestUrl.origin).toString());
+      return NextResponse.redirect(dashboardUrl);
     } catch (error: any) {
       console.error('Errore non gestito nello scambio del codice:', error);
       return NextResponse.redirect(

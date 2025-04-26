@@ -1,95 +1,107 @@
-import { createServerClient } from '@supabase/ssr'
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 export async function middleware(request: NextRequest) {
-  // Controlla se l'URL contiene un token per il reset della password
-  const requestUrl = new URL(request.url)
-  const hasTokenHash = requestUrl.searchParams.has('token_hash')
-  const type = requestUrl.searchParams.get('type')
-  const isPasswordRecovery = hasTokenHash && type === 'recovery'
+  const requestUrl = new URL(request.url);
+  const { pathname, searchParams } = requestUrl;
   
-  // Se questa è una richiesta di recupero password, lasciala passare
-  if (isPasswordRecovery) {
-    return NextResponse.next()
+  // Percorsi pubblici che non richiedono autenticazione
+  const publicAuthPaths = [
+    '/auth/signin',
+    '/auth/signup',
+    '/auth/error',
+    '/auth/forgot-password'
+  ];
+  
+  // Percorsi per operazioni di autenticazione che necessitano di un trattamento speciale
+  const specialAuthPaths = [
+    '/auth/reset-password',
+    '/auth/callback',
+    '/auth/confirm'
+  ];
+  
+  // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
+  const hasTokenHash = searchParams.has('token_hash');
+  const hasCode = searchParams.has('code');
+  const hasType = searchParams.has('type');
+  
+  // Log per il debugging
+  if (pathname.includes('/auth/') || hasTokenHash || hasCode) {
+    console.log(`Middleware check - path: ${pathname}, token_hash: ${hasTokenHash}, code: ${hasCode}, type: ${searchParams.get('type')}`);
   }
   
-  const response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
+  // Consenti sempre l'accesso al percorso di callback (necessario per il flusso di autenticazione)
+  if (pathname === '/auth/callback') {
+    return NextResponse.next();
+  }
+  
+  // Consenti sempre l'accesso al percorso di reset-password con token_hash e type recovery
+  if (pathname === '/auth/reset-password' && (hasTokenHash || (hasCode && hasType && searchParams.get('type') === 'recovery'))) {
+    console.log('Permettendo l\'accesso a reset-password con token');
+    return NextResponse.next();
+  }
+  
+  // Per i percorsi protetti, verifica l'autenticazione
+  // Se il percorso è pubblico o speciale, consenti l'accesso
+  if (publicAuthPaths.some(path => pathname.startsWith(path)) || 
+      specialAuthPaths.some(path => pathname.startsWith(path) && (hasTokenHash || hasCode))) {
+    return NextResponse.next();
+  }
+  
+  try {
+    // Crea un nuovo client Supabase lato server
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name) => {
+            return request.cookies.get(name)?.value;
+          },
+          set: (name, value, options) => {
+            // SSR non supporta impostazione cookie
+          },
+          remove: (name, options) => {
+            // SSR non supporta rimozione cookie
+          },
         },
-        set(name: string, value: string, options: any) {
-          // Utilizziamo solo response.cookies.set per evitare problemi di duplicazione
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          // Utilizziamo solo response.cookies.set per evitare problemi di duplicazione
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
+      }
+    );
+    
+    // Verifica se abbiamo una sessione valida
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    
+    if (error || !user) {
+      console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
+      
+      // Solo i percorsi che iniziano con /dashboard o /api sono protetti
+      if (pathname.startsWith('/dashboard') || pathname.startsWith('/api')) {
+        const signInUrl = new URL('/auth/signin', request.url);
+        signInUrl.searchParams.set('redirectUrl', request.url);
+        return NextResponse.redirect(signInUrl);
+      }
     }
-  )
-  
-  // Aggiorniamo la sessione utente in ogni richiesta
-  const { data: { user } } = await supabase.auth.getUser()
-
-  // Debug per tracciare i cookie
-  console.log('Cookie disponibili:', request.cookies.getAll().map(c => c.name))
-  
-  // Percorso attuale
-  const pathname = requestUrl.pathname
-  
-  // Definire percorsi pubblici che non richiedono autenticazione
-  const isAuthRoute = pathname.startsWith('/dashboard')
-  const isPublicAuthPath = 
-    pathname.startsWith('/auth/callback') || 
-    pathname.startsWith('/auth/reset-password') || 
-    pathname.startsWith('/auth/signin') || 
-    pathname.startsWith('/auth/signup') ||
-    pathname.startsWith('/auth/forgot-password') ||
-    pathname === '/auth/confirm'
-
-  // Non reindirizzare mai i percorsi di autenticazione pubblica
-  if (isPublicAuthPath) {
-    return response
+    
+    // Utente autenticato o percorso non protetto
+    return NextResponse.next();
+  } catch (error: any) {
+    console.error('Errore nel middleware:', error.message);
+    
+    // In caso di errore, reindirizza alla pagina di errore
+    const errorUrl = new URL('/auth/error', request.url);
+    errorUrl.searchParams.set('message', encodeURIComponent(error.message || 'Errore middleware'));
+    return NextResponse.redirect(errorUrl);
   }
-  
-  // Proteggiamo le rotte che iniziano con /dashboard
-  if (isAuthRoute && !user) {
-    // Reindirizza alla pagina di login se l'utente non è autenticato
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
-  }
-  
-  return response
 }
 
-// Configura il matcher per specificare su quali percorsi eseguire il middleware
 export const config = {
   matcher: [
-    /*
-     * Match tutte le route eccetto:
-     * - API routes (/api/*)
-     * - Files statici (es. favicon.ico)
-     * - File di debug next
-     */
-    '/((?!_next/static|_next/image|api/|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Percorsi che richiedono il middleware
+    '/dashboard/:path*',
+    '/api/:path*',
+    '/auth/:path*'
   ],
-}
+};
