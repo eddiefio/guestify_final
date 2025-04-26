@@ -25,6 +25,7 @@ export default function WifiConnectionGuest() {
   const [wifiCredentials, setWifiCredentials] = useState<WifiCredentials | null>(null)
   const [propertyName, setPropertyName] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null)
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null)
 
   useEffect(() => {
     if (!propertyId) return
@@ -96,6 +97,18 @@ export default function WifiConnectionGuest() {
     }
   }
 
+  // Funzione per copiare negli appunti
+  const copyToClipboard = (text: string, type: 'network' | 'password') => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setCopyFeedback(type === 'network' ? 'Nome rete copiato!' : 'Password copiata!')
+        setTimeout(() => setCopyFeedback(null), 2000)
+      })
+      .catch(err => {
+        console.error('Errore durante la copia: ', err)
+      })
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-spartan">
       {/* Header */}
@@ -157,12 +170,44 @@ export default function WifiConnectionGuest() {
                     <div className="mb-6">
                       <div className="mb-4">
                         <div className="text-gray-500 text-sm">Network Name:</div>
-                        <div className="text-gray-800 font-bold text-lg">{wifiCredentials.network_name}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-gray-800 font-bold text-lg">{wifiCredentials.network_name}</div>
+                          <button
+                            onClick={() => copyToClipboard(wifiCredentials.network_name, 'network')}
+                            className="ml-2 p-2 text-[#5E2BFF] hover:bg-gray-100 rounded-full"
+                            aria-label="Copia nome rete"
+                            title="Copia nome rete"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <div className="text-gray-500 text-sm">Password:</div>
-                        <div className="text-gray-800 font-bold text-lg">{wifiCredentials.password}</div>
+                        <div className="flex items-center justify-between">
+                          <div className="text-gray-800 font-bold text-lg">{wifiCredentials.password}</div>
+                          <button
+                            onClick={() => copyToClipboard(wifiCredentials.password, 'password')}
+                            className="ml-2 p-2 text-[#5E2BFF] hover:bg-gray-100 rounded-full"
+                            aria-label="Copia password"
+                            title="Copia password"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
+                      
+                      {copyFeedback && (
+                        <div className="mt-2 text-center">
+                          <div className="inline-block bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
+                            {copyFeedback}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {qrCodeUrl && (
