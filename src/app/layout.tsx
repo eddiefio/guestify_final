@@ -7,6 +7,10 @@ export const metadata: Metadata = {
   title: 'Guestify',
   description: '',
   themeColor: '#5E2BFF',
+  icons: {
+    icon: '/images/guestify_icon.png',
+    apple: '/images/guestify_icon.png',
+  }
 }
 
 export default function RootLayout({
@@ -17,7 +21,8 @@ export default function RootLayout({
   return (
     <html lang="it">
       <head>
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href="/images/guestify_icon.png" />
+        <link rel="apple-touch-icon" href="/images/guestify_icon.png" />
         <link
           href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700&display=swap"
           rel="stylesheet"
