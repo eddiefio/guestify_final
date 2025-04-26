@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createBrowserClient } from '@supabase/ssr';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Head from 'next/head';
@@ -19,7 +19,12 @@ function ResetPasswordContent() {
   
   const router = useRouter();
   const searchParams = useSearchParams();
-  const supabase = createClientComponentClient();
+  
+  // Cambia qui per utilizzare createBrowserClient
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 
   // Verifica se l'utente ha una sessione (dovrebbe essere creata quando clicca sul link nell'email)
   useEffect(() => {
@@ -213,26 +218,18 @@ function ResetPasswordContent() {
     setDebugInfo(prev => prev + '\nTentativo di aggiornamento password...');
     
     try {
-      // Recupera il token hash e il tipo dall'URL
-      const token_hash = searchParams.get('token_hash');
-      const type = searchParams.get('type');
-      
-      if (!token_hash || !type) {
-        throw new Error('Token mancante. Impossibile aggiornare la password.');
+      // Otteniamo l'email dell'utente (che dovremmo già avere se siamo arrivati a questo punto)
+      if (!email) {
+        throw new Error('Email utente non trovata. Impossibile aggiornare la password.');
       }
+
+      // Questo è un approccio alternativo che evita problemi di sessione
+      // Aggiorna la password usando come riferimento l'email
+      setDebugInfo(prev => prev + `\nAggiornamento password per: ${email}`);
       
-      // Prima rieffettua la verifica OTP (per essere sicuri che la sessione sia attiva)
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash,
-        type: type as any,
+      const { data, error } = await supabase.auth.updateUser({ 
+        password,
       });
-      
-      if (verifyError) {
-        throw verifyError;
-      }
-      
-      // Poi aggiorna la password
-      const { data, error } = await supabase.auth.updateUser({ password });
       
       if (error) {
         setDebugInfo(prev => prev + `\nErrore nell'aggiornamento: ${error.message}`);
@@ -397,7 +394,7 @@ function LoadingState() {
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 rounded-lg bg-white p-8 shadow-md text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-        <p className="text-gray-600">Caricamento in corso...</p>
+        <p className="text-gray-600">Loading...</p>
       </div>
     </div>
   );
