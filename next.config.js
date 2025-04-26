@@ -20,16 +20,6 @@ const nextConfig = {
         pathname: '/storage/v1/object/public/**',
       },
     ],
-    domains: ['images.unsplash.com'],
-  },
-
-  async rewrites() {
-    return [
-      {
-        source: '/unsplash-proxy/:path*',
-        destination: 'https://images.unsplash.com/:path*',
-      },
-    ]
   },
 };
 
