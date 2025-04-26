@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { supabase, createTemplateProperty } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/layout/Layout'
@@ -23,6 +23,7 @@ export default function DashboardClient() {
   const { user, isLoading } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+  const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [hostName, setHostName] = useState('')
   const router = useRouter()
@@ -149,6 +150,77 @@ export default function DashboardClient() {
     }
   }
 
+  // Handle create template property
+  const handleCreateTemplate = async () => {
+    if (!user) return
+    
+    try {
+      setCreatingTemplate(true)
+      toast.loading('Creating template property...')
+      
+      const { success, propertyId, error } = await createTemplateProperty(user.id)
+      
+      if (!success || error) {
+        toast.dismiss()
+        toast.error('Error creating template property')
+        console.error('Error:', error)
+        return
+      }
+      
+      toast.dismiss()
+      toast.success('Template property created successfully!')
+      
+      // Refresh properties list
+      const { data, error: fetchError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('host_id', user.id)
+        .order('created_at', { ascending: false })
+        
+      if (fetchError) throw fetchError
+      
+      // Fetch additional data for properties
+      if (data && data.length > 0) {
+        const propertiesWithData = await Promise.all(
+          data.map(async (property: {
+            id: string;
+            name: string;
+            address: string;
+            city?: string;
+            country?: string;
+          }) => {
+            // Check if property has wifi credentials
+            const { count: wifiCount, error: wifiError } = await supabase
+              .from('wifi_credentials')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            // Check if property has how things work guides
+            const { count: howThingsCount, error: howThingsError } = await supabase
+              .from('how_things_work')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            return {
+              ...property,
+              has_wifi: wifiCount ? wifiCount > 0 : false,
+              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
+            }
+          })
+        )
+        
+        setProperties(propertiesWithData)
+      }
+      
+    } catch (error) {
+      console.error('Error creating template property:', error)
+      toast.dismiss()
+      toast.error('Error creating template property')
+    } finally {
+      setCreatingTemplate(false)
+    }
+  }
+
   // Filter properties based on search term
   const filteredProperties = properties.filter(prop => 
     prop.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -214,14 +286,33 @@ export default function DashboardClient() {
               <p className="text-gray-600 mb-8 font-medium">
                 You haven't added any properties yet. Start by adding your first property!
               </p>
-              <Link href="/dashboard/add-property">
-                <button className="bg-[#ffde59] text-black px-6 py-3 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm">
-                  <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add First Property
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Link href="/dashboard/add-property">
+                  <button className="bg-[#ffde59] text-black px-6 py-3 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm">
+                    <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add First Property
+                  </button>
+                </Link>
+                <button 
+                  onClick={handleCreateTemplate}
+                  disabled={creatingTemplate}
+                  className="bg-[#5E2BFF] text-white px-6 py-3 rounded-lg hover:bg-[#4e25d1] transition duration-200 font-bold shadow-sm flex items-center"
+                >
+                  {creatingTemplate ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
+                  ) : (
+                    <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                  )}
+                  Create Template Property
                 </button>
-              </Link>
+              </div>
+              <p className="text-gray-500 mt-4 text-sm">
+                The template property includes pre-configured rules, services, and WiFi settings.
+              </p>
             </div>
           ) : (
             <div>

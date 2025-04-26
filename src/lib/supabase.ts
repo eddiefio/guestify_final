@@ -185,3 +185,150 @@ export const fetchWithRetry = async (fn: Function, maxRetries = 3, delay = 1000)
     }
   }
 }
+
+// Funzione per creare una proprietà template completa
+export const createTemplateProperty = async (userId: string) => {
+  try {
+    console.log(`Creating template property for user ${userId}...`)
+    
+    // 1. Create base property
+    const { data: property, error: propertyError } = await supabase
+      .from('properties')
+      .insert([
+        {
+          host_id: userId,
+          name: "Template House",
+          address: "123 Example Street",
+          city: "London",
+          state: "Greater London",
+          zip: "W1A 1AA",
+          country: "United Kingdom",
+        }
+      ])
+      .select()
+      .single()
+    
+    if (propertyError) {
+      console.error('Error creating template property:', propertyError)
+      return { success: false, error: propertyError }
+    }
+    
+    const propertyId = property.id
+    
+    // 2. Create WiFi credentials
+    const { error: wifiError } = await supabase
+      .from('wifi_credentials')
+      .insert([
+        {
+          property_id: propertyId,
+          network_name: "GuestifyWiFi",
+          password: "welcome2024",
+        }
+      ])
+    
+    if (wifiError) {
+      console.error('Error creating WiFi credentials:', wifiError)
+      // Continue anyway to create as much as possible
+    }
+    
+    // 3. Add house rules
+    const houseRules = [
+      { title: "Check-in time", description: "Check-in is available from 3:00 PM to 8:00 PM. Please contact the host for late check-in." },
+      { title: "Check-out time", description: "Check-out before 11:00 AM. Please leave the keys on the table." },
+      { title: "No parties or events", description: "Please respect the neighbors and keep noise levels down." },
+      { title: "No smoking", description: "Smoking is not allowed inside the property." },
+      { title: "Pets", description: "Sorry, pets are not allowed." }
+    ]
+    
+    for (const rule of houseRules) {
+      const { error } = await supabase
+        .from('house_rules')
+        .insert([
+          {
+            property_id: propertyId,
+            title: rule.title,
+            description: rule.description
+          }
+        ])
+      
+      if (error) {
+        console.error('Error creating house rule:', error)
+        // Continue anyway
+      }
+    }
+    
+    // 4. Add extra services
+    const extraServices = [
+      { title: "Breakfast", description: "Continental breakfast delivered to your room", price: 15, category: "Food" },
+      { title: "Airport Transfer", description: "Private transfer from/to the airport", price: 50, category: "Transport" },
+      { title: "Extra Cleaning", description: "Additional cleaning service during your stay", price: 30, category: "Cleaning" },
+      { title: "Late Check-out", description: "Extended check-out until 2:00 PM", price: 25, category: "Accommodation" }
+    ]
+    
+    for (const service of extraServices) {
+      const { error } = await supabase
+        .from('extra_services')
+        .insert([
+          {
+            property_id: propertyId,
+            title: service.title,
+            description: service.description,
+            price: service.price,
+            active: true,
+            category: service.category
+          }
+        ])
+      
+      if (error) {
+        console.error('Error creating extra service:', error)
+        // Continue anyway
+      }
+    }
+    
+    // 5. Add city guide entry (note: without actual file, just DB record)
+    const { error: guideError } = await supabase
+      .from('city_guides')
+      .insert([
+        {
+          property_id: propertyId,
+          title: "London City Guide",
+          file_path: "city-guides/template-guide.pdf"
+        }
+      ])
+    
+    if (guideError) {
+      console.error('Error creating city guide:', guideError)
+      // Continue anyway
+    }
+    
+    // 6. Add how things work items
+    const howThingsWorkItems = [
+      { title: "Heating System", description: "The heating control is located in the hallway. Turn the dial clockwise to increase temperature." },
+      { title: "Smart TV", description: "Use the black remote to turn on the TV. Netflix and other streaming services are available." },
+      { title: "Washing Machine", description: "The washing machine is in the bathroom. Please use only the provided detergent." }
+    ]
+    
+    for (const item of howThingsWorkItems) {
+      const { error } = await supabase
+        .from('how_things_work')
+        .insert([
+          {
+            property_id: propertyId,
+            title: item.title,
+            description: item.description
+          }
+        ])
+      
+      if (error) {
+        console.error('Error creating how things work item:', error)
+        // Continue anyway
+      }
+    }
+    
+    console.log(`Template property ${propertyId} created successfully`)
+    return { success: true, propertyId }
+  } catch (error) {
+    console.error('Exception in createTemplateProperty:', error)
+    return { success: false, error }
+  }
+}
