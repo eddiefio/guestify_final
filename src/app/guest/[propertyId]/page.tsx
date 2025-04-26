@@ -164,16 +164,24 @@ export default function GuestHomePage() {
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const today = new Date();
       
-      // Estrai previsioni per i prossimi 5 giorni (prendendo la previsione alle 12:00)
-      const dailyForecasts = [];
-      const processedDates = new Set();
+      // Inizializza le previsioni con il giorno corrente
+      const dailyForecasts = [{
+        day: days[today.getDay()],
+        temperature: Math.round(currentData.main.temp),
+        icon: getWeatherIcon(currentData.weather[0].id),
+      }];
       
+      const processedDates = new Set();
+      // Aggiungi la data di oggi al set per evitare duplicati
+      processedDates.add(today.toISOString().split('T')[0]);
+      
+      // Estrai previsioni per i prossimi 4 giorni (prendendo la previsione alle 12:00)
       for (const item of forecastData.list) {
         const date = new Date(item.dt * 1000);
         const dateStr = date.toISOString().split('T')[0];
         
-        // Salta il giorno corrente e prendi solo una previsione per giorno
-        if (!processedDates.has(dateStr) && date.getDate() !== today.getDate()) {
+        // Prendi solo una previsione per giorno e non quella di oggi (già aggiunta)
+        if (!processedDates.has(dateStr)) {
           processedDates.add(dateStr);
           
           const dayIndex = date.getDay();
@@ -184,7 +192,7 @@ export default function GuestHomePage() {
             icon: getWeatherIcon(item.weather[0].id),
           });
           
-          // Ferma dopo 5 giorni
+          // Ferma dopo 5 giorni in totale (oggi + 4 giorni successivi)
           if (dailyForecasts.length >= 5) break;
         }
       }
@@ -211,6 +219,10 @@ export default function GuestHomePage() {
     } catch (error) {
       console.error('Errore nel recupero dei dati meteo:', error);
       // In caso di errore, ritorna dati simulati
+      const today = new Date();
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const todayIndex = today.getDay();
+      
       const mockWeatherData: WeatherData = {
         temperature: 23,
         condition: 'Sunny',
@@ -218,11 +230,11 @@ export default function GuestHomePage() {
         city: city,
         date: new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' }),
         forecast: [
-          { day: 'Tue', temperature: 25, icon: '☀️' },
-          { day: 'Wed', temperature: 22, icon: '⛅' },
-          { day: 'Thu', temperature: 20, icon: '🌧️' },
-          { day: 'Fri', temperature: 18, icon: '🌧️' },
-          { day: 'Sat', temperature: 21, icon: '⛅' },
+          { day: days[todayIndex], temperature: 23, icon: '☀️' },
+          { day: days[(todayIndex + 1) % 7], temperature: 25, icon: '☀️' },
+          { day: days[(todayIndex + 2) % 7], temperature: 22, icon: '⛅' },
+          { day: days[(todayIndex + 3) % 7], temperature: 20, icon: '🌧️' },
+          { day: days[(todayIndex + 4) % 7], temperature: 18, icon: '🌧️' },
         ]
       };
       
@@ -641,12 +653,13 @@ export default function GuestHomePage() {
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
       <header className="bg-white shadow-sm py-3">
         <div className="w-full px-4 flex items-center justify-between">
-          <div className="relative h-12 w-28">
+          <div className="relative h-12 w-36">
             <Image 
               src="/images/logo_guest.png"
               alt="Guestify Logo"
               fill
               className="object-contain object-left"
+              style={{ objectFit: 'contain', objectPosition: 'left' }}
             />
           </div>
           <div className="text-gray-700">{propertyName}</div>
