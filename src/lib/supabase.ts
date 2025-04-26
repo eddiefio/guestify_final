@@ -408,6 +408,39 @@ export const createTemplateProperty = async (userId: string) => {
       
       // Add items for this category
       for (const [itemIndex, item] of itemsForCategory.entries()) {
+        // Get appropriate image URL based on item title
+        let imagePath = ""
+        
+        switch (item.title) {
+          case "Coffee Machine":
+            imagePath = "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Dishwasher":
+            imagePath = "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Smart TV":
+            imagePath = "https://images.unsplash.com/photo-1593305841991-05c297ba4575?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Air Conditioning":
+            imagePath = "https://images.unsplash.com/photo-1628914437458-22353487eadd?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Shower":
+            imagePath = "https://images.unsplash.com/photo-1550342780-b5089e55677a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Washing Machine":
+            imagePath = "https://images.unsplash.com/photo-1626806787461-102c1a62d3d5?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Safe":
+            imagePath = "https://images.unsplash.com/photo-1599508704512-2f19efd1e35f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          case "Heating Control":
+            imagePath = "https://images.unsplash.com/photo-1582557892479-366e08cf46de?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+            break
+          default:
+            // Fallback image if none of the specific items match
+            imagePath = "https://images.unsplash.com/photo-1517404215738-15263e9f9178?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80"
+        }
+        
         const { error: itemError } = await supabase
           .from('how_things_work_items')
           .insert([
@@ -416,7 +449,7 @@ export const createTemplateProperty = async (userId: string) => {
               title: item.title,
               description: item.description,
               display_order: itemIndex,
-              image_path: "default-item.jpg" // Default placeholder image
+              image_path: imagePath
             }
           ])
         
