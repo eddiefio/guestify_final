@@ -26,7 +26,7 @@ export default function StripeMiddleware({ children, propertyId }: StripeMiddlew
           .single();
           
         // Se è la Template House, consenti l'accesso senza controllo Stripe
-        if (!propertyError && property && property.name === "Template House") {
+        if (!propertyError && property && property.name === "Example House Guestify") {
           console.log('Template property detected, bypassing Stripe check');
           setIsStripeEnabled(true);
           setIsLoading(false);

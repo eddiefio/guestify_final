@@ -211,7 +211,7 @@ export const createTemplateProperty = async (userId: string) => {
       .insert([
         {
           host_id: userId,
-          name: "Template House",
+          name: "Example House Guestify",
           address: "123 Example Street",
           city: "London",
           state: "Greater London",

@@ -130,7 +130,7 @@ export default function DashboardClient() {
         .single()
       
       // Se è la Template House, reindirizza direttamente alla pagina extra-services
-      if (!propertyError && property && property.name === "Template House") {
+      if (!propertyError && property && property.name === "Example House Guestify") {
         router.push(`/dashboard/property/${propertyId}/extra-services`)
         return
       }
