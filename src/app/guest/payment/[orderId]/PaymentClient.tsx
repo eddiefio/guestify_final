@@ -231,8 +231,10 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
               const errorData = await orderResponse.json();
               errorMessage = errorData.error || errorMessage;
             } else {
+              // Se il content-type non è JSON, potrebbe essere HTML causato da un reindirizzamento
               const text = await orderResponse.text();
-              console.error('Risposta non-JSON ricevuta:', text);
+              console.error('Risposta non-JSON ricevuta:', text.substring(0, 150) + '...');
+              errorMessage = 'Il server ha restituito HTML invece di JSON. Possibile problema di autenticazione.';
             }
           } catch (parseError) {
             console.error('Errore nel parsing della risposta:', parseError);
@@ -241,7 +243,17 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           throw new Error(errorMessage);
         }
         
-        const orderData = await orderResponse.json();
+        let orderData;
+        try {
+          orderData = await orderResponse.json();
+        } catch (jsonError) {
+          console.error('Errore nel parsing JSON della risposta ordine:', jsonError);
+          // Tenta di leggere la risposta come testo per diagnosi
+          const text = await orderResponse.text();
+          console.error('Contenuto risposta non valida:', text.substring(0, 150) + '...');
+          throw new Error('Impossibile interpretare la risposta del server come JSON. Risposta non valida.');
+        }
+        
         console.log(`PaymentClient: Dati ordine ricevuti:`, {
           id: orderData.id,
           total_amount: orderData.total_amount,
@@ -278,11 +290,13 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
               const errorData = await paymentResponse.json();
               errorMessage = errorData.error || errorMessage;
             } else {
+              // Se il content-type non è JSON, potrebbe essere HTML causato da un reindirizzamento
               const text = await paymentResponse.text();
-              console.error('Risposta non-JSON ricevuta:', text);
+              console.error('Risposta payment non-JSON ricevuta:', text.substring(0, 150) + '...');
+              errorMessage = 'Il server ha restituito HTML invece di JSON per il payment intent. Possibile problema di autenticazione.';
             }
           } catch (parseError) {
-            console.error('Errore nel parsing della risposta:', parseError);
+            console.error('Errore nel parsing della risposta payment:', parseError);
           }
           
           throw new Error(errorMessage);
@@ -291,10 +305,12 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         let responseData;
         try {
           responseData = await paymentResponse.json();
-          console.log(`PaymentClient: PaymentIntent ricevuto con clientSecret:`, !!responseData.clientSecret);
-        } catch (err) {
-          console.error('Errore nel parsing della risposta JSON:', err);
-          throw new Error('Risposta dal server non valida');
+        } catch (jsonError) {
+          console.error('Errore nel parsing JSON della risposta payment:', jsonError);
+          // Tenta di leggere la risposta come testo per diagnosi
+          const text = await paymentResponse.text();
+          console.error('Contenuto risposta payment non valida:', text.substring(0, 150) + '...');
+          throw new Error('Impossibile interpretare la risposta del payment intent come JSON. Risposta non valida.');
         }
         
         if (!responseData.clientSecret) {

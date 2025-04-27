@@ -12,62 +12,18 @@ export default function Checkout() {
   const router = useRouter()
   const { cart, propertyId, getCartTotal, clearCart } = useCart()
   
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [propertyDetails, setPropertyDetails] = useState<{name: string, hostId: string} | null>(null)
   
   // Calcola il totale del carrello 
   const cartTotal = getCartTotal()
   
-  useEffect(() => {
-    // Redirect if cart is empty
-    if (!cart.length || !propertyId) {
-      router.push('/')
-      return
-    }
-    
-    // Fetch property and host details
-    const fetchDetails = async () => {
-      try {
-        // Get property details
-        const { data: property, error: propertyError } = await supabase
-          .from('properties')
-          .select('name, host_id')
-          .eq('id', propertyId)
-          .single()
-          
-        if (propertyError) throw propertyError
-        
-        setPropertyDetails({
-          name: property.name,
-          hostId: property.host_id
-        })
-        
-        // Non è più necessario recuperare l'account Stripe dell'host
-        // poiché l'API create-payment-intent funziona senza questa informazione
-        
-      } catch (error) {
-        console.error('Error fetching details:', error)
-        setError('Could not load checkout details')
-      }
-    }
-    
-    fetchDetails()
-  }, [cart, propertyId, router])
-  
-  // Format price to currency
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(price)
-  }
-  
-  // Handle checkout process
-  const handleCheckout = async () => {
-    if (loading) return
+  // Funzione per eseguire il checkout
+  const processCheckout = async () => {
     if (!propertyDetails) {
       setError('Property details are missing')
+      setLoading(false)
       return
     }
     
@@ -75,7 +31,7 @@ export default function Checkout() {
       setLoading(true)
       setError(null)
       
-      console.log('Avvio processo di checkout...')
+      console.log('Avvio processo di checkout automatico...')
       console.log('Dati del carrello:', cart)
       console.log('Property ID:', propertyId)
       
@@ -140,6 +96,69 @@ export default function Checkout() {
     }
   }
   
+  useEffect(() => {
+    // Redirect if cart is empty
+    if (!cart.length || !propertyId) {
+      router.push('/')
+      return
+    }
+    
+    // Fetch property and host details
+    const fetchDetails = async () => {
+      try {
+        // Get property details
+        const { data: property, error: propertyError } = await supabase
+          .from('properties')
+          .select('name, host_id')
+          .eq('id', propertyId)
+          .single()
+          
+        if (propertyError) throw propertyError
+        
+        setPropertyDetails({
+          name: property.name,
+          hostId: property.host_id
+        })
+        
+        // Una volta ottenuti i dettagli della proprietà, esegui automaticamente il checkout
+        await processCheckout()
+        
+      } catch (error) {
+        console.error('Error fetching details:', error)
+        setError('Could not load checkout details')
+        setLoading(false)
+      }
+    }
+    
+    fetchDetails()
+  }, [cart, propertyId, router])
+  
+  // Format price to currency
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(price)
+  }
+  
+  // Questa funzione non è più necessaria dato che il checkout avviene automaticamente
+  const handleCheckout = async () => {
+    await processCheckout()
+  }
+  
+  // Pagina di caricamento durante il processo automatico
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-spartan flex justify-center items-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold mb-4">Elaborazione dell'ordine in corso...</h2>
+          <p className="text-gray-600">Sarai reindirizzato automaticamente alla pagina di pagamento</p>
+        </div>
+      </div>
+    )
+  }
+  
+  // Mostra la pagina di checkout solo in caso di errore
   return (
     <div className="min-h-screen bg-gray-50 font-spartan">
       {/* Header */}
