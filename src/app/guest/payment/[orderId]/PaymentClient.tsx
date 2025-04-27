@@ -8,7 +8,6 @@ import {
   Elements,
   useStripe,
   useElements,
-  PaymentRequestButtonElement,
 } from '@stripe/react-stripe-js'
 
 // Funzione per formattare i prezzi in Euro
@@ -135,75 +134,6 @@ function CheckoutForm({
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [succeeded, setSucceeded] = useState(false)
-  const [paymentRequest, setPaymentRequest] = useState<any>(null)
-
-  useEffect(() => {
-    if (!stripe || !elements) return;
-
-    // Crea un Payment Request per Apple Pay / Google Pay
-    const pr = stripe.paymentRequest({
-      country: 'IT',
-      currency: 'eur',
-      total: {
-        label: 'Pagamento ordine',
-        amount: order.total_amount * 100, // Stripe richiede centesimi
-      },
-      requestPayerName: true,
-      requestPayerEmail: true,
-    });
-
-    // Controlla se il browser supporta Apple Pay / Google Pay
-    pr.canMakePayment().then(result => {
-      if (result) {
-        setPaymentRequest(pr);
-      }
-    });
-
-    // Gestisci l'evento di pagamento
-    pr.on('paymentmethod', async (e) => {
-      setProcessing(true);
-      
-      try {
-        // Conferma il pagamento con il payment method ricevuto
-        const { error, paymentIntent } = await stripe.confirmCardPayment(
-          clientSecret,
-          {
-            payment_method: e.paymentMethod.id,
-          },
-          { handleActions: false }
-        );
-
-        if (error) {
-          e.complete('fail');
-          setPaymentError(`Pagamento fallito: ${error.message}`);
-          setProcessing(false);
-        } else if (paymentIntent.status === 'requires_action') {
-          // Gestisci l'autenticazione 3D Secure se necessario
-          e.complete('success');
-          const { error: confirmError } = await stripe.confirmCardPayment(clientSecret);
-          if (confirmError) {
-            setPaymentError(`Errore di autenticazione: ${confirmError.message}`);
-          } else {
-            setSucceeded(true);
-            await updateOrderStatus();
-            router.push(`/guest/checkout/success?orderId=${orderId}`);
-          }
-        } else {
-          // Pagamento completato con successo
-          e.complete('success');
-          setSucceeded(true);
-          await updateOrderStatus();
-          router.push(`/guest/checkout/success?orderId=${orderId}`);
-        }
-      } catch (error) {
-        console.error("Errore durante il pagamento:", error);
-        e.complete('fail');
-        setPaymentError("Si è verificato un errore durante il pagamento");
-      } finally {
-        setProcessing(false);
-      }
-    });
-  }, [stripe, elements, clientSecret, order, orderId, router]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -280,31 +210,6 @@ function CheckoutForm({
           <p className="font-semibold text-lg">Totale: {formatEuro(order.total_amount)}</p>
         </div>
       </div>
-      
-      {paymentRequest && (
-        <div className="mb-4">
-          <div className="mb-2 text-center text-gray-700">
-            Paga in modo veloce con:
-          </div>
-          <PaymentRequestButtonElement
-            options={{
-              paymentRequest,
-              style: {
-                paymentRequestButton: {
-                  type: 'default', // 'default', 'book', 'buy', or 'donate'
-                  theme: 'dark', // 'dark', 'light', or 'light-outline'
-                  height: '40px',
-                },
-              },
-            }}
-          />
-          <div className="my-4 flex items-center">
-            <div className="flex-grow border-t border-gray-300"></div>
-            <span className="mx-4 text-sm text-gray-500">oppure</span>
-            <div className="flex-grow border-t border-gray-300"></div>
-          </div>
-        </div>
-      )}
       
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
