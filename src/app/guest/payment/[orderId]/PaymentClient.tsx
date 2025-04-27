@@ -153,7 +153,7 @@ function CheckoutForm({
                 type: 'tabs',
                 defaultCollapsed: false,
               },
-              paymentMethodOrder: ['apple_pay', 'google_pay', 'card']
+              paymentMethodOrder: ['apple_pay', 'card']
             }}
           />
         </div>
