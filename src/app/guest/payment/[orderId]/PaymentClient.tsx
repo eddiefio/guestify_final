@@ -46,6 +46,9 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
           },
           body: JSON.stringify({ 
             orderId: orderId,
@@ -53,24 +56,44 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           }),
         });
         
+        // Verifica se la risposta è OK prima di provare a parsare il JSON
         if (!paymentResponse.ok) {
-          const errorData = await paymentResponse.json().catch(() => null);
-          const errorMessage = errorData?.error || 'Errore nella creazione del payment intent';
+          const contentType = paymentResponse.headers.get('content-type');
+          let errorMessage = `Errore nella creazione del payment intent: ${paymentResponse.status} ${paymentResponse.statusText}`;
+          
+          try {
+            // Se è JSON, prova a estrarre il messaggio di errore
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await paymentResponse.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              // Se non è JSON, leggi il testo della risposta
+              const text = await paymentResponse.text();
+              console.error('Risposta non-JSON ricevuta:', text);
+              errorMessage = 'Errore nella risposta del server. Controlla la console per dettagli.';
+            }
+          } catch (parseError) {
+            console.error('Errore nel parsing della risposta:', parseError);
+          }
+          
           console.error('Errore payment intent:', errorMessage);
           throw new Error(errorMessage);
         }
         
-        const responseData = await paymentResponse.json().catch(err => {
-          console.error('Errore nel parsing della risposta:', err);
-          throw new Error('Risposta dal server non valida');
-        });
-        
-        const { clientSecret, stripeAccountId } = responseData;
-        
-        if (!clientSecret) {
-          throw new Error('Client secret non disponibile');
+        let responseData;
+        try {
+          responseData = await paymentResponse.json();
+        } catch (err) {
+          console.error('Errore nel parsing della risposta JSON:', err);
+          throw new Error('Risposta dal server non valida. Controlla la console per dettagli.');
         }
         
+        if (!responseData || !responseData.clientSecret) {
+          console.error('Risposta mancante o incompleta:', responseData);
+          throw new Error('Client secret non disponibile nella risposta');
+        }
+        
+        const { clientSecret, stripeAccountId } = responseData;
         setClientSecret(clientSecret);
         
         // 3. Inizializza Stripe con l'account dell'host
