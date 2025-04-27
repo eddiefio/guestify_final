@@ -15,7 +15,6 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [propertyDetails, setPropertyDetails] = useState<{name: string, hostId: string} | null>(null)
-  const [hostDetails, setHostDetails] = useState<{stripeAccountId: string} | null>(null)
   
   // Calcola il totale del carrello 
   const cartTotal = getCartTotal()
@@ -44,30 +43,8 @@ export default function Checkout() {
           hostId: property.host_id
         })
         
-        // Recupera l'account Stripe dell'host dalla tabella host_stripe_accounts
-        const { data: hostStripeAccount, error: stripeError } = await supabase
-          .from('host_stripe_accounts')
-          .select('stripe_account_id, stripe_account_status')
-          .eq('host_id', property.host_id)
-          .single()
-        
-        if (stripeError) {
-          console.warn('Impossibile recuperare l\'account Stripe dell\'host:', stripeError)
-          // Imposta un ID account Stripe fittizio per continuare il processo
-          setHostDetails({
-            stripeAccountId: "active"
-          })
-        } else {
-          // Se l'account Stripe dell'host è stato trovato, impostalo
-          setHostDetails({
-            stripeAccountId: hostStripeAccount.stripe_account_id
-          })
-          
-          // Verifica che l'account sia attivo
-          if (hostStripeAccount.stripe_account_status !== 'active') {
-            console.warn('L\'account Stripe dell\'host non è attivo:', hostStripeAccount.stripe_account_status)
-          }
-        }
+        // Non è più necessario recuperare l'account Stripe dell'host
+        // poiché l'API create-payment-intent funziona senza questa informazione
         
       } catch (error) {
         console.error('Error fetching details:', error)
@@ -89,8 +66,8 @@ export default function Checkout() {
   // Handle checkout process
   const handleCheckout = async () => {
     if (loading) return
-    if (!propertyDetails || !hostDetails) {
-      setError('Property or host details are missing')
+    if (!propertyDetails) {
+      setError('Property details are missing')
       return
     }
     
@@ -226,9 +203,9 @@ export default function Checkout() {
           {/* Checkout Button */}
           <button
             onClick={handleCheckout}
-            disabled={loading || !hostDetails}
+            disabled={loading || !propertyDetails}
             className={`w-full py-3 rounded-xl font-bold ${
-              loading || !hostDetails
+              loading || !propertyDetails
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 : 'bg-[#ffde59] text-black hover:bg-opacity-90'
             }`}
