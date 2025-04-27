@@ -57,7 +57,7 @@ export default function SuccessContent() {
             
             <div className="mt-8">
               <Link href="/" className="bg-[#ffde59] text-black px-4 py-2 rounded-full text-sm hover:opacity-90 transition font-semibold inline-block">
-                Return <B></B>ack
+                Return Back
               </Link>
             </div>
           </div>
