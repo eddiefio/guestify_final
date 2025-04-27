@@ -55,14 +55,24 @@ export async function POST(request: NextRequest) {
     console.log(`API create-payment-intent: Recupero account Stripe per host ${property.host_id}`)
     const { data: hostStripeAccount, error: hostError } = await supabaseAdmin
       .from('host_stripe_accounts')
-      .select('stripe_account_id')
+      .select('stripe_account_id, stripe_account_status')
       .eq('host_id', property.host_id)
-      .eq('stripe_account_status', 'active')
       .single()
     
-    if (hostError || !hostStripeAccount) {
+    // Controllo più dettagliato sull'errore
+    if (hostError) {
       console.error('Errore nel recupero dell\'account Stripe dell\'host:', hostError)
-      return NextResponse.json({ error: 'Account Stripe dell\'host non trovato o non attivo' }, { status: 404 })
+      
+      // Verifica se l'account Stripe esiste ma non è attivo
+      if (!hostStripeAccount) {
+        return NextResponse.json({ error: 'Account Stripe dell\'host non trovato' }, { status: 404 })
+      }
+    }
+    
+    // Verifica se l'account è attivo
+    if (!hostStripeAccount || hostStripeAccount.stripe_account_status !== 'active') {
+      console.error('Account Stripe dell\'host non attivo:', hostStripeAccount?.stripe_account_status)
+      return NextResponse.json({ error: 'Account Stripe dell\'host non attivo' }, { status: 400 })
     }
     
     console.log('API create-payment-intent: Creazione direct payment intent per l\'host con account Stripe ID:', hostStripeAccount.stripe_account_id)

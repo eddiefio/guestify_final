@@ -54,10 +54,23 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         });
         
         if (!paymentResponse.ok) {
-          throw new Error('Errore nella creazione del payment intent');
+          const errorData = await paymentResponse.json().catch(() => null);
+          const errorMessage = errorData?.error || 'Errore nella creazione del payment intent';
+          console.error('Errore payment intent:', errorMessage);
+          throw new Error(errorMessage);
         }
         
-        const { clientSecret, stripeAccountId } = await paymentResponse.json();
+        const responseData = await paymentResponse.json().catch(err => {
+          console.error('Errore nel parsing della risposta:', err);
+          throw new Error('Risposta dal server non valida');
+        });
+        
+        const { clientSecret, stripeAccountId } = responseData;
+        
+        if (!clientSecret) {
+          throw new Error('Client secret non disponibile');
+        }
+        
         setClientSecret(clientSecret);
         
         // 3. Inizializza Stripe con l'account dell'host
