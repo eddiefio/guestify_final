@@ -27,11 +27,13 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 function CheckoutForm({ 
   orderId, 
   clientSecret,
-  order
+  order,
+  stripeAccountId
 }: { 
   orderId: string, 
   clientSecret: string,
-  order: any
+  order: any,
+  stripeAccountId: string
 }) {
   const stripe = useStripe()
   const elements = useElements()
@@ -193,6 +195,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [stripeAccountId, setStripeAccountId] = useState<string | null>(null)
   const [order, setOrder] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
@@ -319,6 +322,15 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         }
         
         setClientSecret(responseData.clientSecret);
+        
+        // Salva l'ID dell'account Stripe dell'host
+        if (responseData.stripeAccountId) {
+          console.log(`PaymentClient: Account Stripe dell'host: ${responseData.stripeAccountId}`);
+          setStripeAccountId(responseData.stripeAccountId);
+        } else {
+          console.warn('PaymentClient: stripeAccountId mancante nella risposta');
+        }
+        
         console.log(`PaymentClient: Inizializzazione completata con successo`);
       } catch (error) {
         console.error("Errore in loadOrderAndInitializeStripe:", error);
@@ -376,7 +388,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
     );
   }
 
-  if (!clientSecret || !order) {
+  if (!clientSecret || !order || !stripeAccountId) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
@@ -386,12 +398,18 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
             <p className="mt-2 text-sm text-gray-500">
               {!clientSecret ? 'Client Secret non disponibile.' : ''}
               {!order ? 'Dettagli ordine non disponibili.' : ''}
+              {!stripeAccountId ? 'Account Stripe dell\'host non disponibile.' : ''}
             </p>
           </div>
         </div>
       </div>
     );
   }
+
+  // Inizializza Stripe con l'opzione stripeAccount per specificare l'account dell'host
+  const stripePromiseWithAccount = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
+    stripeAccount: stripeAccountId
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -411,8 +429,13 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
       </div>
       
       <div className="container mx-auto px-4 py-8">
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CheckoutForm orderId={orderId} clientSecret={clientSecret} order={order} />
+        <Elements stripe={stripePromiseWithAccount} options={{ clientSecret }}>
+          <CheckoutForm 
+            orderId={orderId} 
+            clientSecret={clientSecret} 
+            order={order} 
+            stripeAccountId={stripeAccountId}
+          />
         </Elements>
       </div>
     </div>

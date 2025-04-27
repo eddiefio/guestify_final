@@ -51,14 +51,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Proprietà non trovata' }, { status: 404 })
     }
     
-    // Per evitare problemi con i record nella tabella host_stripe_accounts,
-    // facciamo una richiesta diretta a Stripe senza usare il database per recuperare l'account Stripe
-    // Creiamo un payment intent semplice senza connessione all'account dell'host
+    // Recupera l'account Stripe dell'host
+    console.log(`API create-payment-intent: Recupero account Stripe dell'host ${property.host_id}`)
+    const { data: hostStripeAccount, error: hostStripeError } = await supabaseAdmin
+      .from('host_stripe_accounts')
+      .select('stripe_account_id, stripe_account_status')
+      .eq('host_id', property.host_id)
+      .single()
     
-    console.log('API create-payment-intent: Creazione payment intent standard')
+    if (hostStripeError || !hostStripeAccount) {
+      console.error('Errore nel recupero dell\'account Stripe dell\'host:', hostStripeError)
+      return NextResponse.json({ error: 'Account Stripe dell\'host non trovato' }, { status: 404 })
+    }
+    
+    if (hostStripeAccount.stripe_account_status !== 'active') {
+      console.error('L\'account Stripe dell\'host non è attivo:', hostStripeAccount.stripe_account_status)
+      return NextResponse.json({ error: 'L\'account Stripe dell\'host non è attivo' }, { status: 400 })
+    }
+    
+    console.log('API create-payment-intent: Creazione payment intent sull\'account dell\'host:', hostStripeAccount.stripe_account_id)
     
     try {
-      // Crea un semplice payment intent senza configurazione di distribuzione
+      // Crea un payment intent direttamente sull'account dell'host usando Stripe Connect
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
@@ -69,7 +83,11 @@ export async function POST(request: NextRequest) {
           orderId,
           propertyId: order.property_id,
           hostId: property.host_id
-        }
+        },
+        // Non configuriamo application_fee_amount perché vogliamo che tutto il pagamento
+        // vada direttamente all'host senza prelevare commissioni
+      }, {
+        stripeAccount: hostStripeAccount.stripe_account_id // Questo è il parametro chiave per creare un direct charge
       })
       
       console.log(`API create-payment-intent: PaymentIntent creato con successo. ID: ${paymentIntent.id}, Client Secret: ${paymentIntent.client_secret?.substring(0, 10)}...`)
@@ -77,13 +95,17 @@ export async function POST(request: NextRequest) {
       // Aggiorna l'ordine con l'ID del payment intent
       await supabaseAdmin
         .from('orders')
-        .update({ stripe_payment_intent: paymentIntent.id })
+        .update({ 
+          stripe_payment_intent: paymentIntent.id,
+          stripe_account_id: hostStripeAccount.stripe_account_id
+        })
         .eq('id', orderId)
     
       // Return the client secret
       return NextResponse.json({ 
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
+        paymentIntentId: paymentIntent.id,
+        stripeAccountId: hostStripeAccount.stripe_account_id
       })
     } catch (stripeError: any) {
       console.error('Errore specifico di Stripe nella creazione del payment intent:', {

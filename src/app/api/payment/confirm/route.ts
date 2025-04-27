@@ -16,6 +16,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Payment Intent ID is required' }, { status: 400 })
     }
 
+    // Recupera l'ordine per verificare che il paymentIntentId corrisponda e per prendere lo stripe_account_id
+    const { data: order, error: orderError } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('id', orderId)
+      .single()
+      
+    if (orderError || !order) {
+      console.error('Errore nel recupero dell\'ordine:', orderError)
+      return NextResponse.json({ 
+        success: false,
+        error: 'Ordine non trovato'
+      }, { status: 404 })
+    }
+    
+    // Verifica che il payment intent ID corrisponda
+    if (order.stripe_payment_intent !== paymentIntentId) {
+      console.error('Il payment intent ID non corrisponde:', {
+        stored: order.stripe_payment_intent,
+        received: paymentIntentId
+      })
+      return NextResponse.json({ 
+        success: false,
+        error: 'Payment intent non valido per questo ordine'
+      }, { status: 400 })
+    }
+
     // Aggiorna lo stato dell'ordine a "completed"
     const { error: updateError } = await supabase
       .from('orders')
@@ -24,7 +51,7 @@ export async function POST(request: Request) {
         paid_at: new Date().toISOString(),
       })
       .eq('id', orderId)
-      .eq('stripe_payment_intent_id', paymentIntentId)
+      .eq('stripe_payment_intent', paymentIntentId)
 
     if (updateError) {
       console.error('Errore nell\'aggiornamento dell\'ordine:', updateError)
@@ -35,7 +62,10 @@ export async function POST(request: Request) {
     }
 
     console.log('Ordine aggiornato con successo:', orderId)
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      message: 'Il pagamento è stato ricevuto direttamente dall\'host'
+    })
   } catch (error: any) {
     console.error('Errore nella conferma del pagamento:', error)
     return NextResponse.json({
