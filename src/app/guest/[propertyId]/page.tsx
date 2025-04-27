@@ -651,18 +651,18 @@ export default function GuestHomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-white shadow-sm py-3">
+      <header className="bg-[#E2BFFF] shadow-sm py-3">
         <div className="w-full px-4 flex items-center justify-between">
           <div className="relative h-12 w-36">
             <Image 
-              src="/images/logo_guest.png"
+              src="/images/guestify_logo.png"
               alt="Guestify Logo"
               fill
               className="object-contain object-left"
               style={{ objectFit: 'contain', objectPosition: 'left' }}
             />
           </div>
-          <div className="text-gray-700">{propertyName}</div>
+          <div className="text-white font-bold text-lg truncate max-w-xs text-right">{propertyName}</div>
         </div>
       </header>
 
