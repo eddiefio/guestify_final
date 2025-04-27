@@ -9,6 +9,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
+import { ChevronLeft } from 'lucide-react'
 
 // Funzione per formattare i prezzi in Euro
 const formatEuro = (price: number) => {
@@ -18,141 +19,8 @@ const formatEuro = (price: number) => {
   }).format(price);
 }
 
-// Dichiarazione ma non inizializzazione dello stripe Promise 
-let stripePromise: Promise<any> | null = null;
-
-export default function PaymentClient({ orderId }: { orderId: string }) {
-  const [stripePromiseState, setStripePromiseState] = useState<Promise<any> | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [order, setOrder] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadOrderAndInitializeStripe = async () => {
-      try {
-        setLoading(true);
-        
-        // 1. Carica i dettagli dell'ordine
-        const orderResponse = await fetch(`/api/orders/${orderId}`);
-        if (!orderResponse.ok) {
-          throw new Error('Ordine non trovato');
-        }
-        const orderData = await orderResponse.json();
-        setOrder(orderData);
-        
-        // 2. Crea un singolo payment intent che useremo sia per l'inizializzazione che per il pagamento
-        const paymentResponse = await fetch('/api/create-payment-intent', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache'
-          },
-          body: JSON.stringify({ 
-            orderId: orderId,
-            amount: orderData.total_amount || 0
-          }),
-        });
-        
-        // Verifica se la risposta è OK prima di provare a parsare il JSON
-        if (!paymentResponse.ok) {
-          const contentType = paymentResponse.headers.get('content-type');
-          let errorMessage = `Errore nella creazione del payment intent: ${paymentResponse.status} ${paymentResponse.statusText}`;
-          
-          try {
-            // Se è JSON, prova a estrarre il messaggio di errore
-            if (contentType && contentType.includes('application/json')) {
-              const errorData = await paymentResponse.json();
-              errorMessage = errorData.error || errorMessage;
-            } else {
-              // Se non è JSON, leggi il testo della risposta
-              const text = await paymentResponse.text();
-              console.error('Risposta non-JSON ricevuta:', text);
-              errorMessage = 'Errore nella risposta del server. Controlla la console per dettagli.';
-            }
-          } catch (parseError) {
-            console.error('Errore nel parsing della risposta:', parseError);
-          }
-          
-          console.error('Errore payment intent:', errorMessage);
-          throw new Error(errorMessage);
-        }
-        
-        let responseData;
-        try {
-          responseData = await paymentResponse.json();
-        } catch (err) {
-          console.error('Errore nel parsing della risposta JSON:', err);
-          throw new Error('Risposta dal server non valida. Controlla la console per dettagli.');
-        }
-        
-        if (!responseData || !responseData.clientSecret) {
-          console.error('Risposta mancante o incompleta:', responseData);
-          throw new Error('Client secret non disponibile nella risposta');
-        }
-        
-        const { clientSecret, stripeAccountId } = responseData;
-        setClientSecret(clientSecret);
-        
-        // 3. Inizializza Stripe con l'account dell'host
-        if (stripeAccountId) {
-          console.log("Inizializzazione Stripe con account:", stripeAccountId);
-          stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!, {
-            stripeAccount: stripeAccountId, // Specifica l'account Stripe dell'host
-          });
-          setStripePromiseState(stripePromise);
-        } else {
-          stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-          setStripePromiseState(stripePromise);
-        }
-      } catch (error) {
-        console.error("Errore:", error);
-        setError(error instanceof Error ? error.message : "Si è verificato un errore");
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadOrderAndInitializeStripe();
-  }, [orderId]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Inizializzazione pagamento...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
-        <p>{error}</p>
-      </div>
-    );
-  }
-
-  if (!stripePromiseState || !clientSecret || !order) {
-    return (
-      <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
-        <p>Impossibile inizializzare il sistema di pagamento. Riprova più tardi.</p>
-      </div>
-    );
-  }
-
-  return (
-    <Elements stripe={stripePromiseState} options={{ clientSecret }}>
-      <CheckoutForm orderId={orderId} clientSecret={clientSecret} order={order} />
-    </Elements>
-  )
-}
+// Inizializzazione di Stripe (una sola volta fuori dal componente)
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 function CheckoutForm({ 
   orderId, 
@@ -185,6 +53,7 @@ function CheckoutForm({
     }
     
     setProcessing(true)
+    setPaymentError(null)
     
     try {
       console.log("Confermo il pagamento con clientSecret:", clientSecret);
@@ -222,6 +91,7 @@ function CheckoutForm({
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
         body: JSON.stringify({ status: 'PAID' }),
       })
@@ -235,15 +105,33 @@ function CheckoutForm({
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+    <div className="max-w-md mx-auto mt-6 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center text-primary">Completa il tuo pagamento</h2>
       
       <div className="mb-6 p-4 bg-gray-50 rounded-md">
         <h3 className="font-semibold mb-2">Riepilogo ordine</h3>
         <p className="text-sm text-gray-600 mb-1">ID ordine: {orderId}</p>
         <p className="text-sm text-gray-600 mb-3">Data: {new Date(order.created_at).toLocaleDateString()}</p>
+        
+        {order.items && order.items.length > 0 && (
+          <div className="mb-3">
+            <h4 className="text-sm font-medium">Dettagli:</h4>
+            <ul className="text-sm text-gray-600 mt-1 space-y-1">
+              {order.items.map((item: any) => (
+                <li key={item.id} className="flex justify-between">
+                  <span>{item.quantity}x {item.extra_services?.title || 'Servizio'}</span>
+                  <span>{formatEuro(item.price * item.quantity)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        
         <div className="border-t border-gray-200 pt-2 mt-2">
-          <p className="font-semibold text-lg">Totale: {formatEuro(order.total_amount)}</p>
+          <p className="font-semibold text-lg flex justify-between">
+            <span>Totale:</span>
+            <span>{formatEuro(order.total_amount)}</span>
+          </p>
         </div>
       </div>
       
@@ -286,6 +174,192 @@ function CheckoutForm({
           {processing ? 'Elaborazione...' : 'Paga ora'}
         </button>
       </form>
+    </div>
+  )
+}
+
+export default function PaymentClient({ orderId }: { orderId: string }) {
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [clientSecret, setClientSecret] = useState<string | null>(null)
+  const [order, setOrder] = useState<any>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+
+  useEffect(() => {
+    const loadOrderAndInitializeStripe = async () => {
+      if (!orderId) return
+      
+      try {
+        setLoading(true)
+        
+        // 1. Carica i dettagli dell'ordine
+        const orderResponse = await fetch(`/api/orders/${orderId}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (!orderResponse.ok) {
+          const contentType = orderResponse.headers.get('content-type');
+          let errorMessage = `Errore nel recupero dell'ordine: ${orderResponse.status} ${orderResponse.statusText}`;
+          
+          try {
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await orderResponse.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              const text = await orderResponse.text();
+              console.error('Risposta non-JSON ricevuta:', text);
+            }
+          } catch (parseError) {
+            console.error('Errore nel parsing della risposta:', parseError);
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        const orderData = await orderResponse.json();
+        setOrder(orderData);
+        
+        // 2. Crea un payment intent
+        const paymentResponse = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+          },
+          body: JSON.stringify({ 
+            orderId: orderId,
+            amount: orderData.total_amount || 0
+          }),
+        });
+        
+        if (!paymentResponse.ok) {
+          const contentType = paymentResponse.headers.get('content-type');
+          let errorMessage = `Errore nella creazione del payment intent: ${paymentResponse.status} ${paymentResponse.statusText}`;
+          
+          try {
+            if (contentType && contentType.includes('application/json')) {
+              const errorData = await paymentResponse.json();
+              errorMessage = errorData.error || errorMessage;
+            } else {
+              const text = await paymentResponse.text();
+              console.error('Risposta non-JSON ricevuta:', text);
+            }
+          } catch (parseError) {
+            console.error('Errore nel parsing della risposta:', parseError);
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        let responseData;
+        try {
+          responseData = await paymentResponse.json();
+        } catch (err) {
+          console.error('Errore nel parsing della risposta JSON:', err);
+          throw new Error('Risposta dal server non valida');
+        }
+        
+        if (!responseData.clientSecret) {
+          throw new Error('Client secret non disponibile');
+        }
+        
+        setClientSecret(responseData.clientSecret);
+      } catch (error) {
+        console.error("Errore:", error);
+        setError(error instanceof Error ? error.message : "Si è verificato un errore");
+        
+        // Se abbiamo meno di 3 tentativi, proviamo di nuovo dopo un breve ritardo
+        if (retryCount < 2) {
+          console.log(`Ritentativo ${retryCount + 1}/3 tra 2 secondi...`);
+          setTimeout(() => {
+            setRetryCount(prevCount => prevCount + 1);
+          }, 2000);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadOrderAndInitializeStripe();
+  }, [orderId, retryCount]);
+
+  // Se stiamo ancora caricando o stiamo per riprovare, mostriamo il loader
+  if (loading || (error && retryCount < 2)) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-gray-600">
+                {loading ? 'Inizializzazione pagamento...' : `Tentativo di riconnessione ${retryCount + 1}/3...`}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
+            <p className="mb-4">{error}</p>
+            <button
+              onClick={() => router.push(`/guest/checkout`)}
+              className="w-full px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300 transition"
+            >
+              Torna al checkout
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clientSecret || !order) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
+            <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
+            <p>Impossibile inizializzare il sistema di pagamento. Riprova più tardi.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center">
+            <button 
+              onClick={() => router.back()}
+              className="p-2 mr-4 rounded-full hover:bg-gray-100"
+            >
+              <ChevronLeft className="h-6 w-6 text-gray-700" />
+            </button>
+            <h1 className="text-xl font-bold text-gray-800">Pagamento</h1>
+          </div>
+        </div>
+      </div>
+      
+      <div className="container mx-auto px-4 py-8">
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <CheckoutForm orderId={orderId} clientSecret={clientSecret} order={order} />
+        </Elements>
+      </div>
     </div>
   )
 } 
