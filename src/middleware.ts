@@ -20,6 +20,21 @@ export async function middleware(request: NextRequest) {
     '/auth/confirm'
   ];
   
+  // Percorsi pubblici per gli ospiti
+  const publicGuestPaths = [
+    '/guest/payment',
+    '/guest/checkout'
+  ];
+  
+  // Verifica se il percorso corrente è un percorso per ospiti
+  const isGuestPath = publicGuestPaths.some(path => pathname.startsWith(path));
+  
+  // Consenti sempre l'accesso ai percorsi per ospiti
+  if (isGuestPath) {
+    console.log(`Accesso consentito al percorso guest: ${pathname}`);
+    return NextResponse.next();
+  }
+  
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
   const hasTokenHash = searchParams.has('token_hash');
   const hasCode = searchParams.has('code');
@@ -102,6 +117,8 @@ export const config = {
     // Percorsi che richiedono il middleware
     '/dashboard/:path*',
     '/api/:path*',
-    '/auth/:path*'
+    '/auth/:path*',
+    '/guest/payment/:path*',
+    '/guest/checkout/:path*'
   ],
 };
