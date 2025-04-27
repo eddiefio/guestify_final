@@ -18,7 +18,7 @@ export async function GET(
       return NextResponse.json({ error: 'ID ordine mancante' }, { status: 400 })
     }
 
-    console.log(`Recupero ordine con ID: ${orderId}`)
+    console.log(`API orders/[orderId]: Recupero ordine con ID: ${orderId}`)
 
     // Recupera i dettagli dell'ordine
     const { data: order, error: orderError } = await supabaseAdmin
@@ -45,9 +45,14 @@ export async function GET(
     }
 
     // Ora recuperiamo gli elementi dell'ordine
+    console.log(`API orders/[orderId]: Recupero elementi per l'ordine: ${orderId}`)
+    
     const { data: orderItems, error: itemsError } = await supabaseAdmin
       .from('order_items')
-      .select('*, extra_services(*)')
+      .select(`
+        *,
+        extra_services(*)
+      `)
       .eq('order_id', orderId)
 
     if (itemsError) {
@@ -57,6 +62,8 @@ export async function GET(
         { status: 500 }
       )
     }
+
+    console.log(`API orders/[orderId]: Trovati ${orderItems.length} elementi per l'ordine ${orderId}`)
 
     // Restituisci l'ordine completo con i suoi elementi
     return NextResponse.json({

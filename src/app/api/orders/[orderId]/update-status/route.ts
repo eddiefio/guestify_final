@@ -23,6 +23,25 @@ export async function PUT(
       return NextResponse.json({ error: 'Stato mancante' }, { status: 400 })
     }
 
+    console.log(`API update-status: Aggiornamento ordine ${orderId} a stato ${status}`);
+
+    // Prima verifichiamo che l'ordine esista
+    const { data: orderCheck, error: checkError } = await supabaseAdmin
+      .from('orders')
+      .select('id, status')
+      .eq('id', orderId)
+      .single();
+      
+    if (checkError) {
+      console.error('Errore nel recuperare l\'ordine:', checkError);
+      return NextResponse.json(
+        { error: `Ordine non trovato: ${checkError.message}` },
+        { status: 404 }
+      );
+    }
+    
+    console.log(`API update-status: Ordine trovato, stato attuale: ${orderCheck.status}`);
+
     // Update order status
     const { data, error } = await supabaseAdmin
       .from('orders')
@@ -38,6 +57,8 @@ export async function PUT(
         { status: 500 }
       )
     }
+
+    console.log(`API update-status: Stato aggiornato con successo a ${status}`);
 
     return NextResponse.json({ 
       success: true,

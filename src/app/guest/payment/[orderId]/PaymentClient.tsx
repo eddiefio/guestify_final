@@ -20,6 +20,8 @@ const formatEuro = (price: number) => {
 }
 
 // Inizializzazione di Stripe (una sola volta fuori dal componente)
+// Aggiunto log per verificare se la chiave è definita correttamente
+console.log("STRIPE KEY definita:", !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 function CheckoutForm({ 
@@ -44,11 +46,13 @@ function CheckoutForm({
     
     if (!stripe || !elements) {
       // Stripe.js non è ancora caricato
+      console.log("Stripe o Elements non ancora caricati");
       return
     }
     
     const cardElement = elements.getElement(CardElement)
     if (!cardElement) {
+      console.log("CardElement non trovato");
       return
     }
     
@@ -56,7 +60,7 @@ function CheckoutForm({
     setPaymentError(null)
     
     try {
-      console.log("Confermo il pagamento con clientSecret:", clientSecret);
+      console.log("Confermo il pagamento con clientSecret:", clientSecret.substring(0, 10) + "...");
       
       const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
@@ -69,6 +73,7 @@ function CheckoutForm({
         setPaymentError(`Pagamento fallito: ${error.message}`);
         setProcessing(false);
       } else if (paymentIntent.status === 'succeeded') {
+        console.log("Pagamento completato con successo:", paymentIntent.id);
         setSucceeded(true)
         setPaymentError(null)
         
@@ -87,6 +92,7 @@ function CheckoutForm({
   
   const updateOrderStatus = async () => {
     try {
+      console.log("Aggiornamento stato ordine a PAID:", orderId);
       const response = await fetch(`/api/orders/${orderId}/update-status`, {
         method: 'PUT',
         headers: {
@@ -97,10 +103,15 @@ function CheckoutForm({
       })
       
       if (!response.ok) {
-        console.error('Errore nell\'aggiornamento dello stato dell\'ordine')
+        console.error('Errore nell\'aggiornamento dello stato dell\'ordine:', response.status);
+        const errorText = await response.text();
+        console.error('Dettagli errore:', errorText);
+      } else {
+        const result = await response.json();
+        console.log('Stato ordine aggiornato con successo:', result);
       }
     } catch (error) {
-      console.error('Errore:', error)
+      console.error('Errore nella richiesta di aggiornamento:', error)
     }
   }
 
@@ -188,12 +199,18 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
 
   useEffect(() => {
     const loadOrderAndInitializeStripe = async () => {
-      if (!orderId) return
+      if (!orderId) {
+        console.log("PaymentClient: Nessun orderId fornito");
+        return;
+      }
+      
+      console.log(`PaymentClient: Caricamento ordine e inizializzazione Stripe per ordine: ${orderId}, tentativo: ${retryCount + 1}`);
       
       try {
         setLoading(true)
         
         // 1. Carica i dettagli dell'ordine
+        console.log(`PaymentClient: Recupero dettagli ordine: ${orderId}`);
         const orderResponse = await fetch(`/api/orders/${orderId}`, {
           headers: {
             'Accept': 'application/json',
@@ -201,8 +218,12 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           }
         });
         
+        console.log(`PaymentClient: Stato risposta ordine:`, orderResponse.status);
+        
         if (!orderResponse.ok) {
           const contentType = orderResponse.headers.get('content-type');
+          console.log("PaymentClient: Content-Type risposta:", contentType);
+          
           let errorMessage = `Errore nel recupero dell'ordine: ${orderResponse.status} ${orderResponse.statusText}`;
           
           try {
@@ -221,9 +242,16 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         }
         
         const orderData = await orderResponse.json();
+        console.log(`PaymentClient: Dati ordine ricevuti:`, {
+          id: orderData.id,
+          total_amount: orderData.total_amount,
+          items: orderData.items?.length || 0
+        });
+        
         setOrder(orderData);
         
         // 2. Crea un payment intent
+        console.log(`PaymentClient: Creazione payment intent per ordine: ${orderId} con importo: ${orderData.total_amount}`);
         const paymentResponse = await fetch('/api/create-payment-intent', {
           method: 'POST',
           headers: {
@@ -237,8 +265,12 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           }),
         });
         
+        console.log(`PaymentClient: Stato risposta payment intent:`, paymentResponse.status);
+        
         if (!paymentResponse.ok) {
           const contentType = paymentResponse.headers.get('content-type');
+          console.log("PaymentClient: Content-Type risposta payment:", contentType);
+          
           let errorMessage = `Errore nella creazione del payment intent: ${paymentResponse.status} ${paymentResponse.statusText}`;
           
           try {
@@ -259,23 +291,26 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
         let responseData;
         try {
           responseData = await paymentResponse.json();
+          console.log(`PaymentClient: PaymentIntent ricevuto con clientSecret:`, !!responseData.clientSecret);
         } catch (err) {
           console.error('Errore nel parsing della risposta JSON:', err);
           throw new Error('Risposta dal server non valida');
         }
         
         if (!responseData.clientSecret) {
+          console.error('PaymentClient: clientSecret mancante nella risposta', responseData);
           throw new Error('Client secret non disponibile');
         }
         
         setClientSecret(responseData.clientSecret);
+        console.log(`PaymentClient: Inizializzazione completata con successo`);
       } catch (error) {
-        console.error("Errore:", error);
+        console.error("Errore in loadOrderAndInitializeStripe:", error);
         setError(error instanceof Error ? error.message : "Si è verificato un errore");
         
         // Se abbiamo meno di 3 tentativi, proviamo di nuovo dopo un breve ritardo
         if (retryCount < 2) {
-          console.log(`Ritentativo ${retryCount + 1}/3 tra 2 secondi...`);
+          console.log(`PaymentClient: Ritentativo ${retryCount + 1}/3 tra 2 secondi...`);
           setTimeout(() => {
             setRetryCount(prevCount => prevCount + 1);
           }, 2000);
@@ -332,6 +367,10 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
           <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
             <h2 className="text-xl font-semibold text-red-600 mb-4">Errore</h2>
             <p>Impossibile inizializzare il sistema di pagamento. Riprova più tardi.</p>
+            <p className="mt-2 text-sm text-gray-500">
+              {!clientSecret ? 'Client Secret non disponibile.' : ''}
+              {!order ? 'Dettagli ordine non disponibili.' : ''}
+            </p>
           </div>
         </div>
       </div>

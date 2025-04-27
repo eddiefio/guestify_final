@@ -101,7 +101,6 @@ export default function Checkout() {
       console.log('Avvio processo di checkout...')
       console.log('Dati del carrello:', cart)
       console.log('Property ID:', propertyId)
-      console.log('Host Stripe Account:', hostDetails.stripeAccountId)
       
       // Prepare cart items for the API
       const cartItems = cart.map(item => ({
@@ -154,6 +153,7 @@ export default function Checkout() {
       console.log('Elementi dell\'ordine aggiunti con successo')
       
       // Reindirizza alla pagina di pagamento
+      console.log('Reindirizzamento alla pagina di pagamento:', `/guest/payment/${order.id}`)
       router.push(`/guest/payment/${order.id}`)
       
     } catch (error: any) {

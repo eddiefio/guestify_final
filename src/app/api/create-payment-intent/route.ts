@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
       // Aggiorna l'ordine con l'ID del payment intent
       await supabaseAdmin
         .from('orders')
-        .update({ payment_intent_id: paymentIntent.id })
+        .update({ stripe_payment_intent: paymentIntent.id })
         .eq('id', orderId)
     
       // Return the client secret
