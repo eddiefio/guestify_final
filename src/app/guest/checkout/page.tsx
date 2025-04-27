@@ -2,11 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
 import { supabase } from '@/lib/supabase'
-import toast from 'react-hot-toast'
-import Link from 'next/link'
 
 export default function Checkout() {
   const router = useRouter()
@@ -14,87 +11,9 @@ export default function Checkout() {
   
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [propertyDetails, setPropertyDetails] = useState<{name: string, hostId: string} | null>(null)
   
   // Calcola il totale del carrello 
   const cartTotal = getCartTotal()
-  
-  // Funzione per eseguire il checkout
-  const processCheckout = async () => {
-    if (!propertyDetails) {
-      setError('Property details are missing')
-      setLoading(false)
-      return
-    }
-    
-    try {
-      setLoading(true)
-      setError(null)
-      
-      console.log('Avvio processo di checkout automatico...')
-      console.log('Dati del carrello:', cart)
-      console.log('Property ID:', propertyId)
-      
-      // Prepare cart items for the API
-      const cartItems = cart.map(item => ({
-        productId: item.service.id,
-        quantity: item.quantity,
-        price: item.service.price,
-        name: item.service.title
-      }))
-      
-      console.log('Creazione ordine nel database...')
-      
-      // Create order in database
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([
-          {
-            property_id: propertyId,
-            total_amount: cartTotal,
-            status: 'pending'
-          }
-        ])
-        .select()
-        .single()
-        
-      if (orderError) {
-        console.error('Errore nella creazione dell\'ordine:', orderError)
-        throw orderError
-      }
-      
-      console.log('Ordine creato con successo:', order)
-      
-      // Add order items
-      console.log('Aggiunta elementi dell\'ordine...')
-      const orderItems = cart.map(item => ({
-        order_id: order.id,
-        extra_service_id: item.service.id,
-        quantity: item.quantity,
-        price: item.service.price
-      }))
-      
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-        
-      if (itemsError) {
-        console.error('Errore nell\'aggiunta degli elementi dell\'ordine:', itemsError)
-        throw itemsError
-      }
-      
-      console.log('Elementi dell\'ordine aggiunti con successo')
-      
-      // Reindirizza alla pagina di pagamento
-      console.log('Reindirizzamento alla pagina di pagamento:', `/guest/payment/${order.id}`)
-      router.push(`/guest/payment/${order.id}`)
-      
-    } catch (error: any) {
-      console.error('Checkout error:', error)
-      setError(error.message || 'Failed to process checkout. Please try again.')
-      setLoading(false)
-    }
-  }
   
   useEffect(() => {
     // Redirect if cart is empty
@@ -103,10 +22,17 @@ export default function Checkout() {
       return
     }
     
-    // Fetch property and host details
-    const fetchDetails = async () => {
+    // Esegui immediatamente il processo di checkout
+    const processCheckout = async () => {
       try {
-        // Get property details
+        setLoading(true)
+        setError(null)
+        
+        console.log('Avvio processo di checkout automatico...')
+        console.log('Dati del carrello:', cart)
+        console.log('Property ID:', propertyId)
+        
+        // Fetch property details
         const { data: property, error: propertyError } = await supabase
           .from('properties')
           .select('name, host_id')
@@ -115,133 +41,90 @@ export default function Checkout() {
           
         if (propertyError) throw propertyError
         
-        setPropertyDetails({
-          name: property.name,
-          hostId: property.host_id
-        })
+        // Prepare cart items for the API
+        const cartItems = cart.map(item => ({
+          productId: item.service.id,
+          quantity: item.quantity,
+          price: item.service.price,
+          name: item.service.title
+        }))
         
-        // Una volta ottenuti i dettagli della proprietà, esegui automaticamente il checkout
-        await processCheckout()
+        console.log('Creazione ordine nel database...')
         
-      } catch (error) {
-        console.error('Error fetching details:', error)
-        setError('Could not load checkout details')
+        // Create order in database
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .insert([
+            {
+              property_id: propertyId,
+              total_amount: cartTotal,
+              status: 'pending'
+            }
+          ])
+          .select()
+          .single()
+          
+        if (orderError) {
+          console.error('Errore nella creazione dell\'ordine:', orderError)
+          throw orderError
+        }
+        
+        console.log('Ordine creato con successo:', order)
+        
+        // Add order items
+        console.log('Aggiunta elementi dell\'ordine...')
+        const orderItems = cart.map(item => ({
+          order_id: order.id,
+          extra_service_id: item.service.id,
+          quantity: item.quantity,
+          price: item.service.price
+        }))
+        
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems)
+          
+        if (itemsError) {
+          console.error('Errore nell\'aggiunta degli elementi dell\'ordine:', itemsError)
+          throw itemsError
+        }
+        
+        console.log('Elementi dell\'ordine aggiunti con successo')
+        
+        // Reindirizza alla pagina di pagamento
+        console.log('Reindirizzamento alla pagina di pagamento:', `/guest/payment/${order.id}`)
+        router.push(`/guest/payment/${order.id}`)
+        
+      } catch (error: any) {
+        console.error('Checkout error:', error)
+        setError(error.message || 'Failed to process checkout. Please try again.')
         setLoading(false)
       }
     }
     
-    fetchDetails()
-  }, [cart, propertyId, router])
+    processCheckout()
+  }, [cart, propertyId, router, cartTotal])
   
-  // Format price to currency
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('it-IT', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(price)
-  }
-  
-  // Questa funzione non è più necessaria dato che il checkout avviene automaticamente
-  const handleCheckout = async () => {
-    await processCheckout()
-  }
-  
-  // Pagina di caricamento durante il processo automatico
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 font-spartan flex justify-center items-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold mb-4">Elaborazione dell'ordine in corso...</h2>
-          <p className="text-gray-600">Sarai reindirizzato automaticamente alla pagina di pagamento</p>
-        </div>
-      </div>
-    )
-  }
-  
-  // Mostra la pagina di checkout solo in caso di errore
+  // Mostra solo un loader durante il processo
   return (
-    <div className="min-h-screen bg-gray-50 font-spartan">
-      {/* Header */}
-      <div className="bg-white shadow">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center">
-            <button 
-              onClick={() => router.back()}
-              className="p-2 mr-4 rounded-full hover:bg-gray-100"
-            >
-              <ChevronLeft className="h-6 w-6 text-gray-700" />
-            </button>
-            <h1 className="text-xl font-bold text-gray-800">Checkout</h1>
-          </div>
-        </div>
-      </div>
-      
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-lg mx-auto">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-              <p>{error}</p>
-            </div>
-          )}
-          
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6">
-            <div className="p-6">
-              <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-              
-              {/* Order Items */}
-              <div className="space-y-3 mb-6">
-                {cart.map((item) => (
-                  <div key={item.service.id} className="flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">{item.service.title}</p>
-                      <p className="text-sm text-gray-500">Quantity: {item.quantity}</p>
-                    </div>
-                    <p className="font-bold">{formatPrice(item.service.price * item.quantity)}</p>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Totals */}
-              <div className="border-t pt-4 mt-4">
-                <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
-                  <span>{formatPrice(cartTotal)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Property Information */}
-          {propertyDetails && (
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden mb-6 p-6">
-              <h3 className="font-bold mb-2">Property Information</h3>
-              <p>{propertyDetails.name}</p>
-            </div>
-          )}
-          
-          {/* Checkout Button */}
-          <button
-            onClick={handleCheckout}
-            disabled={loading || !propertyDetails}
-            className={`w-full py-3 rounded-xl font-bold ${
-              loading || !propertyDetails
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-[#ffde59] text-black hover:bg-opacity-90'
-            }`}
+    <div className="min-h-screen bg-gray-50 font-spartan flex items-center justify-center">
+      {error ? (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-6 py-4 rounded-lg">
+          <p className="font-bold mb-2">Errore</p>
+          <p>{error}</p>
+          <button 
+            onClick={() => router.back()}
+            className="mt-4 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 text-black"
           >
-            {loading ? 'Processing...' : 'Procedi al Pagamento'}
+            Torna indietro
           </button>
-          
-          <div className="text-center mt-4">
-            <Link 
-              href={propertyId ? `/guest/${propertyId}/extra-services` : '/'}
-              className="text-[#5E2BFF] hover:underline"
-            >
-              Return to services
-            </Link>
-          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#5E2BFF] mb-4"></div>
+          <p className="text-gray-600">Elaborazione dell'ordine in corso...</p>
+        </div>
+      )}
     </div>
   )
-} 
+}
