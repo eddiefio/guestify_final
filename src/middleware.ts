@@ -13,6 +13,15 @@ export async function middleware(request: NextRequest) {
     '/auth/forgot-password'
   ];
   
+  // Percorsi API pubblici accessibili senza autenticazione
+  const publicApiPaths = [
+    '/api/orders/',
+    '/api/create-payment-intent'
+  ];
+  
+  // Verifica se il percorso corrente è un API pubblico
+  const isPublicApi = publicApiPaths.some(path => pathname.includes(path));
+  
   // Percorsi per operazioni di autenticazione che necessitano di un trattamento speciale
   const specialAuthPaths = [
     '/auth/reset-password',
@@ -28,6 +37,12 @@ export async function middleware(request: NextRequest) {
   // Log per il debugging
   if (pathname.includes('/auth/') || hasTokenHash || hasCode) {
     console.log(`Middleware check - path: ${pathname}, token_hash: ${hasTokenHash}, code: ${hasCode}, type: ${searchParams.get('type')}`);
+  }
+  
+  // Consenti sempre l'accesso ai percorsi API pubblici
+  if (isPublicApi) {
+    console.log(`Consentendo accesso a API pubblico: ${pathname}`);
+    return NextResponse.next();
   }
   
   // Consenti sempre l'accesso al percorso di callback (necessario per il flusso di autenticazione)
@@ -78,7 +93,7 @@ export async function middleware(request: NextRequest) {
       console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
       
       // Solo i percorsi che iniziano con /dashboard o /api sono protetti
-      if (pathname.startsWith('/dashboard') || pathname.startsWith('/api')) {
+      if (pathname.startsWith('/dashboard') || (pathname.startsWith('/api') && !isPublicApi)) {
         const signInUrl = new URL('/auth/signin', request.url);
         signInUrl.searchParams.set('redirectUrl', request.url);
         return NextResponse.redirect(signInUrl);
