@@ -8,6 +8,8 @@ import {
   Elements,
   useStripe,
   useElements,
+  PlatformPay,
+  isPlatformPaySupported
 } from '@stripe/react-stripe-js'
 import { ChevronLeft } from 'lucide-react'
 
@@ -336,6 +338,14 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
     loadOrderAndInitializeStripe();
   }, [orderId, retryCount]);
 
+  useEffect(() => {
+    async function checkApplePaySupport() {
+      const supported = await isPlatformPaySupported();
+      console.log('Apple Pay supportato:', supported);
+    }
+    checkApplePaySupport();
+  }, []);
+
   // Se stiamo ancora caricando o stiamo per riprovare, mostriamo il loader
   if (loading || (error && retryCount < 2)) {
     return (
@@ -408,7 +418,7 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
             >
               <ChevronLeft className="h-6 w-6 text-gray-700" />
             </button>
-            <h1 className="text-xl font-bold text-gray-800">Pagamento</h1>
+            <h1 className="text-xl font-bold text-gray-800">Payment Method</h1>
           </div>
         </div>
       </div>
