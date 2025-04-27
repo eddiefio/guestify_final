@@ -389,6 +389,7 @@ export default function PrintQR() {
                   )}
                 </button>
               </div>
+              <p className="text-xs text-gray-500 mb-6 -mt-4 text-center italic">Copy and paste this link to see what your guests will see</p>
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
