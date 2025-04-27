@@ -651,7 +651,7 @@ export default function GuestHomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-spartan flex flex-col">
-      <header className="bg-[#E2BFFF] shadow-sm py-3" style={{backgroundColor: '#E2BFFF'}}>
+      <header className="bg-[#E2BFFF]" style={{backgroundColor: '#E2BFFF'}}>
         <div className="w-full px-4 flex items-center justify-between">
           <div className="relative h-12 w-36">
             <Image 
