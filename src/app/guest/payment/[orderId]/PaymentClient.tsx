@@ -116,16 +116,16 @@ function CheckoutForm({
 
   return (
     <div className="max-w-md mx-auto mt-6 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center text-primary">Completa il tuo pagamento</h2>
+      <h2 className="text-2xl font-bold mb-6 text-center text-primary">Complete your purchase</h2>
       
       <div className="mb-6 p-4 bg-gray-50 rounded-md">
-        <h3 className="font-semibold mb-2">Riepilogo ordine</h3>
-        <p className="text-sm text-gray-600 mb-1">ID ordine: {orderId}</p>
-        <p className="text-sm text-gray-600 mb-3">Data: {new Date(order.created_at).toLocaleDateString()}</p>
+        <h3 className="font-semibold mb-2 text-gray-900">Order summary</h3>
+        <p className="text-sm text-gray-600 mb-1">ID ordor: {orderId}</p>
+        <p className="text-sm text-gray-600 mb-3">Date: {new Date(order.created_at).toLocaleDateString()}</p>
         
         {order.items && order.items.length > 0 && (
           <div className="mb-3">
-            <h4 className="text-sm font-medium">Dettagli:</h4>
+            <h4 className="text-sm font-medium text-gray-800">Details:</h4>
             <ul className="text-sm text-gray-600 mt-1 space-y-1">
               {order.items.map((item: any) => (
                 <li key={item.id} className="flex justify-between">
@@ -138,8 +138,8 @@ function CheckoutForm({
         )}
         
         <div className="border-t border-gray-200 pt-2 mt-2">
-          <p className="font-semibold text-lg flex justify-between">
-            <span>Totale:</span>
+          <p className="font-semibold text-lg flex justify-between text-gray-900">
+            <span>Total:</span>
             <span>{formatEuro(order.total_amount)}</span>
           </p>
         </div>
