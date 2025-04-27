@@ -29,7 +29,7 @@ export default function SuccessContent() {
             >
               <ChevronLeft className="h-6 w-6 text-gray-700" />
             </button>
-            <h1 className="text-xl font-bold text-gray-800">Ordine Completato</h1>
+            <h1 className="text-xl font-bold text-gray-800">Order Completed</h1>
           </div>
         </div>
       </div>
@@ -41,23 +41,23 @@ export default function SuccessContent() {
               <div className="flex">
                 <div className="ml-3">
                   <p className="text-sm text-green-700">
-                    Grazie per il tuo ordine su Guestify
+                    Thanks for your order on Guestify!
                   </p>
                 </div>
               </div>
             </div>
             
             {orderId && (
-              <p className="text-sm mb-4">Numero ordine: <span className="font-medium">{orderId}</span></p>
+              <p className="text-sm mb-4">Order Number: <span className="font-medium">{orderId}</span></p>
             )}
             
             <p className="text-sm text-gray-600 mb-6">
-              Grazie per il tuo acquisto. Il tuo ordine è stato completato con successo.
+              Thanks for your purchase. Your order was completed with success.
             </p>
             
             <div className="mt-8">
               <Link href="/" className="bg-[#ffde59] text-black px-4 py-2 rounded-full text-sm hover:opacity-90 transition font-semibold inline-block">
-                Torna alla Home
+                Return <B></B>ack
               </Link>
             </div>
           </div>

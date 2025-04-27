@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loadStripe } from '@stripe/stripe-js'
 import {
-  CardElement,
+  PaymentElement,
   Elements,
   useStripe,
   useElements,
@@ -52,29 +52,26 @@ function CheckoutForm({
       return
     }
     
-    const cardElement = elements.getElement(CardElement)
-    if (!cardElement) {
-      console.log("CardElement non trovato");
-      return
-    }
-    
     setProcessing(true)
     setPaymentError(null)
     
     try {
       console.log("Confermo il pagamento con clientSecret:", clientSecret.substring(0, 10) + "...");
       
-      const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
+      const { error, paymentIntent } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          // Ritorna a questa URL dopo che il pagamento è completo
+          return_url: `${window.location.origin}/guest/checkout/success?orderId=${orderId}`,
         },
-      })
+        redirect: 'if_required'
+      });
       
       if (error) {
         console.error("Errore di pagamento:", error);
         setPaymentError(`Pagamento fallito: ${error.message}`);
         setProcessing(false);
-      } else if (paymentIntent.status === 'succeeded') {
+      } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log("Pagamento completato con successo:", paymentIntent.id);
         setSucceeded(true)
         setPaymentError(null)
@@ -150,27 +147,15 @@ function CheckoutForm({
       
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Dati carta di credito
-          </label>
-          <div className="p-3 border border-gray-300 rounded-md">
-            <CardElement 
-              options={{
-                style: {
-                  base: {
-                    fontSize: '16px',
-                    color: '#424770',
-                    '::placeholder': {
-                      color: '#aab7c4',
-                    },
-                  },
-                  invalid: {
-                    color: '#9e2146',
-                  },
-                },
-              }}
-            />
-          </div>
+          <PaymentElement
+            options={{
+              layout: {
+                type: 'tabs',
+                defaultCollapsed: false,
+              },
+              paymentMethodOrder: ['apple_pay', 'google_pay', 'card']
+            }}
+          />
         </div>
         
         {paymentError && (
@@ -429,7 +414,23 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
       </div>
       
       <div className="container mx-auto px-4 py-8">
-        <Elements stripe={stripePromiseWithAccount} options={{ clientSecret }}>
+        <Elements 
+          stripe={stripePromiseWithAccount} 
+          options={{ 
+            clientSecret,
+            appearance: {
+              theme: 'stripe',
+              variables: {
+                colorPrimary: '#5E2BFF',
+                colorBackground: '#ffffff',
+                colorText: '#30313d',
+                colorDanger: '#df1b41',
+                fontFamily: 'League Spartan, system-ui, sans-serif',
+                borderRadius: '8px'
+              }
+            }
+          }}
+        >
           <CheckoutForm 
             orderId={orderId} 
             clientSecret={clientSecret} 
