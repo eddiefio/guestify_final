@@ -80,9 +80,7 @@ export async function POST(request: Request) {
         orderId: orderId,
         propertyId: propertyId,
       },
-      automatic_payment_methods: {
-        enabled: true,
-      },
+     
       payment_method_types: ["card"],
     });
 
