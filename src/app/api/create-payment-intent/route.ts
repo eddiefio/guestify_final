@@ -85,8 +85,10 @@ export async function POST(request: NextRequest) {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
-        
-         // Specifica esplicitamente i metodi di pagamento supportati
+        automatic_payment_methods: {
+          enabled: false, // Abilitato per supportare automaticamente Apple Pay e altri metodi di pagamento
+        },
+        payment_method_types: ['card'], // Specifica esplicitamente i metodi di pagamento supportati
         metadata: {
           orderId,
           propertyId: order.property_id,
