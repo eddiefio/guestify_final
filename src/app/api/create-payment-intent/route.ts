@@ -10,15 +10,6 @@ const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
-// IMPORTANTE: Per far funzionare Apple Pay, è necessario registrare il dominio in Stripe:
-// 1. Accedi al dashboard di Stripe
-// 2. Vai su Settings -> Payment methods -> Apple Pay
-// 3. Registra il dominio (deve essere HTTPS)
-// 4. Stripe genererà un file di verifica da inserire in /.well-known/apple-developer-merchantid-domain-association
-// 5. Registra anche il dominio per le altre modalità di pagamento in Settings -> Payment Method Domains
-//
-// Per i test locali, è necessario utilizzare ngrok o un servizio simile per ottenere un dominio HTTPS
-
 export async function POST(request: NextRequest) {
   try {
     const { orderId, amount } = await request.json()
@@ -86,9 +77,8 @@ export async function POST(request: NextRequest) {
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
         automatic_payment_methods: {
-          enabled: false, // Abilitato per supportare automaticamente Apple Pay e altri metodi di pagamento
+          enabled: false,
         },
-        payment_method_types: ['card'], // Specifica esplicitamente i metodi di pagamento supportati
         metadata: {
           orderId,
           propertyId: order.property_id,
