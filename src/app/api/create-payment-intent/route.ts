@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
        
-        payment_method_types: ['card', 'apple_pay', 'google_pay'],
+        payment_method_types: ["card"],
         metadata: {
           orderId,
           propertyId: order.property_id,
