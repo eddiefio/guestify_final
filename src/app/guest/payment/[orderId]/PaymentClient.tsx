@@ -9,7 +9,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, InfoIcon } from 'lucide-react'
 
 // Funzione per formattare i prezzi in Euro
 const formatEuro = (price: number) => {
@@ -23,6 +23,27 @@ const formatEuro = (price: number) => {
 // Aggiunto log per verificare se la chiave è definita correttamente
 console.log("STRIPE KEY definita:", !!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY);
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+// Funzione per verificare il supporto di Apple Pay
+async function checkApplePaySupport(stripe: any) {
+  if (!stripe) return false;
+  
+  const paymentRequest = stripe.paymentRequest({
+    country: 'IT',
+    currency: 'eur',
+    total: {
+      label: 'Guestify',
+      amount: 1000, // Un importo minimo per il test
+    },
+    requestPayerName: true,
+    requestPayerEmail: true,
+  });
+  
+  // Controlla se Apple Pay è disponibile
+  const result = await paymentRequest.canMakePayment();
+  console.log("Supporto Apple Pay:", result);
+  return !!result?.applePay;
+}
 
 function CheckoutForm({ 
   orderId, 
@@ -42,6 +63,18 @@ function CheckoutForm({
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [processing, setProcessing] = useState(false)
   const [succeeded, setSucceeded] = useState(false)
+  const [isApplePaySupported, setIsApplePaySupported] = useState(false)
+
+  // Verifica il supporto Apple Pay all'inizializzazione
+  useEffect(() => {
+    if (stripe) {
+      const checkSupport = async () => {
+        const isSupported = await checkApplePaySupport(stripe);
+        setIsApplePaySupported(isSupported);
+      };
+      checkSupport();
+    }
+  }, [stripe]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -145,6 +178,16 @@ function CheckoutForm({
         </div>
       </div>
       
+      {!isApplePaySupported && (
+        <div className="mb-4 p-3 bg-blue-50 text-blue-700 rounded-md text-sm flex items-start">
+          <InfoIcon className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+          <p>
+            Per utilizzare Apple Pay, assicurati di utilizzare Safari su un dispositivo Apple compatibile 
+            con il wallet configurato.
+          </p>
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
           <PaymentElement
@@ -153,7 +196,13 @@ function CheckoutForm({
                 type: 'tabs',
                 defaultCollapsed: false,
               },
-              paymentMethodOrder: ['apple_pay', 'card','google_pay']
+              paymentMethodOrder: isApplePaySupported 
+                ? ['apple_pay', 'card', 'google_pay'] 
+                : ['card', 'google_pay'],
+              wallets: {
+                applePay: 'auto',
+                googlePay: 'auto'
+              }
             }}
           />
         </div>
@@ -169,7 +218,7 @@ function CheckoutForm({
           disabled={!stripe || processing || succeeded}
           className="w-full px-4 py-2 text-white font-semibold rounded-md bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {processing ? 'Elaborazione...' : 'Paga ora'}
+          {processing ? 'Loading...' : 'Pay Now'}
         </button>
       </form>
     </div>
@@ -184,8 +233,21 @@ export default function PaymentClient({ orderId }: { orderId: string }) {
   const [order, setOrder] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
+  const [applePaySupported, setApplePaySupported] = useState(false)
 
   useEffect(() => {
+    // Controllo immediato del supporto Apple Pay utilizzando le API di Safari
+    if (window && 
+        // @ts-ignore: Property 'ApplePaySession' does not exist on type 'Window & typeof globalThis'
+        window.ApplePaySession && 
+        // @ts-ignore: Property 'ApplePaySession' does not exist on type 'Window & typeof globalThis'
+        window.ApplePaySession.canMakePayments()) {
+      console.log("Safari ApplePaySession.canMakePayments() = true");
+      setApplePaySupported(true);
+    } else {
+      console.log("Safari ApplePaySession.canMakePayments() = false o non disponibile");
+    }
+    
     const loadOrderAndInitializeStripe = async () => {
       if (!orderId) {
         console.log("PaymentClient: Nessun orderId fornito");

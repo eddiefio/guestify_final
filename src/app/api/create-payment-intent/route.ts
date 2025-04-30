@@ -77,8 +77,9 @@ export async function POST(request: NextRequest) {
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
         automatic_payment_methods: {
-          enabled: false,
+          enabled: true, // Abilitato per supportare automaticamente Apple Pay e altri metodi di pagamento
         },
+        payment_method_types: ['card', 'apple_pay'], // Specifica esplicitamente i metodi di pagamento supportati
         metadata: {
           orderId,
           propertyId: order.property_id,
