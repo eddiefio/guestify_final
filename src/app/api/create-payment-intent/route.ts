@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         automatic_payment_methods: {
           enabled: false,
         },
-        payment_method_types: ['card', 'apple_pay', 'google_pay'],
+        payment_method_types: ["card"],
         metadata: {
           orderId,
           propertyId: order.property_id,
