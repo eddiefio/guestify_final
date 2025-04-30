@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         propertyId: propertyId,
       },
       automatic_payment_methods: {
-        enabled: false,
+        enabled: true,
       },
     });
 
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
     // Crea la sessione Stripe per il checkout esterno
     console.log('Creazione della sessione Stripe...')
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+
       line_items: orderItems.map((item: any) => ({
         price_data: {
           currency: 'eur',
