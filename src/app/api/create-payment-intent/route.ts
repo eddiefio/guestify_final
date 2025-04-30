@@ -12,17 +12,75 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(request: NextRequest) {
   try {
-    const { orderId, amount } = await request.json()
+    const { orderId, amount, currency = 'eur', stripeAccountId } = await request.json()
     
-    console.log(`API create-payment-intent: Avvio creazione per ordine ${orderId} con importo ${amount}`)
+    console.log(`API create-payment-intent: Avvio creazione con parametri:`, { 
+      orderId, 
+      amount, 
+      currency, 
+      stripeAccountId: stripeAccountId ? `${stripeAccountId.substring(0, 5)}...` : undefined 
+    })
     
     // Validate required fields
-    if (!orderId) {
-      return NextResponse.json({ error: 'Order ID is required' }, { status: 400 })
-    }
-    
     if (!amount || typeof amount !== 'number' || amount <= 0) {
       return NextResponse.json({ error: 'Valid amount is required' }, { status: 400 })
+    }
+
+    // Se è fornito direttamente l'account Stripe, usa quello
+    if (stripeAccountId) {
+      try {
+        // Crea un payment intent direttamente sull'account Stripe fornito
+        console.log('API create-payment-intent: Creazione payment intent diretta sull\'account:', `${stripeAccountId.substring(0, 5)}...`)
+        
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: Math.round(amount * 100), // Stripe richiede centesimi
+          currency: currency.toLowerCase(),
+          automatic_payment_methods: {
+            enabled: false,
+          },
+          metadata: {
+            orderId: orderId || 'direct_payment',
+          },
+        }, {
+          stripeAccount: stripeAccountId
+        })
+        
+        console.log(`API create-payment-intent: PaymentIntent diretto creato con successo. ID: ${paymentIntent.id}`)
+        
+        // Se è stato fornito un orderId, aggiornalo con l'ID del payment intent
+        if (orderId) {
+          await supabaseAdmin
+            .from('orders')
+            .update({ 
+              stripe_payment_intent: paymentIntent.id,
+              stripe_account_id: stripeAccountId
+            })
+            .eq('id', orderId)
+        }
+        
+        // Return the client secret
+        return NextResponse.json({ 
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id,
+          stripeAccountId: stripeAccountId
+        })
+      } catch (stripeError: any) {
+        console.error('Errore nella creazione del payment intent diretto:', {
+          type: stripeError.type,
+          code: stripeError.code,
+          message: stripeError.message,
+          param: stripeError.param
+        })
+        return NextResponse.json(
+          { error: stripeError.message || 'Errore nella creazione del payment intent' },
+          { status: 500 }
+        )
+      }
+    }
+    
+    // Se non è fornito l'account Stripe, usa l'orderId per trovarlo (flusso originale)
+    if (!orderId) {
+      return NextResponse.json({ error: 'Order ID or Stripe Account ID is required' }, { status: 400 })
     }
 
     // Recupera l'ordine per ottenere property_id
@@ -75,7 +133,7 @@ export async function POST(request: NextRequest) {
       // Crea un payment intent direttamente sull'account dell'host usando Stripe Connect
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Stripe richiede centesimi
-        currency: 'eur',
+        currency: currency.toLowerCase(),
         automatic_payment_methods: {
           enabled: false,
         },
