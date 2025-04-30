@@ -29,6 +29,14 @@ interface ParsedContent {
   content: string
 }
 
+// Funzione per trasformare gli URL in link cliccabili
+function linkify(text: string): string {
+  return text.replace(
+    /(https?:\/\/[^\s]+)/g,
+    (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#5E2BFF; text-decoration:underline;">${url}</a>`
+  )
+}
+
 export default function CheckoutInformationGuest() {
   const params = useParams()
   const router = useRouter()
@@ -225,9 +233,16 @@ export default function CheckoutInformationGuest() {
 
                 {checkoutInfo[activeSection] ? (
                   <div className="prose max-w-none mb-8">
-                    <p className="text-gray-700 whitespace-pre-wrap">
-                      {checkoutInfo[activeSection]}
-                    </p>
+                    {activeSection === 'checkout_process' ? (
+                      <p
+                        className="text-gray-700 whitespace-pre-wrap"
+                        dangerouslySetInnerHTML={{ __html: linkify(checkoutInfo[activeSection]!) }}
+                      />
+                    ) : (
+                      <p className="text-gray-700 whitespace-pre-wrap">
+                        {checkoutInfo[activeSection]}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4 mb-8">
