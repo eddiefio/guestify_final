@@ -396,10 +396,10 @@ export default function PrintQR() {
                   className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center justify-center gap-2"
                   style={{ maxWidth: '400px' }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 3v4a1 1 0 001 1h4m-5 8v6a2 2 0 002 2h6a2 2 0 002-2v-6a2 2 0 00-2-2h-6a2 2 0 00-2 2zm-7-2a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6z"></path>
-                  </svg>
-                  Click Here to see how the guest will see the guide
+                 
+                  Click Here to see how the guest will see the Page!
                 </button>
               </div>
 
