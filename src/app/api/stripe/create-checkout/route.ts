@@ -90,7 +90,8 @@ export async function POST(request: Request) {
     // Crea la sessione Stripe per il checkout esterno
     console.log('Creazione della sessione Stripe...')
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
+      // Non specifichiamo payment_method_types per usare i metodi di pagamento predefiniti
+      // che includono automaticamente Apple Pay e Google Pay quando disponibili
       line_items: orderItems.map((item: any) => ({
         price_data: {
           currency: 'eur',
