@@ -80,8 +80,9 @@ export async function POST(request: Request) {
         orderId: orderId,
         propertyId: propertyId,
       },
-     
-      payment_method_types: ["card"],
+      automatic_payment_methods: {
+        enabled: false,
+      },
     });
 
     console.log('Payment intent creato con ID:', paymentIntent.id)
@@ -89,8 +90,7 @@ export async function POST(request: Request) {
     // Crea la sessione Stripe per il checkout esterno
     console.log('Creazione della sessione Stripe...')
     const session = await stripe.checkout.sessions.create({
-      // Nota: checkout.sessions.create non supporta payment_method_types per apple_pay e google_pay
-      // Stripe gestisce automaticamente i metodi di pagamento disponibili in base al dispositivo del cliente
+      payment_method_types: ['card'],
       line_items: orderItems.map((item: any) => ({
         price_data: {
           currency: 'eur',

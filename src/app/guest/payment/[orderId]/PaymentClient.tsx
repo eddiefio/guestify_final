@@ -10,7 +10,6 @@ import {
   useElements,
 } from '@stripe/react-stripe-js'
 import { ChevronLeft } from 'lucide-react'
-import ApplePayButton from '@/components/ApplePayButton'
 
 // Funzione per formattare i prezzi in Euro
 const formatEuro = (price: number) => {
@@ -115,23 +114,6 @@ function CheckoutForm({
     }
   }
 
-  const handlePaymentSuccess = async (paymentIntent: any) => {
-    setSucceeded(true)
-    setPaymentError(null)
-    
-    // Aggiorna lo stato dell'ordine nel database
-    await updateOrderStatus()
-    
-    // Reindirizza alla pagina di successo
-    router.push(`/guest/checkout/success?orderId=${orderId}`)
-  }
-
-  const handlePaymentError = (error: any) => {
-    console.error("Errore di pagamento:", error);
-    setPaymentError(`Pagamento fallito: ${error.message}`);
-    setProcessing(false);
-  }
-
   return (
     <div className="max-w-md mx-auto mt-6 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center text-primary">Complete your purchase</h2>
@@ -162,16 +144,6 @@ function CheckoutForm({
           </p>
         </div>
       </div>
-      
-      {/* Apple Pay Button */}
-      {stripe && clientSecret && (
-        <ApplePayButton 
-          amount={order.total_amount}
-          clientSecret={clientSecret}
-          onSuccess={handlePaymentSuccess}
-          onError={handlePaymentError}
-        />
-      )}
       
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
