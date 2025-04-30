@@ -105,9 +105,7 @@ const ApplePayButton = ({
         },
         requestPayerName: true,
         requestPayerEmail: true,
-        requestPayerPhone: false,
-        // Specificare le reti di pagamento supportate
-        paymentMethodTypes: ['card', 'apple_pay'],
+        requestPayerPhone: false
       });
 
       // Verifica se Apple Pay è supportato
