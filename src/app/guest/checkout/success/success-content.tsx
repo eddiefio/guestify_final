@@ -100,7 +100,7 @@ export default function SuccessContent() {
             </p>
             
             <div className="mt-8">
-              <Link href={getReturnUrl()} className="bg-[#ffde59] text-black px-4 py-2 rounded-full text-sm hover:opacity-90 transition font-semibold inline-block">
+              <Link href="/guest" className="bg-[#ffde59] text-black px-4 py-2 rounded-full text-sm hover:opacity-90 transition font-semibold inline-block">
                 Return Back
               </Link>
             </div>
