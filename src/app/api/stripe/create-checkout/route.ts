@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         propertyId: propertyId,
       },
       automatic_payment_methods: {
-        enabled: false,
+        enabled: true,
       },
     });
 
