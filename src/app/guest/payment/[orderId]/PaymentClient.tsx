@@ -11,6 +11,7 @@ import {
 } from '@stripe/react-stripe-js'
 import { ChevronLeft } from 'lucide-react'
 import ApplePayButton from '@/components/ApplePayButton'
+import '@/styles/apple-pay-button.css'
 
 // Funzione per formattare i prezzi in Euro
 const formatEuro = (price: number) => {
@@ -115,23 +116,6 @@ function CheckoutForm({
     }
   }
 
-  const handleApplePaySuccess = async (paymentIntent: any) => {
-    console.log("Pagamento Apple Pay completato con successo:", paymentIntent.id);
-    setSucceeded(true);
-    setPaymentError(null);
-    
-    // Aggiorna lo stato dell'ordine nel database
-    await updateOrderStatus();
-    
-    // Reindirizza alla pagina di successo
-    router.push(`/guest/checkout/success?orderId=${orderId}`);
-  }
-
-  const handleApplePayError = (error: any) => {
-    console.error("Errore durante il pagamento con Apple Pay:", error);
-    setPaymentError(`Pagamento Apple Pay fallito: ${error.message || 'Si è verificato un errore'}`);
-  }
-
   return (
     <div className="max-w-md mx-auto mt-6 p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center text-primary">Complete your purchase</h2>
@@ -163,26 +147,16 @@ function CheckoutForm({
         </div>
       </div>
       
-      {/* Pulsante Apple Pay */}
-      <div className="mb-6">
-        <div className="mb-4">
-          <h3 className="text-md font-medium mb-2">Paga con Apple Pay</h3>
-          <ApplePayButton 
-            amount={order.total_amount} 
-            stripeAccountId={stripeAccountId}
-            onPaymentSuccess={handleApplePaySuccess}
-            onPaymentError={handleApplePayError}
-          />
-        </div>
-        
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">oppure</span>
-          </div>
-        </div>
+      {/* Apple Pay Button */}
+      <ApplePayButton 
+        orderId={orderId}
+        amount={order.total_amount}
+        stripeAccountId={stripeAccountId}
+        clientSecret={clientSecret}
+      />
+      
+      <div className="my-4 text-center text-gray-500 text-sm">
+        <span>- oppure -</span>
       </div>
       
       <form onSubmit={handleSubmit}>
@@ -193,7 +167,7 @@ function CheckoutForm({
                 type: 'tabs',
                 defaultCollapsed: false,
               },
-              paymentMethodOrder: ['card', 'google_pay']
+              paymentMethodOrder: ['apple_pay', 'card','google_pay']
             }}
           />
         </div>
