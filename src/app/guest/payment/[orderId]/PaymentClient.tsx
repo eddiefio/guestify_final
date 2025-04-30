@@ -10,8 +10,6 @@ import {
   useElements,
 } from '@stripe/react-stripe-js'
 import { ChevronLeft } from 'lucide-react'
-import ApplePayButton from '@/components/ApplePayButton'
-import '@/styles/apple-pay-button.css'
 
 // Funzione per formattare i prezzi in Euro
 const formatEuro = (price: number) => {
@@ -147,18 +145,6 @@ function CheckoutForm({
         </div>
       </div>
       
-      {/* Apple Pay Button */}
-      <ApplePayButton 
-        orderId={orderId}
-        amount={order.total_amount}
-        stripeAccountId={stripeAccountId}
-        clientSecret={clientSecret}
-      />
-      
-      <div className="my-4 text-center text-gray-500 text-sm">
-        <span>- oppure -</span>
-      </div>
-      
       <form onSubmit={handleSubmit}>
         <div className="mb-6">
           <PaymentElement
@@ -167,7 +153,8 @@ function CheckoutForm({
                 type: 'tabs',
                 defaultCollapsed: false,
               },
-              paymentMethodOrder: ['apple_pay', 'card','google_pay']
+              paymentMethodOrder: ['card']
+              
             }}
           />
         </div>
