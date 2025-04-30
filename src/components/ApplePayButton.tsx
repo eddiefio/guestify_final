@@ -126,7 +126,7 @@ function ApplePayButtonContent({
             paymentRequestButton: {
               theme: 'dark',
               height: '48px',
-              type: 'apple-pay',
+              type: 'buy',
             },
           },
         }}
