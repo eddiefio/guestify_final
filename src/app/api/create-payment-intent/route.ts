@@ -76,8 +76,10 @@ export async function POST(request: NextRequest) {
       const paymentIntent = await stripe.paymentIntents.create({
         amount: Math.round(amount * 100), // Stripe richiede centesimi
         currency: 'eur',
-        
-        payment_method_types: ["card", "klarna"],
+        automatic_payment_methods: {
+          enabled: true,
+        },
+        payment_method_types: ['card', 'apple_pay', 'google_pay'],
         metadata: {
           orderId,
           propertyId: order.property_id,
