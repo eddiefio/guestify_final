@@ -12,7 +12,7 @@ const isApplePaySupported = async () => {
     }
     
     // Verifica che il browser supporti Apple Pay
-    if (!ApplePaySession.canMakePayments()) {
+    if (!window.ApplePaySession.canMakePayments()) {
       return false;
     }
     
@@ -21,15 +21,15 @@ const isApplePaySupported = async () => {
       try {
         // Verificare se ci sono carte configurate (con un ritardo di 2 secondi massimo)
         const timeout = setTimeout(() => resolve(false), 2000);
-        ApplePaySession.canMakePaymentsWithActiveCard().then((result: boolean) => {
+        (window.ApplePaySession as any).canMakePaymentsWithActiveCard?.().then((result: boolean) => {
           clearTimeout(timeout);
           resolve(result);
         }).catch(() => {
           clearTimeout(timeout);
-          resolve(ApplePaySession.canMakePayments());
+          resolve(window.ApplePaySession!.canMakePayments());
         });
       } catch (e) {
-        resolve(ApplePaySession.canMakePayments());
+        resolve(window.ApplePaySession!.canMakePayments());
       }
     });
     
