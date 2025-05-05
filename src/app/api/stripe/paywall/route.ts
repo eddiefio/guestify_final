@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     
     // Determine the price ID based on the plan type
     let priceId;
-    let trialPeriodDays = 7; // 7 days trial period
+    const trialPeriodDays = 7; // 7 days trial period
     
     if (planType === 'monthly') {
       priceId = process.env.STRIPE_MONTHLY_PRICE_ID;
