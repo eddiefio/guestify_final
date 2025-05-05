@@ -83,7 +83,9 @@ export default function AddCityGuide() {
       const { data: fileData, error: fileError } = await supabase
         .storage
         .from('city-guides')
-        .upload(fileName, file)
+        .upload(fileName, file, {
+          contentType: file.type
+        })
       
       if (fileError) throw fileError
       
