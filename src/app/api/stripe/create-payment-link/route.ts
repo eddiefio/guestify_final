@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   try {
     // Inizializza il client Stripe con la chiave segreta
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2023-10-16",
+      
     });
 
     // Ottieni la sessione utente corrente
