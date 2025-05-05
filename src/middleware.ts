@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { hasActiveSubscription } from './lib/subscription';
 
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -23,7 +24,22 @@ export async function middleware(request: NextRequest) {
   // Percorsi per le API pubbliche di pagamento
   const publicApiPaths = [
     '/api/orders/',
-    '/api/create-payment-intent'
+    '/api/create-payment-intent', 
+    '/api/webhooks/stripe'
+  ];
+  
+  // Percorsi che richiedono abbonamento attivo
+  const subscriptionProtectedPaths = [
+    '/dashboard/properties',
+    '/dashboard/edit-property'
+  ];
+  
+  // Percorsi che sono sempre accessibili per utenti autenticati (anche senza abbonamento)
+  const authProtectedPaths = [
+    '/dashboard',
+    '/dashboard/profile',
+    '/subscription',
+    '/api/stripe/paywall'
   ];
   
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
@@ -97,6 +113,26 @@ export async function middleware(request: NextRequest) {
         signInUrl.searchParams.set('redirectUrl', request.url);
         return NextResponse.redirect(signInUrl);
       }
+      
+      return NextResponse.next();
+    }
+    
+    // Verifica se il percorso richiede abbonamento attivo
+    const needsActiveSubscription = subscriptionProtectedPaths.some(path => 
+      pathname.startsWith(path) || pathname === path
+    );
+    
+    // Se il percorso richiede abbonamento attivo, verifica che l'utente ne abbia uno
+    if (needsActiveSubscription) {
+      const userHasActiveSubscription = await hasActiveSubscription(user.id);
+      
+      if (!userHasActiveSubscription) {
+        console.log(`Utente senza abbonamento prova ad accedere a: ${pathname}`);
+        
+        // Reindirizza alla pagina di abbonamento
+        const subscriptionUrl = new URL('/subscription', request.url);
+        return NextResponse.redirect(subscriptionUrl);
+      }
     }
     
     // Utente autenticato o percorso non protetto
@@ -116,6 +152,7 @@ export const config = {
     // Percorsi che richiedono il middleware
     '/dashboard/:path*',
     '/api/:path*',
-    '/auth/:path*'
+    '/auth/:path*',
+    '/subscription'
   ],
 };

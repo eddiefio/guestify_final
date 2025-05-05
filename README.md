@@ -32,8 +32,9 @@ a quadrato : QR code, Extra Services, House Rules, Host City Guide.
 
 ## MODALITÀ DI GUADAGNO
 
+Paywall di €9,90 mensili o €99,90 annuali, prova di 7 giorni.
 
-Gli host guadagnano il prezzo che hanno messo per gli Extra Services
+Gli host guadagnano il prezzo completo che hanno messo per gli Extra Service, tolte le commissioni di Stripe.
 
 ## BRAND IDENTITY e STILE APP
 
@@ -55,6 +56,8 @@ Per la gestione Auth si appoggia a Supabase, anche per l'invio di mail AUth.
 Come Email SMTP uso la personal mail di mailcheap.com (stesso servizio del dominio) che è "noreply@guestify.shop"
 
 Gestione dei pagamenti tramite Stripe, creazione da parte degli host di un profilo Stripe standard per gestire i pagamenti.
-Tasse di Stripe applicate solo sulla parte di Guestify, gli store ricevono compenso completo.
+Gli host ricevono compenso completo.
+
+
 
 L'url dell'app è https://app.guestify.shop
