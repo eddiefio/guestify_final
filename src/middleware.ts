@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -24,14 +23,7 @@ export async function middleware(request: NextRequest) {
   // Percorsi per le API pubbliche di pagamento
   const publicApiPaths = [
     '/api/orders/',
-    '/api/create-payment-intent',
-    '/api/webhooks/stripe'
-  ];
-  
-  // Percorsi che non richiedono abbonamento
-  const noSubscriptionRequiredPaths = [
-    '/subscription',
-    '/api/stripe/create-payment-link'
+    '/api/create-payment-intent'
   ];
   
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
@@ -69,19 +61,32 @@ export async function middleware(request: NextRequest) {
   }
   
   try {
-    // Inizializza la risposta per poterla modificare
-    const res = NextResponse.next();
-    
-    // Crea un nuovo client Supabase per middleware
-    const supabase = createMiddlewareClient({ req: request, res });
+    // Crea un nuovo client Supabase lato server
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name) => {
+            return request.cookies.get(name)?.value;
+          },
+          set: (name, value, options) => {
+            // SSR non supporta impostazione cookie
+          },
+          remove: (name, options) => {
+            // SSR non supporta rimozione cookie
+          },
+        },
+      }
+    );
     
     // Verifica se abbiamo una sessione valida
     const {
-      data: { session },
+      data: { user },
       error,
-    } = await supabase.auth.getSession();
+    } = await supabase.auth.getUser();
     
-    if (error || !session) {
+    if (error || !user) {
       console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
       
       // Solo i percorsi che iniziano con /dashboard o /api sono protetti
@@ -92,34 +97,10 @@ export async function middleware(request: NextRequest) {
         signInUrl.searchParams.set('redirectUrl', request.url);
         return NextResponse.redirect(signInUrl);
       }
-      
-      return res;
-    }
-    
-    // Verifica se è richiesto l'abbonamento per questa pagina
-    const requiresSubscription = pathname.startsWith('/dashboard') &&
-                               !noSubscriptionRequiredPaths.some(path => pathname.startsWith(path));
-    
-    if (requiresSubscription) {
-      // Verifica lo stato dell'abbonamento
-      const { data: subscription } = await supabase
-        .from("subscriptions")
-        .select("status")
-        .eq("user_id", session.user.id)
-        .in("status", ["active", "trialing"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      
-      // Se l'utente non ha un abbonamento attivo, reindirizzalo alla pagina di sottoscrizione
-      if (!subscription) {
-        console.log('Utente senza abbonamento, reindirizzamento a /subscription');
-        return NextResponse.redirect(new URL('/subscription', request.url));
-      }
     }
     
     // Utente autenticato o percorso non protetto
-    return res;
+    return NextResponse.next();
   } catch (error: any) {
     console.error('Errore nel middleware:', error.message);
     
@@ -135,7 +116,6 @@ export const config = {
     // Percorsi che richiedono il middleware
     '/dashboard/:path*',
     '/api/:path*',
-    '/auth/:path*',
-    '/subscription'
+    '/auth/:path*'
   ],
 };
