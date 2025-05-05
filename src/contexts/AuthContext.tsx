@@ -18,6 +18,7 @@ type AuthContextType = {
   resetPassword: (email: string) => Promise<{ error: any }>
   updatePassword: (password: string) => Promise<{ error: any }>
   refreshSession: (forceRefresh?: boolean) => Promise<boolean>
+  signInWithGoogle: () => Promise<any>
 }
 
 // Creazione del contesto
@@ -187,6 +188,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // Funzione per il login con Google
+  const signInWithGoogle = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+
+      return data
+    } catch (err: any) {
+      console.error('Errore nell\'accesso con Google:', err)
+      toast.error(`Errore: ${err.message || 'Accesso con Google fallito'}`)
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Funzione di registrazione
   const signUp = async (email: string, password: string, name: string, country: string) => {
     try {
@@ -326,6 +358,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     resetPassword,
     updatePassword,
     refreshSession,
+    signInWithGoogle,
   }
 
   return (

@@ -225,8 +225,9 @@ export default function HowThingsWorkPage() {
             <p className="ml-3 text-gray-600">Loading...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            {error}
+          <div className="flex flex-col items-center justify-center bg-white rounded-xl p-8 shadow-sm">
+            <h2 className="text-lg font-semibold text-gray-700 mb-2">No instructions available</h2>
+            <p className="text-gray-500 text-center">There are no instructions for this property yet.<br />Contact the owner for more information.</p>
           </div>
         ) : selectedItem ? (
           // Visualizzazione dettaglio dell'elemento selezionato

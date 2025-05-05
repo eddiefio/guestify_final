@@ -136,7 +136,7 @@ export default function GuestHomePage() {
   // Function to get weather data from OpenWeatherMap API
   const fetchWeatherData = async (city: string) => {
     try {
-      const apiKey = 'ecf9903b2edd9ef9d93ac875709b5357'; // API key gratuita per OpenWeatherMap
+      const apiKey = 'e4f74294c35651c171cde78fc29b6043'; // API key gratuita per OpenWeatherMap
       
       // Chiamata per ottenere il meteo corrente
       const currentResponse = await fetch(
