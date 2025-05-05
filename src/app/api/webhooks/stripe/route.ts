@@ -1,132 +1,175 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextRequest, NextResponse } from 'next/server';
-import Stripe from 'stripe';
-import { headers } from 'next/headers';
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+import Stripe from "stripe";
 
-// Initialize Stripe with your secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-});
+// Disabilita il body parser integrato in Next.js per ricevere il raw body
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
 
-// Initialize Supabase client with service role for admin access
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// Funzione per leggere il corpo della richiesta come stringa
+async function readBody(readable: ReadableStream): Promise<string> {
+  const decoder = new TextDecoder();
+  const chunks: Uint8Array[] = [];
 
-export async function POST(req: NextRequest) {
-  const body = await req.text();
-  const sig = headers().get('stripe-signature');
-
-  if (!sig) {
-    return NextResponse.json({ error: 'No signature provided' }, { status: 400 });
+  const reader = readable.getReader();
+  let done = false;
+  
+  while (!done) {
+    const { value, done: doneReading } = await reader.read();
+    done = doneReading;
+    if (value) {
+      chunks.push(value);
+    }
   }
 
-  let event;
+  return decoder.decode(chunks.length === 1 ? chunks[0] : Buffer.concat(chunks));
+}
 
+export async function POST(req: Request) {
   try {
-    // Verify the event came from Stripe
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
-    );
-  } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
-    return NextResponse.json({ error: err.message }, { status: 400 });
-  }
-
-  // Handle the event
-  try {
-    // Handle subscription events
-    if (event.type === 'customer.subscription.created' ||
-        event.type === 'customer.subscription.updated') {
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = subscription.customer as string;
-      
-      // Get customer to find the user ID
-      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-      const userId = customer.metadata.userId;
-      
-      if (!userId) {
-        console.error('No userId found in customer metadata');
-        return NextResponse.json({ error: 'No userId found' }, { status: 400 });
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+      apiVersion: "2023-10-16",
+    });
+    
+    // Recupera la signature dell'header
+    const signature = req.headers.get("stripe-signature");
+    
+    if (!signature) {
+      return NextResponse.json(
+        { error: "Manca la signature di Stripe" },
+        { status: 400 }
+      );
+    }
+    
+    // Leggi il corpo della richiesta
+    const body = await readBody(req.body as ReadableStream);
+    
+    // Verifica l'evento
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    if (!webhookSecret) {
+      return NextResponse.json(
+        { error: "Webhook secret non configurato" },
+        { status: 500 }
+      );
+    }
+    
+    let event: Stripe.Event;
+    
+    try {
+      event = stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret
+      );
+    } catch (err) {
+      console.error(`❌ Errore di verifica della webhook signature: ${err}`);
+      return NextResponse.json(
+        { error: `Webhook Error: ${err instanceof Error ? err.message : 'Errore sconosciuto'}` },
+        { status: 400 }
+      );
+    }
+    
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Gestisci diversi tipi di eventi
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        
+        // Assicurati che questa sia una sessione di pagamento per un abbonamento
+        if (session.mode === 'subscription' && session.subscription && session.customer) {
+          // Ottieni i dettagli dell'abbonamento
+          const subscription = await stripe.subscriptions.retrieve(
+            session.subscription as string
+          );
+          
+          // Ottieni i dettagli del prezzo dall'abbonamento
+          const priceId = subscription.items.data[0].price.id;
+          const price = subscription.items.data[0].price;
+          const userId = session.metadata?.user_id;
+          
+          if (!userId) {
+            console.error('Nessun user_id trovato nei metadati della sessione');
+            break;
+          }
+          
+          // Determina il tipo di piano in base ai metadati o al prezzo
+          const planType = session.metadata?.plan_type || 
+                          (price.recurring?.interval === 'year' ? 'yearly' : 'monthly');
+          
+          // Salva o aggiorna la sottoscrizione nel database
+          const { error } = await supabase
+            .from('subscriptions')
+            .upsert({
+              user_id: userId,
+              status: subscription.status,
+              stripe_subscription_id: subscription.id,
+              stripe_customer_id: session.customer as string,
+              stripe_price_id: priceId,
+              plan_type: planType,
+              price: price.unit_amount ? price.unit_amount / 100 : 0,
+              interval: price.recurring?.interval || 'month',
+              trial_ends_at: subscription.trial_end 
+                ? new Date(subscription.trial_end * 1000).toISOString() 
+                : null,
+              updated_at: new Date().toISOString(),
+            });
+          
+          if (error) {
+            console.error('Errore durante il salvataggio della sottoscrizione:', error);
+          }
+        }
+        break;
       }
       
-      // Get the price details
-      const priceId = subscription.items.data[0].price.id;
-      const price = await stripe.prices.retrieve(priceId);
-      
-      // Determine plan type based on interval
-      const planType = price.recurring?.interval === 'year' ? 'yearly' : 'monthly';
-      
-      // Format price for database
-      const priceAmount = price.unit_amount ? price.unit_amount / 100 : 0;
-      
-      // Determine subscription status
-      const status = subscription.status;
-      
-      // Calculate trial end date if applicable
-      let trialEndsAt = null;
-      if (subscription.trial_end) {
-        trialEndsAt = new Date(subscription.trial_end * 1000).toISOString();
+      case 'customer.subscription.updated': {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Aggiorna lo stato dell'abbonamento
+        const { error } = await supabase
+          .from('subscriptions')
+          .update({
+            status: subscription.status,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_subscription_id', subscription.id);
+        
+        if (error) {
+          console.error('Errore durante l\'aggiornamento della sottoscrizione:', error);
+        }
+        break;
       }
       
-      // Update or insert subscription record
-      const { error } = await supabase
-        .from('subscriptions')
-        .upsert({
-          user_id: userId,
-          stripe_customer_id: customerId,
-          stripe_subscription_id: subscription.id,
-          stripe_price_id: priceId,
-          plan_type: planType,
-          status: status,
-          trial_ends_at: trialEndsAt,
-          price: priceAmount,
-          interval: price.recurring?.interval || 'month',
-          updated_at: new Date().toISOString()
-        });
-      
-      if (error) {
-        console.error('Error updating subscription in database:', error);
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        
+        // Aggiorna lo stato dell'abbonamento a 'canceled'
+        const { error } = await supabase
+          .from('subscriptions')
+          .update({
+            status: 'canceled',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('stripe_subscription_id', subscription.id);
+        
+        if (error) {
+          console.error('Errore durante la cancellazione della sottoscrizione:', error);
+        }
+        break;
       }
     }
     
-    // Handle subscription deletion
-    else if (event.type === 'customer.subscription.deleted') {
-      const subscription = event.data.object as Stripe.Subscription;
-      const customerId = subscription.customer as string;
-      
-      // Get customer to find the user ID
-      const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-      const userId = customer.metadata.userId;
-      
-      if (!userId) {
-        console.error('No userId found in customer metadata');
-        return NextResponse.json({ error: 'No userId found' }, { status: 400 });
-      }
-      
-      // Update subscription status to 'canceled'
-      const { error } = await supabase
-        .from('subscriptions')
-        .update({
-          status: 'canceled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        .eq('stripe_subscription_id', subscription.id);
-      
-      if (error) {
-        console.error('Error updating subscription status in database:', error);
-        return NextResponse.json({ error: 'Database update failed' }, { status: 500 });
-      }
-    }
-
     return NextResponse.json({ received: true });
-  } catch (err) {
-    console.error('Error processing webhook:', err);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+  } catch (error) {
+    console.error('Errore durante la gestione del webhook:', error);
+    return NextResponse.json(
+      { error: "Errore interno del server" },
+      { status: 500 }
+    );
   }
 } 

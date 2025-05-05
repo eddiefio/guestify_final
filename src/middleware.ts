@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import { hasActiveSubscription } from './lib/subscription';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 
 export async function middleware(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -24,22 +24,14 @@ export async function middleware(request: NextRequest) {
   // Percorsi per le API pubbliche di pagamento
   const publicApiPaths = [
     '/api/orders/',
-    '/api/create-payment-intent', 
+    '/api/create-payment-intent',
     '/api/webhooks/stripe'
   ];
   
-  // Percorsi che richiedono abbonamento attivo
-  const subscriptionProtectedPaths = [
-    '/dashboard/properties',
-    '/dashboard/edit-property'
-  ];
-  
-  // Percorsi che sono sempre accessibili per utenti autenticati (anche senza abbonamento)
-  const authProtectedPaths = [
-    '/dashboard',
-    '/dashboard/profile',
+  // Percorsi che non richiedono abbonamento
+  const noSubscriptionRequiredPaths = [
     '/subscription',
-    '/api/stripe/paywall'
+    '/api/stripe/create-payment-link'
   ];
   
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
@@ -77,32 +69,19 @@ export async function middleware(request: NextRequest) {
   }
   
   try {
-    // Crea un nuovo client Supabase lato server
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get: (name) => {
-            return request.cookies.get(name)?.value;
-          },
-          set: (name, value, options) => {
-            // SSR non supporta impostazione cookie
-          },
-          remove: (name, options) => {
-            // SSR non supporta rimozione cookie
-          },
-        },
-      }
-    );
+    // Inizializza la risposta per poterla modificare
+    const res = NextResponse.next();
+    
+    // Crea un nuovo client Supabase per middleware
+    const supabase = createMiddlewareClient({ req: request, res });
     
     // Verifica se abbiamo una sessione valida
     const {
-      data: { user },
+      data: { session },
       error,
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
     
-    if (error || !user) {
+    if (error || !session) {
       console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
       
       // Solo i percorsi che iniziano con /dashboard o /api sono protetti
@@ -114,29 +93,33 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(signInUrl);
       }
       
-      return NextResponse.next();
+      return res;
     }
     
-    // Verifica se il percorso richiede abbonamento attivo
-    const needsActiveSubscription = subscriptionProtectedPaths.some(path => 
-      pathname.startsWith(path) || pathname === path
-    );
+    // Verifica se è richiesto l'abbonamento per questa pagina
+    const requiresSubscription = pathname.startsWith('/dashboard') &&
+                               !noSubscriptionRequiredPaths.some(path => pathname.startsWith(path));
     
-    // Se il percorso richiede abbonamento attivo, verifica che l'utente ne abbia uno
-    if (needsActiveSubscription) {
-      const userHasActiveSubscription = await hasActiveSubscription(user.id);
+    if (requiresSubscription) {
+      // Verifica lo stato dell'abbonamento
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("status")
+        .eq("user_id", session.user.id)
+        .in("status", ["active", "trialing"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
       
-      if (!userHasActiveSubscription) {
-        console.log(`Utente senza abbonamento prova ad accedere a: ${pathname}`);
-        
-        // Reindirizza alla pagina di abbonamento
-        const subscriptionUrl = new URL('/subscription', request.url);
-        return NextResponse.redirect(subscriptionUrl);
+      // Se l'utente non ha un abbonamento attivo, reindirizzalo alla pagina di sottoscrizione
+      if (!subscription) {
+        console.log('Utente senza abbonamento, reindirizzamento a /subscription');
+        return NextResponse.redirect(new URL('/subscription', request.url));
       }
     }
     
     // Utente autenticato o percorso non protetto
-    return NextResponse.next();
+    return res;
   } catch (error: any) {
     console.error('Errore nel middleware:', error.message);
     
