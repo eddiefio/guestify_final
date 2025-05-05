@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function EditCityGuide() {
-  const { propertyId, guideId } = useParams()
+  const { propertyId, guideId } = useParams() as { propertyId: string, guideId: string }
   const { user } = useAuth()
   const router = useRouter()
   
@@ -127,35 +127,47 @@ export default function EditCityGuide() {
       
       let filePath = currentFilePath
       
-      // Se è stato selezionato un nuovo file, lo carichiamo
+      // Aggiorno il file solo se ne è stato caricato uno nuovo
       if (file) {
-        // Prima eliminiamo il file vecchio se esiste
+        // Creiamo un nuovo nome file
+        const fileExt = file.name.split('.').pop()
+        const newFileName = `${propertyId}/${Date.now()}.${fileExt}`
+        
+        // Crea FormData per caricare il file con il content-type corretto
+        const formData = new FormData()
+        formData.append('file', file)
+        
+        // URL per l'upload a Supabase Storage
+        const storageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/city-guides/${newFileName}`
+        
+        // Ottieni il token di accesso dalla sessione
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
+        
+        // Caricamento del file usando fetch con FormData
+        const response = await fetch(storageUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        })
+        
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(`Error uploading file: ${JSON.stringify(errorData)}`)
+        }
+        
+        // Se abbiamo un file precedente, lo eliminiamo
         if (currentFilePath) {
           await supabase
             .storage
             .from('city-guides')
             .remove([currentFilePath.replace('city-guides/', '')])
-            .catch((error: unknown) => {
-              console.error('Error deleting old file:', error)
-              // Continuiamo comunque con l'aggiornamento
-            })
         }
         
-        // Carichiamo il nuovo file
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${propertyId}/${Date.now()}.${fileExt}`
-        
-        const { data: fileData, error: fileError } = await supabase
-          .storage
-          .from('city-guides')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: false
-          })
-        
-        if (fileError) throw fileError
-        
-        filePath = `city-guides/${fileName}`
+        // Aggiorniamo il path del file
+        filePath = `city-guides/${newFileName}`
       }
       
       // Aggiorniamo il record nel database

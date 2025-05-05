@@ -10,7 +10,7 @@ import toast from 'react-hot-toast'
 import ProtectedRoute from '@/components/ProtectedRoute'
 
 export default function AddCityGuide() {
-  const { propertyId } = useParams()
+  const { propertyId } = useParams() as { propertyId: string }
   const { user } = useAuth()
   const router = useRouter()
   
@@ -76,22 +76,34 @@ export default function AddCityGuide() {
         return
       }
       
-      // Convertiamo il file in ArrayBuffer
+      // Carichiamo il file su Supabase Storage usando FormData
       const fileExt = file.name.split('.').pop()
       const fileName = `${propertyId}/${Date.now()}.${fileExt}`
       
-      // Leggiamo il file come ArrayBuffer
-      const arrayBuffer = await file.arrayBuffer()
+      // Creazione di FormData per caricare il file con il corretto Content-Type
+      const formData = new FormData()
+      formData.append('file', file)
       
-      // Carichiamo il file su Supabase Storage come ArrayBuffer
-      const { data: fileData, error: fileError } = await supabase
-        .storage
-        .from('city-guides')
-        .upload(fileName, arrayBuffer, {
-          contentType: file.type
-        })
+      // URL per l'upload a Supabase Storage
+      const storageUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/city-guides/${fileName}`
       
-      if (fileError) throw fileError
+      // Ottieni il token di accesso dalla sessione
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
+      
+      // Caricamento del file usando fetch con FormData
+      const response = await fetch(storageUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Error uploading file: ${JSON.stringify(errorData)}`)
+      }
       
       // Salviamo il record nel database
       const { error } = await supabase
