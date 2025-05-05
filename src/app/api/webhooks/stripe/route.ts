@@ -32,7 +32,7 @@ async function readBody(readable: ReadableStream): Promise<string> {
 export async function POST(req: Request) {
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-      apiVersion: "2023-10-16",
+     
     });
     
     // Recupera la signature dell'header
