@@ -76,14 +76,18 @@ export default function AddCityGuide() {
         return
       }
       
-      // Carichiamo il file su Supabase Storage
+      // Convertiamo il file in ArrayBuffer
       const fileExt = file.name.split('.').pop()
       const fileName = `${propertyId}/${Date.now()}.${fileExt}`
       
+      // Leggiamo il file come ArrayBuffer
+      const arrayBuffer = await file.arrayBuffer()
+      
+      // Carichiamo il file su Supabase Storage come ArrayBuffer
       const { data: fileData, error: fileError } = await supabase
         .storage
         .from('city-guides')
-        .upload(fileName, file, {
+        .upload(fileName, arrayBuffer, {
           contentType: file.type
         })
       
