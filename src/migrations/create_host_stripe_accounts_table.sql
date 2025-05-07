@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS public.host_stripe_accounts (
   CONSTRAINT unique_stripe_account_id UNIQUE (stripe_account_id)
 );
 
--- Add RLS policies
+-- Add RLS policiess
 ALTER TABLE public.host_stripe_accounts ENABLE ROW LEVEL SECURITY;
 
 -- Policy: Users can view only their own Stripe account
