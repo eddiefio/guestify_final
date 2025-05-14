@@ -1,15 +1,16 @@
 'use client'
 
-import { useEffect, ReactNode } from 'react'
+import { useEffect, ReactNode, useLayoutEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
+import { SubscriptionStatus } from '@/utils/enums'
 
 interface ProtectedRouteProps {
   children: ReactNode
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, subscriptionInfo, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -17,6 +18,24 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       router.push('/auth/signin')
     }
   }, [isLoading, isAuthenticated, router])
+
+  useLayoutEffect(() => {
+    if (subscriptionInfo) {
+      const { status } = subscriptionInfo;
+      const {
+        ACTIVE,
+        PENDING,
+        TRIALING,
+        UNPAID,
+        CANCELLED,
+      } = SubscriptionStatus
+      const redirectUrl = status === CANCELLED ? '/dashboard/subscription' : status === PENDING || status === UNPAID ? "/dashboard/profile" : null;
+      if (redirectUrl) {
+        router.push(redirectUrl);
+      }
+    }
+  }, [subscriptionInfo]);
+
 
   if (isLoading) {
     return (
