@@ -9,9 +9,11 @@ import { toast } from 'react-hot-toast'
 // Definizione del tipo per il contesto di autenticazione
 type AuthContextType = {
   user: User | null
+  // subscriptionInfo: any;
   session: Session | null
   isLoading: boolean
   isAuthenticated: boolean
+  subscriptionInfo: any | null
   signIn: (email: string, password: string) => Promise<any>
   signUp: (email: string, password: string, name: string, country: string) => Promise<any>
   signOut: () => Promise<{ error: any }>
@@ -28,10 +30,35 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [subscriptionInfo, setSubscriptionInfo] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  const fetchSubscriptionInfo = async (userId: string) => {
+    try {
+      console.log('fetching subscription info for user:', userId);
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('id, plan_type, status, created_at, trial_start, trial_end, current_period_end, current_period_start, canceled_at, trial_remaining_days, trial_consumed')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false }) // Optional: latest first
+        .limit(1) // Only the latest
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error fetching subscription:', error)
+        setSubscriptionInfo(null)
+        return
+      }
+
+      setSubscriptionInfo(data)
+    } catch (err) {
+      console.error('Unexpected error fetching subscription:', err)
+      setSubscriptionInfo(null)
+    }
+  }
 
   // Funzione per verificare e aggiornare la sessione
   const refreshSession = async (forceRefresh = false) => {
@@ -70,6 +97,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.error('Error getting session:', error)
         setSession(null)
         setUser(null)
+        setSubscriptionInfo(null)
         setIsLoading(false)
         return false
       }
@@ -84,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('No session found')
         setSession(null)
         setUser(null)
+        setSubscriptionInfo(null)
         setIsLoading(false)
         return false
       }
@@ -109,13 +138,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event: string, newSession: Session | null) => {
             console.log('Auth state changed:', event)
-            
+
             if (event === 'SIGNED_IN' && newSession) {
               setSession(newSession)
               setUser(newSession.user)
             } else if (event === 'SIGNED_OUT') {
               setSession(null)
               setUser(null)
+              setSubscriptionInfo(null)
             }
           }
         )
@@ -153,6 +183,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     return () => clearInterval(interval)
   }, [session])
+
+  useEffect(() => {
+    if (user) {
+      fetchSubscriptionInfo(user.id as string) // Fetch subscription info
+    }
+  }, [user])
+
 
   // Funzione di login
   const signIn = async (email: string, password: string) => {
@@ -197,6 +234,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
+          redirectTo: `http://localhost:3000/auth/callback`,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -358,6 +396,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     updatePassword,
     refreshSession,
     signInWithGoogle,
+    subscriptionInfo,
   }
 
   return (
