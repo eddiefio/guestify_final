@@ -62,16 +62,10 @@ export default function SubscriptionSection({
   const { name, price } = getPlanDetails()
 
   // Only treat as “in trial” if Stripe says TRIALING *and* they haven’t consumed it yet
-  const isTrialActive =
-    subscription?.status === SubscriptionStatus.TRIALING &&
-    subscription?.trial_consumed === false
+  const isTrialActive = subscription?.status === SubscriptionStatus.TRIALING && subscription?.trial_end && new Date(subscription.trial_end) > new Date()
 
   // Prefer the server‐computed days; fallback to date diff
-  const daysRemaining = isTrialActive
-    ? subscription!.trial_remaining_days > 0
-      ? subscription!.trial_remaining_days
-      : getDaysRemaining(subscription!.trial_end)
-    : 0
+  const daysRemaining = isTrialActive ? getDaysRemaining(subscription!.trial_end || subscription!.current_period_end) : 0
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-8">
