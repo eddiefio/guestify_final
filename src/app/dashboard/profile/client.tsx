@@ -5,9 +5,7 @@ import SubscriptionSection from '@/components/SubscriptionProfile'
 import { useAuth } from '@/contexts/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { createAPIResource } from '@/utils/axios-interceptor'
-import { createClient } from '@supabase/supabase-js'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { FormEvent, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 
@@ -28,7 +26,6 @@ export default function ProfileClient() {
   const [showOldPassword, setShowOldPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const router = useRouter()
 
   const handleUpdateProfile = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -132,7 +129,6 @@ export default function ProfileClient() {
       const APIResource = createAPIResource(session.access_token)
 
       const apiResponse = await APIResource.post('/customer-portal', payload)
-      console.log('apiResponse', apiResponse);
       if (!apiResponse?.data?.url) {
         throw new Error('Failed to fetch customer URL');
       }
@@ -181,7 +177,6 @@ export default function ProfileClient() {
     fetchUserData()
   }, [user])
 
-
   if (!user) {
     return (
       <div className="p-6 flex justify-center items-center min-h-[60vh]">
@@ -209,11 +204,13 @@ export default function ProfileClient() {
 
         <h1 className="text-3xl font-bold mb-8 text-gray-900">Your Profile</h1>
         {/* Subscription Section */}
-        <SubscriptionSection
-          subscription={subscriptionInfo || undefined}
-          isLoading={isLoading}
-          onManageSubscription={onManageSubscription}
-        />
+        {user && !user?.user_metadata?.is_staff && (
+          <SubscriptionSection
+            subscription={subscriptionInfo || undefined}
+            isLoading={isLoading}
+            onManageSubscription={onManageSubscription}
+          />
+        )}
 
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Personal Information</h2>

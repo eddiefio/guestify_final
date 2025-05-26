@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, subscriptionInfo, isLoading } = useAuth()
+  const { user, isAuthenticated, subscriptionInfo, isLoading } = useAuth()
   const router = useRouter()
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }, [isLoading, isAuthenticated, router])
 
   useLayoutEffect(() => {
-    if (subscriptionInfo) {
+    if (subscriptionInfo && !user?.user_metadata.is_staff) {
       const { status } = subscriptionInfo;
       const {
         ACTIVE,
@@ -34,7 +34,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         router.push(redirectUrl);
       }
     }
-  }, [subscriptionInfo]);
+  }, [subscriptionInfo, user]);
 
 
   if (isLoading) {

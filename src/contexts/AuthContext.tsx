@@ -36,9 +36,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
+  const fetchUserDetails = async (userInfo: User) => {
+    try {
+      const userId = userInfo.id as string
+      if (!userId) {
+        console.warn('No user ID found in session:', userId)
+        setUser(null)
+        return null
+      }
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, is_staff')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (error || !data) {
+        console.warn('No user details found for session user:', userId, error)
+        setUser(userInfo)
+      }
+
+      setUser({
+        ...userInfo,
+        user_metadata: {
+          ...userInfo.user_metadata,
+          is_staff: data.is_staff || false, // Aggiungi is_staff se esiste
+        }
+      })
+
+    } catch (err) {
+      console.error('Unexpected error fetching user details:', err)
+      setUser(null)
+      return null
+    }
+  }
+
   const fetchSubscriptionInfo = async (userId: string) => {
     try {
-      console.log('fetching subscription info for user:', userId);
       const { data, error } = await supabase
         .from('subscriptions')
         .select('id, plan_type, status, created_at, trial_start, trial_end, current_period_end, current_period_start, canceled_at, trial_remaining_days, trial_consumed')
@@ -70,23 +103,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const response = await fetch('/api/auth/refresh-token', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
         })
 
-        if (!response.ok) {
-          throw new Error('Failed to refresh token')
-        }
+        if (!response.ok) throw new Error('Refresh failed')
 
-        const data = await response.json()
-        const apiSession = data.session
+        const { session: apiSession } = await response.json()
         setSession(apiSession)
-        setUser(apiSession.user)
+        await fetchUserDetails(apiSession.user)
+
         setIsLoading(false)
         return true
-      } catch (apiError) {
-        console.error('Error refreshing via API:', apiError)
+      } catch (err) {
+        console.error('Error refreshing via API:', err)
         // Continua con l'approccio Admin
       }
 
@@ -105,7 +135,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (data.session) {
         console.log('Session found via client')
         setSession(data.session)
-        setUser(data.session.user)
+        await fetchUserDetails(data.session.user)
         setIsLoading(false)
         return true
       } else {
@@ -124,72 +154,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false
     }
   }
-
-  // Inizializzazione e setup degli handler di autenticazione
-  useEffect(() => {
-    if (isInitialized) return
-
-    const initAuth = async () => {
-      try {
-        // Tenta di ottenere la sessione corrente
-        await refreshSession()
-
-        // Configura l'ascoltatore per i cambiamenti di autenticazione
-        const { data: authListener } = supabase.auth.onAuthStateChange(
-          async (event: string, newSession: Session | null) => {
-            console.log('Auth state changed:', event)
-
-            if (event === 'SIGNED_IN' && newSession) {
-              setSession(newSession)
-              setUser(newSession.user)
-            } else if (event === 'SIGNED_OUT') {
-              setSession(null)
-              setUser(null)
-              setSubscriptionInfo(null)
-            }
-          }
-        )
-
-        return () => {
-          authListener?.subscription.unsubscribe()
-        }
-      } catch (err) {
-        console.error('Error in auth initialization:', err)
-      } finally {
-        setIsLoading(false)
-        setIsInitialized(true)
-      }
-    }
-
-    initAuth()
-  }, [isInitialized])
-
-  // Configura un timer per verificare e aggiornare periodicamente la sessione
-  useEffect(() => {
-    // Controlla ogni 5 minuti se la sessione deve essere aggiornata
-    const interval = setInterval(async () => {
-      if (!session) return
-
-      // Se mancano meno di 10 minuti alla scadenza
-      const expiresAt = session.expires_at
-      const now = Math.floor(Date.now() / 1000)
-      const timeLeft = expiresAt ? expiresAt - now : 0
-
-      if (timeLeft < 600) {
-        console.log('Session expiring soon, refreshing...')
-        refreshSession(true)
-      }
-    }, 300000) // Ogni 5 minuti
-
-    return () => clearInterval(interval)
-  }, [session])
-
-  useEffect(() => {
-    if (user) {
-      fetchSubscriptionInfo(user.id as string) // Fetch subscription info
-    }
-  }, [user])
-
 
   // Funzione di login
   const signIn = async (email: string, password: string) => {
@@ -210,11 +174,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error
       }
-
       setSession(data.session)
-      setUser(data.user)
-      toast.success('Login successful!')
+      await fetchUserDetails(data.session.user)
 
+      toast.success('Login successful!')
       return data
     } catch (err: any) {
       console.error('Error in login:', err)
@@ -244,7 +207,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         throw error
       }
-
+      setSession(data.session)
+      await fetchUserDetails(data.session.user)
+      toast.success('Login with Google successful!')
       return data
     } catch (err: any) {
       console.error('Errore nell\'accesso con Google:', err)
@@ -397,6 +362,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signInWithGoogle,
     subscriptionInfo,
   }
+
+  const initAuth = async () => {
+    try {
+      // Tenta di ottenere la sessione corrente
+      await refreshSession()
+
+      // Configura l'ascoltatore per i cambiamenti di autenticazione
+      const { data: authListener } = supabase.auth.onAuthStateChange(
+        async (event: string, newSession: Session | null) => {
+          console.log('Auth state changed:', event)
+
+          if (event === 'SIGNED_IN' && newSession) {
+            setSession(newSession)
+            await fetchUserDetails(newSession.user)
+          } else if (event === 'SIGNED_OUT') {
+            setSession(null)
+            setUser(null)
+            setSubscriptionInfo(null)
+          }
+        }
+      )
+
+      return () => {
+        authListener?.subscription.unsubscribe()
+      }
+    } catch (err) {
+      console.error('Error in auth initialization:', err)
+    } finally {
+      setIsLoading(false)
+      setIsInitialized(true)
+    }
+  }
+
+  // Inizializzazione e setup degli handler di autenticazione
+  useEffect(() => {
+    if (isInitialized) return
+    initAuth()
+  }, [isInitialized])
+
+  // Configura un timer per verificare e aggiornare periodicamente la sessione
+  useEffect(() => {
+    // Controlla ogni 5 minuti se la sessione deve essere aggiornata
+    const interval = setInterval(async () => {
+      if (!session) return
+
+      // Se mancano meno di 10 minuti alla scadenza
+      const expiresAt = session.expires_at
+      const now = Math.floor(Date.now() / 1000)
+      const timeLeft = expiresAt ? expiresAt - now : 0
+
+      if (timeLeft < 600) {
+        console.log('Session expiring soon, refreshing...')
+        refreshSession(true)
+      }
+    }, 300000) // Ogni 5 minuti
+
+    return () => clearInterval(interval)
+  }, [session])
+
+  useEffect(() => {
+    if (user && !user?.user_metadata.is_staff) {
+      fetchSubscriptionInfo(user.id as string) // Fetch subscription info
+    }
+  }, [user])
+
 
   return (
     <AuthContext.Provider value={value}>

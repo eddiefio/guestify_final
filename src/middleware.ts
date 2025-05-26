@@ -98,6 +98,25 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(signInUrl);
       }
     }
+    if (user && user.id && pathname.startsWith('/dashboard')) {
+      // fetcj user metadata from profiles 
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_staff')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Errore nel recupero del profilo:', profileError.message);
+      } else if (profileData && profileData.is_staff) {
+        if (pathname.startsWith('/dashboard/subscription')) {
+          console.log('staff user, allowing access to subscription');
+          return NextResponse.redirect(new URL('/dashboard', request.url));
+        }
+        console.log('details for staff, allowing access to dashboard');
+        return NextResponse.next();
+      }
+    }
 
     if (user && !pathname.startsWith('/dashboard/subscription')) {
       // validat if the subscription is valid and it exists
@@ -105,7 +124,8 @@ export async function middleware(request: NextRequest) {
         .from('subscriptions')
         .select('status')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
+
       if (subscriptionError || !subscriptionData) {
         return NextResponse.redirect(new URL('/dashboard/subscription', request.url));
       }
