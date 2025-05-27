@@ -16,11 +16,11 @@ export default function PurchaseSubscription() {
   const router = useRouter()
 
   const features = [
-    "Unlimited access to all content",
-    "Ad-free experience",
-    "Premium support",
-    "Early access to new features",
-    "Download for offline use",
+    "Save time answering the same guest questions",
+    "Unlimited properties",
+    "Full access to all features",
+    "No commission on extra services",
+    "Cancel anytime",
   ];
 
   const handleSelectPlan = (id: string) => {
