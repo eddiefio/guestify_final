@@ -120,7 +120,7 @@ export default function PurchaseSubscription() {
             price="€9.90"
             period="per month"
             features={features}
-            buttonText={isRedirecting && selectedPlan === "monthly" ? "Redirecting..." : "Get Started"}
+            buttonText={isRedirecting && selectedPlan === "monthly" ? "Redirecting..." : "Start your 14-day free trial"}
             isPrimary={selectedPlan === "monthly"}
             isSelected={selectedPlan === "monthly"}
             onSelect={handleSelectPlan}
@@ -134,7 +134,7 @@ export default function PurchaseSubscription() {
             price="€89.90"
             period="per year"
             features={features}
-            buttonText={isRedirecting && selectedPlan === "yearly" ? "Redirecting..." : "Get Started"}
+            buttonText={isRedirecting && selectedPlan === "yearly" ? "Redirecting..." : "Start your 14-day free trial"}
             isPrimary={selectedPlan === "yearly"}
             badge={selectedPlan === "yearly" ? "BEST VALUE" : undefined}
             savings="Save €28.90 compared to monthly"
