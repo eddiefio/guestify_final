@@ -145,10 +145,7 @@ export default function PurchaseSubscription() {
         </div>
 
         <div className="mt-16 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Check className="h-5 w-5 text-[#5E2BFF]" />
-            <p className="text-gray-700">No credit card required</p>
-          </div>
+          
           <p className="text-gray-600 max-w-lg mx-auto">
             All plans come with a 14-day free trial. Cancel anytime during your trial and you won't be charged.
           </p>
