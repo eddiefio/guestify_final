@@ -55,12 +55,6 @@ export const getSupabase = () => {
             expires: new Date(0),
           })
         }
-      },
-      global: {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
       }
     });
     

@@ -431,13 +431,36 @@ export default function HowThingsWork() {
     try {
       setUploadingImage(true)
       
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+      if (newItemImage.size > maxSize) {
+        toast.error('Image size must be less than 5MB')
+        setUploadingImage(false)
+        return
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!allowedTypes.includes(newItemImage.type)) {
+        toast.error('Please upload a valid image file (JPG, PNG, or WebP)')
+        setUploadingImage(false)
+        return
+      }
+      
       // Carica l'immagine
-      const fileName = `${user.id}/${Date.now()}_${newItemImage.name}`
+      const fileExt = newItemImage.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}_${newItemTitle.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('how-things-work-images')
-        .upload(fileName, newItemImage)
+        .upload(fileName, newItemImage, {
+          cacheControl: '3600',
+          upsert: false
+        })
       
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
       
       // Aggiungi il nuovo elemento
       const { data, error } = await supabase
@@ -577,13 +600,36 @@ export default function HowThingsWork() {
     try {
       setUploadingPhoto(true)
       
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+      if (newPhotoImage.size > maxSize) {
+        toast.error('Image size must be less than 5MB')
+        setUploadingPhoto(false)
+        return
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+      if (!allowedTypes.includes(newPhotoImage.type)) {
+        toast.error('Please upload a valid image file (JPG, PNG, or WebP)')
+        setUploadingPhoto(false)
+        return
+      }
+      
       // Carica l'immagine
-      const fileName = `${user.id}/${Date.now()}_${newPhotoImage.name}`
+      const fileExt = newPhotoImage.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}_photo.${fileExt}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('item-photos')
-        .upload(fileName, newPhotoImage)
+        .upload(fileName, newPhotoImage, {
+          cacheControl: '3600',
+          upsert: false
+        })
       
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
       
       // Aggiungi la nuova foto
       const { data, error } = await supabase
@@ -797,13 +843,36 @@ export default function HowThingsWork() {
       if (editItemImage) {
         setUploadingImage(true)
         
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+        if (editItemImage.size > maxSize) {
+          toast.error('Image size must be less than 5MB')
+          setUploadingImage(false)
+          return
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if (!allowedTypes.includes(editItemImage.type)) {
+          toast.error('Please upload a valid image file (JPG, PNG, or WebP)')
+          setUploadingImage(false)
+          return
+        }
+        
         // Carica la nuova immagine
-        const fileName = `${user.id}/${Date.now()}_${editItemImage.name}`
+        const fileExt = editItemImage.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}_${editItemTitle.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('how-things-work-images')
-          .upload(fileName, editItemImage)
+          .upload(fileName, editItemImage, {
+            cacheControl: '3600',
+            upsert: false
+          })
         
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw uploadError
+        }
         
         // Elimina la vecchia immagine se presente
         if (updatedImagePath) {
@@ -875,13 +944,36 @@ export default function HowThingsWork() {
       if (editPhotoImage) {
         setUploadingPhoto(true)
         
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024 // 5MB in bytes
+        if (editPhotoImage.size > maxSize) {
+          toast.error('Image size must be less than 5MB')
+          setUploadingPhoto(false)
+          return
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+        if (!allowedTypes.includes(editPhotoImage.type)) {
+          toast.error('Please upload a valid image file (JPG, PNG, or WebP)')
+          setUploadingPhoto(false)
+          return
+        }
+        
         // Carica la nuova immagine
-        const fileName = `${user.id}/${Date.now()}_${editPhotoImage.name}`
+        const fileExt = editPhotoImage.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}_photo_edit.${fileExt}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('item-photos')
-          .upload(fileName, editPhotoImage)
+          .upload(fileName, editPhotoImage, {
+            cacheControl: '3600',
+            upsert: false
+          })
         
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw uploadError
+        }
         
         // Elimina la vecchia immagine se presente
         if (updatedPhotoPath) {
