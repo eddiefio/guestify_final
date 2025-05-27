@@ -140,7 +140,7 @@ export default function Layout({
             {/* Telegram Button and Description */}
             <div className="mb-6 md:mb-0 flex flex-col md:flex-row items-center justify-center md:space-x-4 text-center md:text-left">
               <a 
-                href="https://t.me/+vXtjk7jYyhI1YjY0" 
+                href="https://t.me/+dQa_aZK5KStkMzRk" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="bg-[#0088cc] hover:bg-[#0077b5] text-white px-4 py-2 rounded-lg transition-colors font-medium flex items-center space-x-2 shadow-md mb-2 md:mb-0"

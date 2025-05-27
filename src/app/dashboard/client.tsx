@@ -250,37 +250,39 @@ export default function DashboardClient() {
                 <h1 className="text-lg sm:text-xl font-bold text-[#5E2BFF]">
                   Welcome back, <span className="text-[#5E2BFF] border-b-2 border-[#ffde59]">{hostName}</span>!
                 </h1>
-                <div className="text-sm text-gray-600 font-medium mt-1 sm:mt-0">
-                  {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
-                </div>
               </div>
               <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
                 Your dashboard is ready.
               </p>
+              <div className="text-sm text-gray-600 font-medium mt-1">
+                {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 mt-2 md:mt-0">
-              <div className="relative w-full md:w-60">
-                <input
-                  type="text"
-                  placeholder="Search properties..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
+            <div className="flex flex-col sm:flex-row w-full md:w-auto mt-2 md:mt-0">
+              <div className="flex flex-col sm:flex-row w-full md:w-auto md:flex-col md:items-end gap-2">
+                <Link href="/dashboard/add-property">
+                  <button className="bg-[#ffde59] text-black px-4 py-2 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto md:w-60 md:whitespace-nowrap">
+                    <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Property
+                  </button>
+                </Link>
+                <div className="relative w-full md:w-60">
+                  <input
+                    type="text"
+                    placeholder="Search properties..."
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <Link href="/dashboard/add-property">
-                <button className="bg-[#ffde59] text-black px-4 py-2 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto">
-                  <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add Property
-                </button>
-              </Link>
             </div>
           </div>
 
