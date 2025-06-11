@@ -148,46 +148,45 @@ export default function AddPropertyClient() {
     setError(null)
     
     try {
-      // Set a timeout to avoid infinite blocks
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out')), 10000)
-      })
-      
-      // Function to handle submission attempts
-      const insertPromise = async () => {
-        const { data, error } = await supabase
-          .from('properties')
-          .insert([
-            {
-              host_id: user.id,
-              name: formData.rental_name,
-              address: formData.address,
-              city: formData.city,
-              state: formData.state,
-              zip: formData.zip,
-              country: formData.country,
-            },
-          ])
-          .select()
-          .single()
-          
-        if (error) throw error
-        return data
-      }
-      
-      // Race to handle timeout
-      const data = await Promise.race([insertPromise(), timeoutPromise])
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([
+          {
+            host_id: user.id,
+            name: formData.rental_name,
+            address: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zip: formData.zip,
+            country: formData.country,
+          },
+        ])
+        .select()
+        .single()
+        
+      if (error) throw error
       
       setSuccess(true)
       toast.success('Property added successfully!')
       
+      // Reset form data
+      setFormData({
+        rental_name: '',
+        address: '',
+        city: '',
+        state: '',
+        zip: '',
+        country: '',
+      })
+      
       // Redirect to dashboard after a brief delay
       setTimeout(() => {
         router.push('/dashboard')
-      }, 1000)
+      }, 1500)
     } catch (error: any) {
       console.error('Error creating property:', error)
       setError(error.message || 'Failed to create property. Please try again.')
+    } finally {
       setLoading(false)
     }
   }

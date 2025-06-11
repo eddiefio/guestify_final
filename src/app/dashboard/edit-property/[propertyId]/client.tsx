@@ -178,7 +178,15 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
+    
+    // Form validation
+    if (!formData.country) {
+      setError('Please select a country')
+      return
+    }
+    
     setSaving(true)
+    setError(null)
     
     try {
       const { error } = await supabase
@@ -197,13 +205,15 @@ export default function EditPropertyClient({ propertyId }: EditPropertyClientPro
       
       toast.success('Property updated successfully!')
       
-      // Redirect back to dashboard
-      router.push('/dashboard')
+      // Redirect back to dashboard after a short delay
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1000)
     } catch (err: any) {
       console.error('Error updating property:', err)
-      setError('Failed to update property')
+      setError(err.message || 'Failed to update property')
+      toast.error(err.message || 'Error updating property')
       setSaving(false)
-      toast.error('Error updating property')
     }
   }
 

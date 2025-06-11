@@ -81,9 +81,9 @@ export default function EditHouseRule() {
       return
     }
     
+    setSaving(true)
+    
     try {
-      setSaving(true)
-      
       // Aggiorniamo la regola
       const { error } = await supabase
         .from('house_rules')
@@ -98,12 +98,15 @@ export default function EditHouseRule() {
       if (error) throw error
       
       toast.success('House rule updated successfully')
-      router.push(`/dashboard/property/${propertyId}/house-rules`)
       
-    } catch (error) {
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push(`/dashboard/property/${propertyId}/house-rules`)
+      }, 1000)
+      
+    } catch (error: any) {
       console.error('Error updating house rule:', error)
-      toast.error('Failed to update house rule')
-    } finally {
+      toast.error(error.message || 'Failed to update house rule')
       setSaving(false)
     }
   }

@@ -977,13 +977,13 @@ export default function HowThingsWork() {
       return
     }
     
+    setUploadingPhoto(true)
+    
     try {
       let updatedPhotoPath = itemPhotos[selectedItem]?.find(photo => photo.id === editPhotoId)?.photo_path || '';
       
       // Se c'è una nuova immagine, caricarla e aggiornare il percorso
       if (editPhotoImage) {
-        setUploadingPhoto(true)
-        
         // Validate file size (max 10MB)
         const maxSize = 10 * 1024 * 1024 // 10MB in bytes
         if (editPhotoImage.size > maxSize) {
@@ -1070,11 +1070,11 @@ export default function HowThingsWork() {
       setEditPhotoId(null)
       setEditPhotoDescription('')
       setEditPhotoImage(null)
+      setUploadingPhoto(false)
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating instruction:', error)
-      toast.error('Failed to update instruction')
-    } finally {
+      toast.error(error.message || 'Failed to update instruction')
       setUploadingPhoto(false)
     }
   }
