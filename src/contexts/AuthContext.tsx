@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0)
   const router = useRouter()
 
   const fetchUserDetails = async (userInfo: User) => {
@@ -99,33 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(true)
       console.log('Refreshing auth session...')
 
-      // Tenta il refresh tramite API - metodo più affidabile
-      try {
-        const response = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-        })
-
-        if (response.ok) {
-          const { session: apiSession, error: apiError } = await response.json()
-          
-          if (apiSession && !apiError) {
-            setSession(apiSession)
-            await fetchUserDetails(apiSession.user)
-            setIsLoading(false)
-            return true
-          } else if (apiError) {
-            console.log('API returned error:', apiError)
-            // Continue to fallback method
-          }
-        }
-      } catch (err) {
-        console.error('Error refreshing via API:', err)
-        // Continue to fallback method
-      }
-
-      // Usa il metodo standard client come fallback
+      // Usa direttamente il client Supabase per evitare problemi con l'API
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
