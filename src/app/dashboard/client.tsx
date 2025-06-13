@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react'
 import { supabase, createTemplateProperty } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { useProperties } from '@/hooks/useSupabaseQuery'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/layout/Layout'
 import Link from 'next/link'
@@ -22,12 +21,72 @@ interface Property {
 
 export default function DashboardClient() {
   const { user, isLoading: authLoading } = useAuth()
-  const { data: properties, loading, error, refetch: refetchProperties } = useProperties()
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loading, setLoading] = useState(true)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [hostName, setHostName] = useState('')
   const router = useRouter()
+  const isMounted = React.useRef(false)
 
+  // Function to fetch properties
+  const fetchProperties = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Fetch properties
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('host_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      
+      // Fetch additional data for properties
+      if (data && data.length > 0) {
+        const propertiesWithData = await Promise.all(
+          data.map(async (property: {
+            id: string;
+            name: string;
+            address: string;
+            city?: string;
+            country?: string;
+          }) => {
+            // Check if property has wifi credentials
+            const { count: wifiCount, error: wifiError } = await supabase
+              .from('wifi_credentials')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            // Check if property has how things work guides
+            const { count: howThingsCount, error: howThingsError } = await supabase
+              .from('how_things_work')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            return {
+              ...property,
+              has_wifi: wifiCount ? wifiCount > 0 : false,
+              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
+            }
+          })
+        )
+        
+        setProperties(propertiesWithData)
+      } else {
+        setProperties([])
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+      toast.error('Error loading properties')
+      setProperties([]) // Set empty array on error to prevent infinite loading
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load user profile and get full name
   useEffect(() => {
@@ -54,6 +113,71 @@ export default function DashboardClient() {
     fetchUserProfile()
   }, [user])
 
+  // Load user properties
+  useEffect(() => {
+    // Track if component is mounted
+    isMounted.current = true
+    
+    // If auth is still loading, wait
+    if (authLoading) {
+      return
+    }
+    
+    // If no user after auth loaded, stop loading
+    if (!authLoading && !user) {
+      setLoading(false)
+      return
+    }
+    
+    // If we have a user, fetch properties
+    if (user) {
+      // Reset loading state first to ensure clean state
+      setLoading(true)
+      fetchProperties()
+    }
+    
+    // Cleanup
+    return () => {
+      isMounted.current = false
+      // Ensure loading is set to false on unmount
+      setLoading(false)
+    }
+  }, [authLoading, user])
+
+  // Handle page visibility change to refresh data when returning to the app
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    
+    const handleVisibilityChange = () => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
+      if (!document.hidden && user && !authLoading && isMounted.current) {
+        // Add a small delay to prevent race conditions with navigation
+        timeoutId = setTimeout(() => {
+          // Only refresh if component is still mounted and not already loading
+          if (isMounted.current && !loading) {
+            // Only refresh if we don't have properties or if it's been more than 30 seconds
+            const shouldRefresh = properties.length === 0
+            if (shouldRefresh) {
+              fetchProperties()
+            }
+          }
+        }, 100)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [user, authLoading, loading])
 
   // Handle the Extra Services link click
   const handleExtraServicesClick = async (propertyId: string, e: React.MouseEvent) => {
@@ -125,7 +249,7 @@ export default function DashboardClient() {
       toast.success('Example property created successfully!')
       
       // Refresh properties list
-      await refetchProperties()
+      await fetchProperties()
       
     } catch (error) {
       console.error('Error creating template property:', error)
@@ -137,7 +261,7 @@ export default function DashboardClient() {
   }
 
   // Filter properties based on search term
-  const filteredProperties = (properties || []).filter(prop =>
+  const filteredProperties = properties.filter(prop => 
     prop.name.toLowerCase().includes(searchTerm.toLowerCase())
   )
 

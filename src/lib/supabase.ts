@@ -1,9 +1,7 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-// Singleton pattern per il client Supabase con miglioramenti per riconnessione
+// Singleton pattern per il client Supabase
 let supabaseInstance: ReturnType<typeof createBrowserClient> | null = null
-let connectionRetries = 0
-const MAX_CONNECTION_RETRIES = 3
 
 export const getSupabase = () => {
   if (supabaseInstance) return supabaseInstance
@@ -15,9 +13,9 @@ export const getSupabase = () => {
     console.log('Inizializzazione del client Supabase');
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Variabili di ambiente Supabase mancanti:', {
-        urlPresente: !!supabaseUrl,
-        keyPresente: !!supabaseKey
+      console.error('Variabili di ambiente Supabase mancanti:', { 
+        urlPresente: !!supabaseUrl, 
+        keyPresente: !!supabaseKey 
       });
       throw new Error('Configurazione Supabase incompleta');
     }
@@ -26,72 +24,44 @@ export const getSupabase = () => {
       cookies: {
         get(name) {
           if (typeof document === 'undefined') return ''
-          try {
-            const cookies = document.cookie.split(';').map(c => c.trim())
-            const cookie = cookies.find(c => c.startsWith(`${name}=`))
-            return cookie ? cookie.split('=')[1] : ''
-          } catch (error) {
-            console.warn('Error reading cookie:', error)
-            return ''
-          }
+          const cookies = document.cookie.split(';').map(c => c.trim())
+          const cookie = cookies.find(c => c.startsWith(`${name}=`))
+          return cookie ? cookie.split('=')[1] : ''
         },
         set(name, value, options) {
           if (typeof document === 'undefined') return
-          try {
-            let cookie = `${name}=${value}`
-            if (options.expires) {
-              cookie += `; expires=${options.expires.toUTCString()}`
-            }
-            if (options.path) {
-              cookie += `; path=${options.path}`
-            }
-            if (options.domain) {
-              cookie += `; domain=${options.domain}`
-            }
-            if (options.sameSite) {
-              cookie += `; samesite=${options.sameSite}`
-            }
-            if (options.secure) {
-              cookie += '; secure'
-            }
-            document.cookie = cookie
-          } catch (error) {
-            console.warn('Error setting cookie:', error)
+          let cookie = `${name}=${value}`
+          if (options.expires) {
+            cookie += `; expires=${options.expires.toUTCString()}`
           }
+          if (options.path) {
+            cookie += `; path=${options.path}`
+          }
+          if (options.domain) {
+            cookie += `; domain=${options.domain}`
+          }
+          if (options.sameSite) {
+            cookie += `; samesite=${options.sameSite}`
+          }
+          if (options.secure) {
+            cookie += '; secure'
+          }
+          document.cookie = cookie
         },
         remove(name, options) {
           if (typeof document === 'undefined') return
-          try {
-            this.set(name, '', {
-              ...options,
-              expires: new Date(0),
-            })
-          } catch (error) {
-            console.warn('Error removing cookie:', error)
-          }
+          this.set(name, '', {
+            ...options,
+            expires: new Date(0),
+          })
         }
-      },
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
       }
     });
     
     console.log('Client Supabase inizializzato con successo');
-    connectionRetries = 0; // Reset retry count on successful connection
     return supabaseInstance;
   } catch (error) {
     console.error('Errore nell\'inizializzazione del client Supabase:', error);
-    connectionRetries++;
-    
-    // Se abbiamo troppi tentativi falliti, resetta l'istanza
-    if (connectionRetries >= MAX_CONNECTION_RETRIES) {
-      console.error('Troppi tentativi di connessione falliti, reset istanza');
-      supabaseInstance = null;
-      connectionRetries = 0;
-    }
-    
     // Fallback a un client base per evitare errori fatali
     supabaseInstance = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co',
@@ -103,14 +73,6 @@ export const getSupabase = () => {
 
 // Client Supabase esportato come default
 export const supabase = getSupabase()
-
-// Funzione per resettare la connessione Supabase in caso di problemi
-export const resetSupabaseConnection = () => {
-  console.log('Resetting Supabase connection...')
-  supabaseInstance = null
-  connectionRetries = 0
-  return getSupabase()
-}
 
 // Funzione di utilità per verificare la connessione a Supabase
 export const checkSupabaseConnection = async () => {
