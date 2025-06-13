@@ -20,13 +20,73 @@ interface Property {
 }
 
 export default function DashboardClient() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [hostName, setHostName] = useState('')
   const router = useRouter()
+  const isMounted = React.useRef(false)
+
+  // Function to fetch properties
+  const fetchProperties = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Fetch properties
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('host_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      
+      // Fetch additional data for properties
+      if (data && data.length > 0) {
+        const propertiesWithData = await Promise.all(
+          data.map(async (property: {
+            id: string;
+            name: string;
+            address: string;
+            city?: string;
+            country?: string;
+          }) => {
+            // Check if property has wifi credentials
+            const { count: wifiCount, error: wifiError } = await supabase
+              .from('wifi_credentials')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            // Check if property has how things work guides
+            const { count: howThingsCount, error: howThingsError } = await supabase
+              .from('how_things_work')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            return {
+              ...property,
+              has_wifi: wifiCount ? wifiCount > 0 : false,
+              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
+            }
+          })
+        )
+        
+        setProperties(propertiesWithData)
+      } else {
+        setProperties([])
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+      toast.error('Error loading properties')
+      setProperties([]) // Set empty array on error to prevent infinite loading
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load user profile and get full name
   useEffect(() => {
@@ -55,65 +115,38 @@ export default function DashboardClient() {
 
   // Load user properties
   useEffect(() => {
-    if (!user) return
-
-    const fetchProperties = async () => {
-      try {
-        setLoading(true)
-        
-        // Fetch properties
-        const { data, error } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('host_id', user.id)
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-        
-        // Fetch additional data for properties
-        if (data && data.length > 0) {
-          const propertiesWithData = await Promise.all(
-            data.map(async (property: {
-              id: string;
-              name: string;
-              address: string;
-              city?: string;
-              country?: string;
-            }) => {
-              // Check if property has wifi credentials
-              const { count: wifiCount, error: wifiError } = await supabase
-                .from('wifi_credentials')
-                .select('id', { count: 'exact', head: true })
-                .eq('property_id', property.id)
-              
-              // Check if property has how things work guides
-              const { count: howThingsCount, error: howThingsError } = await supabase
-                .from('how_things_work')
-                .select('id', { count: 'exact', head: true })
-                .eq('property_id', property.id)
-              
-              return {
-                ...property,
-                has_wifi: wifiCount ? wifiCount > 0 : false,
-                has_how_things_work: howThingsCount ? howThingsCount > 0 : false
-              }
-            })
-          )
-          
-          setProperties(propertiesWithData)
-        } else {
-          setProperties([])
-        }
-      } catch (error) {
-        console.error('Error fetching properties:', error)
-        toast.error('Error loading properties')
-      } finally {
-        setLoading(false)
-      }
+    // Track if component is mounted
+    isMounted.current = true
+    
+    // If auth is still loading, wait
+    if (authLoading) {
+      return
     }
+    
+    // If no user after auth loaded, stop loading
+    if (!authLoading && !user) {
+      setLoading(false)
+      return
+    }
+    
+    // If we have a user, fetch properties
+    if (user) {
+      fetchProperties()
+    }
+    
+    // Cleanup
+    return () => {
+      isMounted.current = false
+    }
+  }, [authLoading, user])
 
-    fetchProperties()
-  }, [user])
+  // Force data refresh on mount
+  useEffect(() => {
+    // This ensures data is fetched when navigating back
+    if (user && !authLoading && properties.length === 0 && !loading) {
+      fetchProperties()
+    }
+  }, [])
 
   // Handle the Extra Services link click
   const handleExtraServicesClick = async (propertyId: string, e: React.MouseEvent) => {
@@ -185,46 +218,7 @@ export default function DashboardClient() {
       toast.success('Example property created successfully!')
       
       // Refresh properties list
-      const { data, error: fetchError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('host_id', user.id)
-        .order('created_at', { ascending: false })
-        
-      if (fetchError) throw fetchError
-      
-      // Fetch additional data for properties
-      if (data && data.length > 0) {
-        const propertiesWithData = await Promise.all(
-          data.map(async (property: {
-            id: string;
-            name: string;
-            address: string;
-            city?: string;
-            country?: string;
-          }) => {
-            // Check if property has wifi credentials
-            const { count: wifiCount, error: wifiError } = await supabase
-              .from('wifi_credentials')
-              .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id)
-            
-            // Check if property has how things work guides
-            const { count: howThingsCount, error: howThingsError } = await supabase
-              .from('how_things_work')
-              .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id)
-            
-            return {
-              ...property,
-              has_wifi: wifiCount ? wifiCount > 0 : false,
-              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
-            }
-          })
-        )
-        
-        setProperties(propertiesWithData)
-      }
+      await fetchProperties()
       
     } catch (error) {
       console.error('Error creating template property:', error)
@@ -286,7 +280,7 @@ export default function DashboardClient() {
             </div>
           </div>
 
-          {loading ? (
+          {loading || authLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
               <p className="text-gray-600 font-medium">Loading properties...</p>
