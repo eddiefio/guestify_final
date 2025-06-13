@@ -164,22 +164,36 @@ export default function HouseInfo() {
   useEffect(() => {
     isMounted.current = true
     
-    if (!user || !propertyId) return
+    if (!user || !propertyId) {
+      setLoading(false)
+      return
+    }
 
     fetchPropertyData()
     
     return () => {
       isMounted.current = false
     }
-  }, [propertyId, user, router])
+  }, [propertyId, user])
 
-  // Force data refresh on mount
+  // Handle page visibility change to refresh data when returning to the app
   useEffect(() => {
-    // This ensures data is fetched when navigating back
-    if (user && propertyId && !loading && !property) {
-      fetchPropertyData()
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && propertyId && isMounted.current) {
+        // Only refresh if we don't have property data or if it's been more than 30 seconds
+        const shouldRefresh = !property || (Date.now() - (property as any)._lastFetch > 30000)
+        if (shouldRefresh) {
+          fetchPropertyData()
+        }
+      }
     }
-  }, [])
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user, propertyId, property])
 
   // Funzione per cambiare tab
   const handleTabChange = (tab: string) => {

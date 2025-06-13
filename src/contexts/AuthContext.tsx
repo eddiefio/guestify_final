@@ -107,17 +107,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           cache: 'no-store',
         })
 
-        if (!response.ok) throw new Error('Refresh failed')
-
-        const { session: apiSession } = await response.json()
-        setSession(apiSession)
-        await fetchUserDetails(apiSession.user)
-
-        setIsLoading(false)
-        return true
+        if (response.ok) {
+          const { session: apiSession, error: apiError } = await response.json()
+          
+          if (apiSession && !apiError) {
+            setSession(apiSession)
+            await fetchUserDetails(apiSession.user)
+            setIsLoading(false)
+            return true
+          } else if (apiError) {
+            console.log('API returned error:', apiError)
+            // Continue to fallback method
+          }
+        }
       } catch (err) {
         console.error('Error refreshing via API:', err)
-        // Continua con l'approccio Admin
+        // Continue to fallback method
       }
 
       // Usa il metodo standard client come fallback
@@ -150,6 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Exception in refreshSession:', err)
       setSession(null)
       setUser(null)
+      setSubscriptionInfo(null)
       setIsLoading(false)
       return false
     }
@@ -376,10 +382,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (event === 'SIGNED_IN' && newSession) {
             setSession(newSession)
             await fetchUserDetails(newSession.user)
+            setIsLoading(false)
           } else if (event === 'SIGNED_OUT') {
             setSession(null)
             setUser(null)
             setSubscriptionInfo(null)
+            setIsLoading(false)
+          } else if (event === 'TOKEN_REFRESHED' && newSession) {
+            setSession(newSession)
+            await fetchUserDetails(newSession.user)
           }
         }
       )
@@ -389,6 +400,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (err) {
       console.error('Error in auth initialization:', err)
+      setSession(null)
+      setUser(null)
+      setSubscriptionInfo(null)
     } finally {
       setIsLoading(false)
       setIsInitialized(true)
@@ -403,23 +417,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Configura un timer per verificare e aggiornare periodicamente la sessione
   useEffect(() => {
+    if (!session) return
+
     // Controlla ogni 5 minuti se la sessione deve essere aggiornata
     const interval = setInterval(async () => {
-      if (!session) return
+      if (!session || isLoading) return
 
       // Se mancano meno di 10 minuti alla scadenza
       const expiresAt = session.expires_at
       const now = Math.floor(Date.now() / 1000)
       const timeLeft = expiresAt ? expiresAt - now : 0
 
-      if (timeLeft < 600) {
+      if (timeLeft < 600 && timeLeft > 0) {
         console.log('Session expiring soon, refreshing...')
-        refreshSession(true)
+        await refreshSession(true)
+      } else if (timeLeft <= 0) {
+        console.log('Session expired, signing out...')
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
+        setIsLoading(false)
       }
     }, 300000) // Ogni 5 minuti
 
     return () => clearInterval(interval)
-  }, [session])
+  }, [session, isLoading])
 
   useEffect(() => {
     if (user && !user?.user_metadata.is_staff) {

@@ -140,13 +140,24 @@ export default function DashboardClient() {
     }
   }, [authLoading, user])
 
-  // Force data refresh on mount
+  // Handle page visibility change to refresh data when returning to the app
   useEffect(() => {
-    // This ensures data is fetched when navigating back
-    if (user && !authLoading && properties.length === 0 && !loading) {
-      fetchProperties()
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && !authLoading && isMounted.current) {
+        // Only refresh if we don't have properties or if it's been more than 30 seconds
+        const shouldRefresh = properties.length === 0 || (Date.now() - (properties as any)._lastFetch > 30000)
+        if (shouldRefresh && !loading) {
+          fetchProperties()
+        }
+      }
     }
-  }, [])
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [user, authLoading, properties, loading])
 
   // Handle the Extra Services link click
   const handleExtraServicesClick = async (propertyId: string, e: React.MouseEvent) => {
