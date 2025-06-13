@@ -20,10 +20,11 @@ export async function middleware(request: NextRequest) {
     '/auth/confirm'
   ];
 
-  // Percorsi per le API pubbliche di pagamento
+  // Percorsi per le API pubbliche di pagamento e auth
   const publicApiPaths = [
     '/api/orders/',
-    '/api/create-payment-intent'
+    '/api/create-payment-intent',
+    '/api/auth/refresh-token'
   ];
 
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)
@@ -60,8 +61,92 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Implementa retry logic per la verifica della sessione
+  const MAX_RETRIES = 2;
+  let lastError: any = null;
+  
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      // Crea un nuovo client Supabase lato server con timeout
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get: (name) => {
+              return request.cookies.get(name)?.value;
+            },
+            set: (name, value, options) => {
+              // SSR non supporta impostazione cookie ma non loggiamo errore
+            },
+            remove: (name, options) => {
+              // SSR non supporta rimozione cookie ma non loggiamo errore
+            },
+          },
+          auth: {
+            // Aggiungi configurazioni di timeout per sessioni più stabili
+            autoRefreshToken: true,
+            persistSession: true,
+          },
+        }
+      );
+
+      // Verifica se abbiamo una sessione valida con timeout
+      const {
+        data: { user },
+        error,
+      } = await Promise.race([
+        supabase.auth.getUser(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Auth timeout')), 5000)
+        )
+      ]) as any;
+
+      if (error || !user) {
+        // Se è un errore di rete e non l'ultimo tentativo, riprova
+        if (error?.message?.includes('network') && attempt < MAX_RETRIES - 1) {
+          console.log(`Tentativo ${attempt + 1} fallito per errore di rete, riprovo...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+          continue;
+        }
+
+        console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
+
+        // Solo i percorsi che iniziano con /dashboard o /api sono protetti
+        // Evitiamo di proteggere le API di pagamento specificate sopra
+        if (pathname.startsWith('/dashboard') ||
+          (pathname.startsWith('/api') && !publicApiPaths.some(apiPath => pathname.includes(apiPath)))) {
+          const signInUrl = new URL('/auth/signin', request.url);
+          signInUrl.searchParams.set('redirectUrl', request.url);
+          return NextResponse.redirect(signInUrl);
+        }
+      }
+
+      // Se arriviamo qui senza errori, continuiamo con la validazione normale
+      break;
+      
+    } catch (networkError: any) {
+      lastError = networkError;
+      console.error(`Middleware attempt ${attempt + 1} failed:`, networkError.message);
+      
+      // Se è l'ultimo tentativo, fallisci
+      if (attempt === MAX_RETRIES - 1) {
+        console.error('Tutti i tentativi di verifica sessione falliti');
+        // Per errori di rete, lascia passare per evitare di bloccare l'app
+        if (networkError.message?.includes('timeout') || networkError.message?.includes('network')) {
+          console.log('Errore di rete nel middleware, permetto accesso per evitare blocchi');
+          return NextResponse.next();
+        }
+        throw networkError;
+      }
+      
+      // Attendi prima del prossimo tentativo
+      await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+    }
+  }
+
   try {
-    // Crea un nuovo client Supabase lato server
+    // Ricrea il client per le operazioni successive
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -80,24 +165,10 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // Verifica se abbiamo una sessione valida
     const {
       data: { user },
       error,
     } = await supabase.auth.getUser();
-
-    if (error || !user) {
-      console.log(`Nessuna sessione nel middleware, reindirizzamento a signin. Errore: ${error?.message}`);
-
-      // Solo i percorsi che iniziano con /dashboard o /api sono protetti
-      // Evitiamo di proteggere le API di pagamento specificate sopra
-      if (pathname.startsWith('/dashboard') ||
-        (pathname.startsWith('/api') && !publicApiPaths.some(apiPath => pathname.includes(apiPath)))) {
-        const signInUrl = new URL('/auth/signin', request.url);
-        signInUrl.searchParams.set('redirectUrl', request.url);
-        return NextResponse.redirect(signInUrl);
-      }
-    }
     if (user && user.id && pathname.startsWith('/dashboard')) {
       // fetcj user metadata from profiles 
       const { data: profileData, error: profileError } = await supabase

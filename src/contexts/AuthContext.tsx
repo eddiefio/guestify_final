@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Session, User } from '@supabase/supabase-js'
@@ -21,6 +21,7 @@ type AuthContextType = {
   updatePassword: (password: string) => Promise<{ error: any }>
   refreshSession: (forceRefresh?: boolean) => Promise<boolean>
   signInWithGoogle: () => Promise<any>
+  retryWithExponentialBackoff: (fn: Function, maxRetries?: number) => Promise<any>
 }
 
 // Creazione del contesto
@@ -35,6 +36,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0)
+  const [retryCount, setRetryCount] = useState(0)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const visibilityListenerRef = useRef<(() => void) | null>(null)
   const router = useRouter()
 
   const fetchUserDetails = async (userInfo: User) => {
@@ -94,45 +99,119 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Funzione per verificare e aggiornare la sessione
+  // Retry logic con exponential backoff
+  const retryWithExponentialBackoff = async (fn: Function, maxRetries = 3) => {
+    let lastError: any
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const result = await fn()
+        if (attempt > 0) {
+          console.log(`Operation succeeded on attempt ${attempt + 1}`)
+        }
+        return result
+      } catch (error) {
+        lastError = error
+        const delay = Math.pow(2, attempt) * 1000 + Math.random() * 1000 // 1s, 2s, 4s + jitter
+        console.log(`Attempt ${attempt + 1} failed, retrying in ${delay}ms...`, error)
+        
+        if (attempt < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+    }
+    
+    throw lastError
+  }
+
+  // Funzione per verificare e aggiornare la sessione con retry logic
   const refreshSession = async (forceRefresh = false) => {
+    // Previeni refresh multipli simultanei
+    if (isRefreshing) {
+      console.log('Session refresh already in progress')
+      return false
+    }
+
+    // Throttle refresh attempts
+    const now = Date.now()
+    if (!forceRefresh && now - lastRefreshAttempt < 30000) { // 30 secondi
+      console.log('Session refresh throttled')
+      return session !== null
+    }
+
     try {
-      setIsLoading(true)
+      setIsRefreshing(true)
+      setLastRefreshAttempt(now)
       console.log('Refreshing auth session...')
 
-      // Usa direttamente il client Supabase per evitare problemi con l'API
-      const { data, error } = await supabase.auth.getSession()
+      const refreshOperation = async () => {
+        // Tenta il refresh tramite API prima
+        try {
+          const response = await fetch('/api/auth/refresh-token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            cache: 'no-store',
+          })
 
-      if (error) {
-        console.error('Error getting session:', error)
-        setSession(null)
-        setUser(null)
-        setSubscriptionInfo(null)
-        setIsLoading(false)
-        return false
+          if (response.ok) {
+            const { session: apiSession, error: apiError } = await response.json()
+            
+            if (apiSession && !apiError) {
+              console.log('Session refreshed via API')
+              setSession(apiSession)
+              await fetchUserDetails(apiSession.user)
+              setRetryCount(0)
+              return true
+            } else if (apiError) {
+              console.log('API returned error:', apiError)
+              throw new Error(apiError.message || 'API refresh failed')
+            }
+          } else {
+            console.log('API response not ok:', response.status)
+            throw new Error(`API responded with status ${response.status}`)
+          }
+        } catch (apiError) {
+          console.log('API refresh failed, trying client method:', apiError)
+          // Fallback al metodo client
+          const { data, error } = await supabase.auth.getSession()
+
+          if (error) {
+            throw error
+          }
+
+          if (data.session) {
+            console.log('Session found via client')
+            setSession(data.session)
+            await fetchUserDetails(data.session.user)
+            setRetryCount(0)
+            return true
+          } else {
+            throw new Error('No session found')
+          }
+        }
       }
 
-      if (data.session) {
-        console.log('Session found via client')
-        setSession(data.session)
-        await fetchUserDetails(data.session.user)
-        setIsLoading(false)
-        return true
-      } else {
-        console.log('No session found')
-        setSession(null)
-        setUser(null)
-        setSubscriptionInfo(null)
-        setIsLoading(false)
-        return false
-      }
+      // Usa retry logic per il refresh
+      const success = await retryWithExponentialBackoff(refreshOperation, 3)
+      return success
+      
     } catch (err) {
-      console.error('Exception in refreshSession:', err)
-      setSession(null)
-      setUser(null)
-      setSubscriptionInfo(null)
-      setIsLoading(false)
+      console.error('Exception in refreshSession after retries:', err)
+      setRetryCount(prev => prev + 1)
+      
+      // Solo reset della sessione dopo diversi fallimenti
+      if (retryCount >= 2) {
+        console.log('Multiple refresh failures, resetting session')
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
+        setRetryCount(0)
+      }
+      
       return false
+    } finally {
+      setIsRefreshing(false)
+      setIsLoading(false)
     }
   }
 
@@ -342,6 +421,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshSession,
     signInWithGoogle,
     subscriptionInfo,
+    retryWithExponentialBackoff,
   }
 
   const initAuth = async () => {
@@ -358,14 +438,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setSession(newSession)
             await fetchUserDetails(newSession.user)
             setIsLoading(false)
+            setRetryCount(0) // Reset retry count on successful sign in
           } else if (event === 'SIGNED_OUT') {
             setSession(null)
             setUser(null)
             setSubscriptionInfo(null)
             setIsLoading(false)
+            setRetryCount(0)
           } else if (event === 'TOKEN_REFRESHED' && newSession) {
             setSession(newSession)
             await fetchUserDetails(newSession.user)
+            setRetryCount(0)
           }
         }
       )
@@ -384,19 +467,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // Gestione della visibilità della pagina per prevenire refresh inutili
+  const handleVisibilityChange = async () => {
+    if (document.hidden) {
+      // Pagina nascosta, interrompi operazioni in background
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+        refreshTimeoutRef.current = null
+      }
+      console.log('Page hidden, pausing background operations')
+    } else if (!document.hidden && session) {
+      // Pagina visibile di nuovo, verifica sessione se necessario
+      console.log('Page visible again, checking session validity')
+      
+      // Verifica se la sessione è ancora valida
+      if (session?.expires_at) {
+        const now = Math.floor(Date.now() / 1000)
+        const timeLeft = session.expires_at - now
+        
+        // Se mancano meno di 5 minuti o è scaduta, aggiorna
+        if (timeLeft < 300) {
+          console.log('Session expiring soon or expired, refreshing...')
+          await refreshSession(true)
+        }
+      }
+    }
+  }
+
   // Inizializzazione e setup degli handler di autenticazione
   useEffect(() => {
     if (isInitialized) return
     initAuth()
   }, [isInitialized])
 
+  // Setup listener per la visibilità della pagina
+  useEffect(() => {
+    const visibilityListener = () => handleVisibilityChange()
+    visibilityListenerRef.current = visibilityListener
+    
+    document.addEventListener('visibilitychange', visibilityListener)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', visibilityListener)
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+    }
+  }, [session])
+
   // Configura un timer per verificare e aggiornare periodicamente la sessione
   useEffect(() => {
-    if (!session) return
+    if (!session || document.hidden) return
 
     // Controlla ogni 5 minuti se la sessione deve essere aggiornata
     const interval = setInterval(async () => {
-      if (!session || isLoading) return
+      // Non eseguire operazioni se la pagina è nascosta
+      if (!session || isLoading || document.hidden) return
 
       // Se mancano meno di 10 minuti alla scadenza
       const expiresAt = session.expires_at

@@ -173,18 +173,33 @@ export default function HouseInfo() {
     
     return () => {
       isMounted.current = false
+      // Ensure loading is set to false on unmount
+      setLoading(false)
     }
   }, [propertyId, user])
 
   // Handle page visibility change to refresh data when returning to the app
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    
     const handleVisibilityChange = () => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
       if (!document.hidden && user && propertyId && isMounted.current) {
-        // Only refresh if we don't have property data or if it's been more than 30 seconds
-        const shouldRefresh = !property || (Date.now() - (property as any)._lastFetch > 30000)
-        if (shouldRefresh) {
-          fetchPropertyData()
-        }
+        // Add a small delay to prevent race conditions with navigation
+        timeoutId = setTimeout(() => {
+          // Only refresh if component is still mounted and not already loading
+          if (isMounted.current && !loading) {
+            // Only refresh if we don't have property data
+            const shouldRefresh = !property
+            if (shouldRefresh) {
+              fetchPropertyData()
+            }
+          }
+        }, 100)
       }
     }
 
@@ -192,8 +207,11 @@ export default function HouseInfo() {
     
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
     }
-  }, [user, propertyId, property])
+  }, [user, propertyId, loading])
 
   // Funzione per cambiare tab
   const handleTabChange = (tab: string) => {
