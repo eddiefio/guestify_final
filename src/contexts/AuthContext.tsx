@@ -94,34 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Funzione per verificare e aggiornare la sessione - MIGLIORATA
+  // Funzione per verificare e aggiornare la sessione - SEMPLIFICATA
   const refreshSession = async (forceRefresh = false) => {
     try {
       console.log('Refreshing auth session...')
-
-      // Prevent refresh if we're already loading
-      if (isLoading && !forceRefresh) {
-        console.log('Already loading, skipping refresh')
-        return !!session
-      }
 
       // Con @supabase/ssr, getSession è tutto quello che serve
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
         console.error('Error getting session:', error)
-        // Try to refresh the session if we get an error
-        if (session && forceRefresh) {
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
-          if (!refreshError && refreshData.session) {
-            console.log('Session refreshed successfully')
-            setSession(refreshData.session)
-            await fetchUserDetails(refreshData.session.user)
-            await fetchSubscriptionInfo(refreshData.session.user.id)
-            setIsLoading(false)
-            return true
-          }
-        }
         setSession(null)
         setUser(null)
         setSubscriptionInfo(null)
@@ -133,7 +115,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Session found via client')
         setSession(data.session)
         await fetchUserDetails(data.session.user)
-        await fetchSubscriptionInfo(data.session.user.id)
         setIsLoading(false)
         return true
       } else {
@@ -434,22 +415,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const timeout = setTimeout(() => {
         console.log('FORCE CLEAR LOADING: timeout after 3 seconds')
         setIsLoading(false)
-        
-        // If we're still loading after timeout, try to recover the session state
-        supabase.auth.getSession().then(({ data }: any) => {
-          if (data?.session) {
-            setSession(data.session)
-            fetchUserDetails(data.session.user).catch(console.error)
-            fetchSubscriptionInfo(data.session.user.id).catch(console.error)
-          }
-        }).catch(console.error)
       }, 3000) // Force clear loading after 3 seconds
 
       return () => clearTimeout(timeout)
     }
   }, [isLoading])
 
-  // Removed visibility change handler - now managed by SessionManager component
+  // Semplificato: ricontrollo sessione quando la tab diventa visibile
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isInitialized) {
+        console.log('Tab became visible, force clear loading and check session...')
+        
+        // FORCE CLEAR LOADING immediately on tab focus
+        setIsLoading(false)
+        
+        // Then check session without setting loading
+        supabase.auth.getSession().then(({ data, error }: any) => {
+          if (!error && data.session) {
+            console.log('Session found on tab focus')
+            if (!session || session.access_token !== data.session.access_token) {
+              setSession(data.session)
+              fetchUserDetails(data.session.user)
+            }
+          } else if (session) {
+            console.log('No session found on tab focus, clearing state')
+            setSession(null)
+            setUser(null)
+            setSubscriptionInfo(null)
+          }
+        }).catch((err: any) => {
+          console.error('Error checking session on tab focus:', err)
+        })
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+    }
+  }, [isInitialized, session])
 
   // Timer semplificato per refresh sessione
   useEffect(() => {

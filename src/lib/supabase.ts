@@ -13,23 +13,15 @@ export const getSupabase = () => {
     console.log('Inizializzazione del client Supabase');
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Variabili di ambiente Supabase mancanti:', {
-        urlPresente: !!supabaseUrl,
-        keyPresente: !!supabaseKey
+      console.error('Variabili di ambiente Supabase mancanti:', { 
+        urlPresente: !!supabaseUrl, 
+        keyPresente: !!supabaseKey 
       });
       throw new Error('Configurazione Supabase incompleta');
     }
     
-    // Con @supabase/ssr, configuriamo opzioni aggiuntive per la gestione della sessione
-    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey, {
-      auth: {
-        persistSession: true,
-        storageKey: 'supabase-auth-token',
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce'
-      }
-    });
+    // Con @supabase/ssr, lasciamo che la libreria gestisca automaticamente i cookie
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey);
     
     console.log('Client Supabase inizializzato con successo');
     return supabaseInstance;
