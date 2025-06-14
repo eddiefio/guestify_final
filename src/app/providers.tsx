@@ -2,6 +2,7 @@
 
 import { AuthProvider } from '@/contexts/AuthContext'
 import { CartProvider } from '@/contexts/CartContext'
+import SessionManager from '@/components/SessionManager'
 import { Toaster } from 'react-hot-toast'
 
 export default function Providers({
@@ -11,10 +12,12 @@ export default function Providers({
 }) {
   return (
     <AuthProvider>
-      <CartProvider>
-        {children}
-        <Toaster position="top-center" />
-      </CartProvider>
+      <SessionManager>
+        <CartProvider>
+          {children}
+          <Toaster position="top-center" />
+        </CartProvider>
+      </SessionManager>
     </AuthProvider>
   )
 }
