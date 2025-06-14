@@ -20,43 +20,8 @@ export const getSupabase = () => {
       throw new Error('Configurazione Supabase incompleta');
     }
     
-    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey, {
-      cookies: {
-        get(name) {
-          if (typeof document === 'undefined') return ''
-          const cookies = document.cookie.split(';').map(c => c.trim())
-          const cookie = cookies.find(c => c.startsWith(`${name}=`))
-          return cookie ? cookie.split('=')[1] : ''
-        },
-        set(name, value, options) {
-          if (typeof document === 'undefined') return
-          let cookie = `${name}=${value}`
-          if (options.expires) {
-            cookie += `; expires=${options.expires.toUTCString()}`
-          }
-          if (options.path) {
-            cookie += `; path=${options.path}`
-          }
-          if (options.domain) {
-            cookie += `; domain=${options.domain}`
-          }
-          if (options.sameSite) {
-            cookie += `; samesite=${options.sameSite}`
-          }
-          if (options.secure) {
-            cookie += '; secure'
-          }
-          document.cookie = cookie
-        },
-        remove(name, options) {
-          if (typeof document === 'undefined') return
-          this.set(name, '', {
-            ...options,
-            expires: new Date(0),
-          })
-        }
-      }
-    });
+    // Con @supabase/ssr, lasciamo che la libreria gestisca automaticamente i cookie
+    supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey);
     
     console.log('Client Supabase inizializzato con successo');
     return supabaseInstance;

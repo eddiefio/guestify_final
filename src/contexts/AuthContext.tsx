@@ -94,42 +94,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Funzione per verificare e aggiornare la sessione
+  // Funzione per verificare e aggiornare la sessione - SEMPLIFICATA
   const refreshSession = async (forceRefresh = false) => {
     try {
-      setIsLoading(true)
       console.log('Refreshing auth session...')
 
-      // Tenta il refresh tramite API - ora dovrebbe funzionare
-      try {
-        const response = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-        })
-
-        if (response.ok) {
-          const { session: apiSession, error: apiError } = await response.json()
-          
-          if (apiSession && !apiError) {
-            console.log('Session refreshed via API')
-            setSession(apiSession)
-            await fetchUserDetails(apiSession.user)
-            setIsLoading(false)
-            return true
-          } else if (apiError) {
-            console.log('API returned error:', apiError)
-            // Continue to fallback method
-          }
-        } else {
-          console.log('API response not ok:', response.status)
-        }
-      } catch (err) {
-        console.error('Error refreshing via API:', err)
-        // Continue to fallback method
-      }
-
-      // Usa il metodo standard client come fallback
+      // Con @supabase/ssr, getSession è tutto quello che serve
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
@@ -374,14 +344,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const initAuth = async () => {
-    try {
-      // Tenta di ottenere la sessione corrente
-      await refreshSession()
+    console.log('Initializing auth...')
+    
+    // GARANTISCE che loading sia sempre falso alla fine
+    const cleanup = () => {
+      setIsLoading(false)
+      setIsInitialized(true)
+    }
 
-      // Configura l'ascoltatore per i cambiamenti di autenticazione
+    try {
+      // Prima ottieni la sessione corrente DIRETTAMENTE
+      const { data, error } = await supabase.auth.getSession()
+      
+      if (!error && data.session) {
+        console.log('Initial session found')
+        setSession(data.session)
+        await fetchUserDetails(data.session.user)
+      } else {
+        console.log('No initial session found')
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
+      }
+
+      // Configura l'ascoltatore SEMPLIFICATO per i cambiamenti di autenticazione
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event: string, newSession: Session | null) => {
-          console.log('Auth state changed:', event)
+          console.log('Auth state changed:', event, !!newSession)
 
           if (event === 'SIGNED_IN' && newSession) {
             setSession(newSession)
@@ -395,9 +384,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else if (event === 'TOKEN_REFRESHED' && newSession) {
             setSession(newSession)
             await fetchUserDetails(newSession.user)
+            setIsLoading(false)
           }
         }
       )
+
+      cleanup()
 
       return () => {
         authListener?.subscription.unsubscribe()
@@ -407,9 +399,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null)
       setUser(null)
       setSubscriptionInfo(null)
-    } finally {
-      setIsLoading(false)
-      setIsInitialized(true)
+      cleanup()
     }
   }
 
@@ -419,33 +409,83 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth()
   }, [isInitialized])
 
-  // Configura un timer per verificare e aggiornare periodicamente la sessione
+  // TIMEOUT ASSOLUTO per evitare infinite loading - SOLUZIONE DEFINITIVA
   useEffect(() => {
-    if (!session) return
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        console.log('FORCE CLEAR LOADING: timeout after 3 seconds')
+        setIsLoading(false)
+      }, 3000) // Force clear loading after 3 seconds
+
+      return () => clearTimeout(timeout)
+    }
+  }, [isLoading])
+
+  // Semplificato: ricontrollo sessione quando la tab diventa visibile
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isInitialized) {
+        console.log('Tab became visible, force clear loading and check session...')
+        
+        // FORCE CLEAR LOADING immediately on tab focus
+        setIsLoading(false)
+        
+        // Then check session without setting loading
+        supabase.auth.getSession().then(({ data, error }: any) => {
+          if (!error && data.session) {
+            console.log('Session found on tab focus')
+            if (!session || session.access_token !== data.session.access_token) {
+              setSession(data.session)
+              fetchUserDetails(data.session.user)
+            }
+          } else if (session) {
+            console.log('No session found on tab focus, clearing state')
+            setSession(null)
+            setUser(null)
+            setSubscriptionInfo(null)
+          }
+        }).catch((err: any) => {
+          console.error('Error checking session on tab focus:', err)
+        })
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleVisibilityChange)
+    }
+  }, [isInitialized, session])
+
+  // Timer semplificato per refresh sessione
+  useEffect(() => {
+    if (!session || !session.expires_at) return
 
     // Controlla ogni 5 minuti se la sessione deve essere aggiornata
-    const interval = setInterval(async () => {
-      if (!session || isLoading) return
-
-      // Se mancano meno di 10 minuti alla scadenza
+    const interval = setInterval(() => {
       const expiresAt = session.expires_at
       const now = Math.floor(Date.now() / 1000)
       const timeLeft = expiresAt ? expiresAt - now : 0
 
       if (timeLeft < 600 && timeLeft > 0) {
         console.log('Session expiring soon, refreshing...')
-        await refreshSession(true)
+        supabase.auth.getSession().then(({ data }: any) => {
+          if (data.session) {
+            setSession(data.session)
+          }
+        })
       } else if (timeLeft <= 0) {
-        console.log('Session expired, signing out...')
+        console.log('Session expired')
         setSession(null)
         setUser(null)
         setSubscriptionInfo(null)
-        setIsLoading(false)
       }
     }, 300000) // Ogni 5 minuti
 
     return () => clearInterval(interval)
-  }, [session, isLoading])
+  }, [session?.expires_at])
 
   useEffect(() => {
     if (user && !user?.user_metadata.is_staff) {
