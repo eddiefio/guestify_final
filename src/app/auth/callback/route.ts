@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -9,15 +9,32 @@ export async function GET(req: NextRequest) {
   const type = requestUrl.searchParams.get('type');
   
   // Per debugging, logga i parametri ricevuti
-  console.log('Callback ricevuta:', { 
+  console.log('Callback ricevuta:', {
     code: code ? `${code.slice(0, 8)}...` : 'none',
     token_hash: token_hash ? `${token_hash.slice(0, 8)}...` : 'none',
     type
   });
   
+  // Create response object for cookie handling
+  const response = new NextResponse();
+  
   // Per la sicurezza, impedisci il clickjacking in questo endpoint
-  const cookieStore = cookies();
-  const supabase = createRouteHandlerClient({ cookies: () => cookieStore });
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+        set: (name, value, options) => {
+          response.cookies.set({ name, value, ...options });
+        },
+        remove: (name, options) => {
+          response.cookies.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
   
   // Garantisce la coerenza del dominio tra richiesta e redirect
   // Questo è importante perché i browser non impostano i cookie per i redirect cross-origin
@@ -46,9 +63,14 @@ export async function GET(req: NextRequest) {
       
       if (error) {
         console.error('Errore nella verifica OTP:', error);
-        return NextResponse.redirect(
+        const errorResponse = NextResponse.redirect(
           new URL(`/auth/error?message=${encodeURIComponent(error.message)}`, requestUrl.origin)
         );
+        // Copy cookies from our response
+        response.cookies.getAll().forEach(cookie => {
+          errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+        });
+        return errorResponse;
       }
       
       console.log('Verifica OTP completata con successo, tipo:', type);
@@ -65,17 +87,32 @@ export async function GET(req: NextRequest) {
         const consistentResetUrl = getConsistentOrigin(resetUrl.toString());
         
         console.log('Reindirizzamento a:', consistentResetUrl);
-        return NextResponse.redirect(consistentResetUrl);
+        const resetResponse = NextResponse.redirect(consistentResetUrl);
+        // Copy cookies from our response
+        response.cookies.getAll().forEach(cookie => {
+          resetResponse.cookies.set(cookie.name, cookie.value, cookie);
+        });
+        return resetResponse;
       }
       
       // Per altri tipi (signup, ecc.), reindirizza alla dashboard
       const dashboardUrl = getConsistentOrigin(new URL('/dashboard', requestUrl.origin).toString());
-      return NextResponse.redirect(dashboardUrl);
+      const dashboardResponse = NextResponse.redirect(dashboardUrl);
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        dashboardResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return dashboardResponse;
     } catch (error: any) {
       console.error('Errore non gestito nella verifica OTP:', error);
-      return NextResponse.redirect(
+      const errorResponse = NextResponse.redirect(
         new URL(`/auth/error?message=${encodeURIComponent(error.message || 'Errore sconosciuto')}`, requestUrl.origin)
       );
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return errorResponse;
     }
   }
   // Secondo caso: abbiamo un code (flusso PKCE)
@@ -88,9 +125,14 @@ export async function GET(req: NextRequest) {
       
       if (error) {
         console.error('Errore nello scambio del codice per una sessione:', error);
-        return NextResponse.redirect(
+        const errorResponse = NextResponse.redirect(
           new URL(`/auth/error?message=${encodeURIComponent(error.message)}`, requestUrl.origin)
         );
+        // Copy cookies from our response
+        response.cookies.getAll().forEach(cookie => {
+          errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+        });
+        return errorResponse;
       }
       
       console.log('Scambio codice completato con successo, tipo:', type);
@@ -98,23 +140,43 @@ export async function GET(req: NextRequest) {
       // Per il recupero password, reindirizza alla pagina reset-password
       if (type === 'recovery') {
         const resetUrl = getConsistentOrigin(new URL('/auth/reset-password', requestUrl.origin).toString());
-        return NextResponse.redirect(resetUrl);
+        const resetResponse = NextResponse.redirect(resetUrl);
+        // Copy cookies from our response
+        response.cookies.getAll().forEach(cookie => {
+          resetResponse.cookies.set(cookie.name, cookie.value, cookie);
+        });
+        return resetResponse;
       }
       
       // Per altri tipi, reindirizza alla dashboard
       const dashboardUrl = getConsistentOrigin(new URL('/dashboard', requestUrl.origin).toString());
-      return NextResponse.redirect(dashboardUrl);
+      const dashboardResponse = NextResponse.redirect(dashboardUrl);
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        dashboardResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return dashboardResponse;
     } catch (error: any) {
       console.error('Errore non gestito nello scambio del codice:', error);
-      return NextResponse.redirect(
+      const errorResponse = NextResponse.redirect(
         new URL(`/auth/error?message=${encodeURIComponent(error.message || 'Errore sconosciuto')}`, requestUrl.origin)
       );
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return errorResponse;
     }
   } else {
     // Nessun token o codice valido
     console.error('Nessun token_hash o code valido trovato nella richiesta');
-    return NextResponse.redirect(
+    const errorResponse = NextResponse.redirect(
       new URL('/auth/error?message=Link+di+autenticazione+non+valido', requestUrl.origin)
     );
+    // Copy cookies from our response
+    response.cookies.getAll().forEach(cookie => {
+      errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return errorResponse;
   }
 } 
