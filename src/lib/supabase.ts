@@ -26,35 +26,56 @@ export const getSupabase = () => {
           if (typeof document === 'undefined') return ''
           const cookies = document.cookie.split(';').map(c => c.trim())
           const cookie = cookies.find(c => c.startsWith(`${name}=`))
-          return cookie ? cookie.split('=')[1] : ''
+          return cookie ? decodeURIComponent(cookie.split('=')[1]) : ''
         },
-        set(name, value, options) {
+        set(name, value, options = {}) {
           if (typeof document === 'undefined') return
-          let cookie = `${name}=${value}`
-          if (options.expires) {
-            cookie += `; expires=${options.expires.toUTCString()}`
+          try {
+            let cookie = `${name}=${encodeURIComponent(value)}`
+            
+            // Set default options for better persistence
+            const cookieOptions = {
+              path: '/',
+              sameSite: 'lax' as const,
+              secure: window.location.protocol === 'https:',
+              ...options
+            }
+            
+            if (cookieOptions.expires) {
+              cookie += `; expires=${cookieOptions.expires.toUTCString()}`
+            }
+            if (cookieOptions.path) {
+              cookie += `; path=${cookieOptions.path}`
+            }
+            if (cookieOptions.domain) {
+              cookie += `; domain=${cookieOptions.domain}`
+            }
+            if (cookieOptions.sameSite) {
+              cookie += `; samesite=${cookieOptions.sameSite}`
+            }
+            if (cookieOptions.secure) {
+              cookie += '; secure'
+            }
+            
+            document.cookie = cookie
+          } catch (error) {
+            console.error('Error setting cookie:', error)
           }
-          if (options.path) {
-            cookie += `; path=${options.path}`
-          }
-          if (options.domain) {
-            cookie += `; domain=${options.domain}`
-          }
-          if (options.sameSite) {
-            cookie += `; samesite=${options.sameSite}`
-          }
-          if (options.secure) {
-            cookie += '; secure'
-          }
-          document.cookie = cookie
         },
-        remove(name, options) {
+        remove(name, options = {}) {
           if (typeof document === 'undefined') return
           this.set(name, '', {
+            path: '/',
             ...options,
             expires: new Date(0),
           })
         }
+      },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
       }
     });
     

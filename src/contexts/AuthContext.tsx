@@ -96,72 +96,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Funzione per verificare e aggiornare la sessione
   const refreshSession = async (forceRefresh = false) => {
+    // Previeni chiamate multiple simultanee - aumentato a 15 secondi
+    if (lastRefreshAttempt > 0 && Date.now() - lastRefreshAttempt < 15000) {
+      console.log('Refresh session already in progress, skipping...')
+      return session !== null
+    }
+    
+    setLastRefreshAttempt(Date.now())
+    
     try {
-      setIsLoading(true)
       console.log('Refreshing auth session...')
 
-      // Tenta il refresh tramite API - ora dovrebbe funzionare
-      try {
-        const response = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-        })
-
-        if (response.ok) {
-          const { session: apiSession, error: apiError } = await response.json()
-          
-          if (apiSession && !apiError) {
-            console.log('Session refreshed via API')
-            setSession(apiSession)
-            await fetchUserDetails(apiSession.user)
-            setIsLoading(false)
-            return true
-          } else if (apiError) {
-            console.log('API returned error:', apiError)
-            // Continue to fallback method
-          }
-        } else {
-          console.log('API response not ok:', response.status)
-        }
-      } catch (err) {
-        console.error('Error refreshing via API:', err)
-        // Continue to fallback method
+      // Non cambiare lo stato di loading se abbiamo già una sessione
+      if (!session) {
+        setIsLoading(true)
       }
 
-      // Usa il metodo standard client come fallback
+      // Usa solo il metodo diretto del client per semplicità
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
         console.error('Error getting session:', error)
-        setSession(null)
-        setUser(null)
-        setSubscriptionInfo(null)
-        setIsLoading(false)
+        if (!session) { // Solo se non abbiamo già una sessione
+          setSession(null)
+          setUser(null)
+          setSubscriptionInfo(null)
+        }
         return false
       }
 
       if (data.session) {
         console.log('Session found via client')
         setSession(data.session)
-        await fetchUserDetails(data.session.user)
-        setIsLoading(false)
+        if (data.session.user && (!user || user.id !== data.session.user.id)) {
+          await fetchUserDetails(data.session.user)
+        }
         return true
       } else {
         console.log('No session found')
         setSession(null)
         setUser(null)
         setSubscriptionInfo(null)
-        setIsLoading(false)
         return false
       }
     } catch (err) {
       console.error('Exception in refreshSession:', err)
-      setSession(null)
-      setUser(null)
-      setSubscriptionInfo(null)
-      setIsLoading(false)
+      if (!session) { // Solo se non abbiamo già una sessione
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
+      }
       return false
+    } finally {
+      if (!session) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -375,26 +364,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const initAuth = async () => {
     try {
-      // Tenta di ottenere la sessione corrente
-      await refreshSession()
+      console.log('Initializing auth...')
+      
+      // Non chiamare refreshSession durante l'init se siamo su una pagina di auth
+      const isAuthPage = typeof window !== 'undefined' && window.location.pathname.includes('/auth/')
+      
+      if (!isAuthPage) {
+        // Solo se non siamo su una pagina di auth, controlla la sessione esistente
+        try {
+          const { data } = await supabase.auth.getSession()
+          if (data.session) {
+            setSession(data.session)
+            await fetchUserDetails(data.session.user)
+          }
+        } catch (error) {
+          console.error('Error getting initial session:', error)
+        }
+      }
 
       // Configura l'ascoltatore per i cambiamenti di autenticazione
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event: string, newSession: Session | null) => {
-          console.log('Auth state changed:', event)
+          console.log('Auth state changed:', event, newSession ? 'with session' : 'no session')
 
           if (event === 'SIGNED_IN' && newSession) {
             setSession(newSession)
-            await fetchUserDetails(newSession.user)
             setIsLoading(false)
+            // Fetch user details in background
+            setTimeout(async () => {
+              if (newSession.user) {
+                await fetchUserDetails(newSession.user)
+              }
+            }, 100)
           } else if (event === 'SIGNED_OUT') {
             setSession(null)
             setUser(null)
             setSubscriptionInfo(null)
             setIsLoading(false)
           } else if (event === 'TOKEN_REFRESHED' && newSession) {
+            console.log('Token refreshed via auth state change')
             setSession(newSession)
-            await fetchUserDetails(newSession.user)
           }
         }
       )
@@ -413,39 +422,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+
   // Inizializzazione e setup degli handler di autenticazione
   useEffect(() => {
     if (isInitialized) return
-    initAuth()
+    
+    const cleanup = initAuth()
+    
+    return () => {
+      cleanup.then(cleanupFn => cleanupFn?.())
+    }
   }, [isInitialized])
 
-  // Configura un timer per verificare e aggiornare periodicamente la sessione
-  useEffect(() => {
-    if (!session) return
 
-    // Controlla ogni 5 minuti se la sessione deve essere aggiornata
-    const interval = setInterval(async () => {
-      if (!session || isLoading) return
-
-      // Se mancano meno di 10 minuti alla scadenza
-      const expiresAt = session.expires_at
-      const now = Math.floor(Date.now() / 1000)
-      const timeLeft = expiresAt ? expiresAt - now : 0
-
-      if (timeLeft < 600 && timeLeft > 0) {
-        console.log('Session expiring soon, refreshing...')
-        await refreshSession(true)
-      } else if (timeLeft <= 0) {
-        console.log('Session expired, signing out...')
-        setSession(null)
-        setUser(null)
-        setSubscriptionInfo(null)
-        setIsLoading(false)
-      }
-    }, 300000) // Ogni 5 minuti
-
-    return () => clearInterval(interval)
-  }, [session, isLoading])
+  // Timer periodico rimosso temporaneamente per evitare interferenze durante il login
 
   useEffect(() => {
     if (user && !user?.user_metadata.is_staff) {
