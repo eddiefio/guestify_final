@@ -94,16 +94,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Funzione per verificare e aggiornare la sessione - SEMPLIFICATA
+  // Funzione per verificare e aggiornare la sessione - MIGLIORATA
   const refreshSession = async (forceRefresh = false) => {
     try {
       console.log('Refreshing auth session...')
+
+      // Prevent refresh if we're already loading
+      if (isLoading && !forceRefresh) {
+        console.log('Already loading, skipping refresh')
+        return !!session
+      }
 
       // Con @supabase/ssr, getSession è tutto quello che serve
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
         console.error('Error getting session:', error)
+        // Try to refresh the session if we get an error
+        if (session && forceRefresh) {
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          if (!refreshError && refreshData.session) {
+            console.log('Session refreshed successfully')
+            setSession(refreshData.session)
+            await fetchUserDetails(refreshData.session.user)
+            await fetchSubscriptionInfo(refreshData.session.user.id)
+            setIsLoading(false)
+            return true
+          }
+        }
         setSession(null)
         setUser(null)
         setSubscriptionInfo(null)
@@ -115,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Session found via client')
         setSession(data.session)
         await fetchUserDetails(data.session.user)
+        await fetchSubscriptionInfo(data.session.user.id)
         setIsLoading(false)
         return true
       } else {
@@ -346,20 +365,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const initAuth = async () => {
     console.log('Initializing auth...')
     
-    // GARANTISCE che loading sia sempre falso alla fine
-    const cleanup = () => {
-      setIsLoading(false)
-      setIsInitialized(true)
-    }
-
     try {
-      // Prima ottieni la sessione corrente DIRETTAMENTE
+      // Prima ottieni la sessione corrente
       const { data, error } = await supabase.auth.getSession()
       
       if (!error && data.session) {
         console.log('Initial session found')
         setSession(data.session)
         await fetchUserDetails(data.session.user)
+        await fetchSubscriptionInfo(data.session.user.id)
       } else {
         console.log('No initial session found')
         setSession(null)
@@ -367,29 +381,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSubscriptionInfo(null)
       }
 
-      // Configura l'ascoltatore SEMPLIFICATO per i cambiamenti di autenticazione
+      // Configura l'ascoltatore per i cambiamenti di autenticazione
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event: string, newSession: Session | null) => {
           console.log('Auth state changed:', event, !!newSession)
 
-          if (event === 'SIGNED_IN' && newSession) {
-            setSession(newSession)
-            await fetchUserDetails(newSession.user)
-            setIsLoading(false)
-          } else if (event === 'SIGNED_OUT') {
-            setSession(null)
-            setUser(null)
-            setSubscriptionInfo(null)
-            setIsLoading(false)
-          } else if (event === 'TOKEN_REFRESHED' && newSession) {
-            setSession(newSession)
-            await fetchUserDetails(newSession.user)
-            setIsLoading(false)
+          switch (event) {
+            case 'SIGNED_IN':
+              if (newSession) {
+                setSession(newSession)
+                await fetchUserDetails(newSession.user)
+                await fetchSubscriptionInfo(newSession.user.id)
+              }
+              break
+            case 'SIGNED_OUT':
+              setSession(null)
+              setUser(null)
+              setSubscriptionInfo(null)
+              break
+            case 'TOKEN_REFRESHED':
+              if (newSession) {
+                setSession(newSession)
+                // No need to refetch user details on token refresh
+              }
+              break
+            case 'USER_UPDATED':
+              if (newSession) {
+                setSession(newSession)
+                await fetchUserDetails(newSession.user)
+              }
+              break
           }
+          
+          // Always ensure loading is false after auth state changes
+          setIsLoading(false)
         }
       )
 
-      cleanup()
+      setIsLoading(false)
+      setIsInitialized(true)
 
       return () => {
         authListener?.subscription.unsubscribe()
@@ -399,7 +429,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null)
       setUser(null)
       setSubscriptionInfo(null)
-      cleanup()
+      setIsLoading(false)
+      setIsInitialized(true)
     }
   }
 
@@ -409,55 +440,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth()
   }, [isInitialized])
 
-  // TIMEOUT ASSOLUTO per evitare infinite loading - SOLUZIONE DEFINITIVA
+  // Timeout di sicurezza per evitare loading infinito
   useEffect(() => {
     if (isLoading) {
       const timeout = setTimeout(() => {
-        console.log('FORCE CLEAR LOADING: timeout after 3 seconds')
+        console.log('Force clearing loading state after timeout')
         setIsLoading(false)
-      }, 3000) // Force clear loading after 3 seconds
+      }, 5000) // 5 secondi di timeout
 
       return () => clearTimeout(timeout)
     }
   }, [isLoading])
 
-  // Semplificato: ricontrollo sessione quando la tab diventa visibile
+  // Gestione semplificata della visibilità della scheda
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && isInitialized) {
-        console.log('Tab became visible, force clear loading and check session...')
+    if (!isInitialized) return
+
+    let isRefreshing = false
+    
+    const handleVisibilityChange = async () => {
+      // Solo quando la scheda diventa visibile
+      if (!document.hidden && !isRefreshing) {
+        isRefreshing = true
+        console.log('Tab became visible, checking session...')
         
-        // FORCE CLEAR LOADING immediately on tab focus
-        setIsLoading(false)
-        
-        // Then check session without setting loading
-        supabase.auth.getSession().then(({ data, error }: any) => {
-          if (!error && data.session) {
-            console.log('Session found on tab focus')
-            if (!session || session.access_token !== data.session.access_token) {
-              setSession(data.session)
-              fetchUserDetails(data.session.user)
-            }
-          } else if (session) {
-            console.log('No session found on tab focus, clearing state')
-            setSession(null)
-            setUser(null)
-            setSubscriptionInfo(null)
-          }
-        }).catch((err: any) => {
-          console.error('Error checking session on tab focus:', err)
-        })
+        try {
+          // Usa refreshSession invece di getSession direttamente
+          const hasSession = await refreshSession(false)
+          console.log('Session check result:', hasSession)
+        } catch (error) {
+          console.error('Error checking session on visibility change:', error)
+        } finally {
+          isRefreshing = false
+        }
       }
     }
 
+    // Aggiungi listener solo per visibilitychange
     document.addEventListener('visibilitychange', handleVisibilityChange)
-    window.addEventListener('focus', handleVisibilityChange)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
-      window.removeEventListener('focus', handleVisibilityChange)
     }
-  }, [isInitialized, session])
+  }, [isInitialized, refreshSession])
 
   // Timer semplificato per refresh sessione
   useEffect(() => {
