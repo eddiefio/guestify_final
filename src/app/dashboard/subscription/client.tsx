@@ -48,13 +48,11 @@ export default function PurchaseSubscription() {
       const APIResource = createAPIResource(session.access_token)
 
       const apiResponse = await APIResource.post('/create-stripe-checkout', payload)
-      if (!apiResponse.data) {
-        throw new Error('Failed to create donation statistics')
+      if (!apiResponse?.data?.url) {
+        throw new Error('Failed to create checkout session');
       }
-      console.log('apiResponse', apiResponse);
       const stripeUrl = apiResponse.data.url;
       window.location.href = stripeUrl;
-
     } catch (error) {
       console.error("Error creating checkout session:", error);
       alert("There was an error processing your request. Please try again.");

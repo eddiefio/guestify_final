@@ -8,34 +8,17 @@ import { SubscriptionPlan, SubscriptionStatus } from "@/utils/enums"
 interface SubscriptionSectionProps {
   subscription?: any
   isLoading?: boolean
-  onCancelSubscription?: () => Promise<void>
+  onManageSubscription?: () => Promise<string | undefined>
 }
 
 export default function SubscriptionSection({
   subscription,
   isLoading = false,
-  onCancelSubscription,
+  onManageSubscription,
 }: SubscriptionSectionProps) {
-  const [isCanceling, setIsCanceling] = useState(false)
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
 
-  const handleCancelSubscription = async () => {
-    if (!onCancelSubscription) return
-
-    try {
-      setIsCanceling(true)
-      await onCancelSubscription()
-      toast.success("Subscription canceled successfully")
-      setShowCancelConfirm(false)
-    } catch (error) {
-      console.error("Error canceling subscription:", error)
-      toast.error("Failed to cancel subscription")
-    } finally {
-      setIsCanceling(false)
-    }
-  }
-
-  const formatDate = (date: Date | null | undefined) => {
+  const formatDate = (date: string | null) => {
     if (!date) return "N/A"
     return new Date(date).toLocaleDateString("en-US", {
       year: "numeric",
@@ -44,12 +27,11 @@ export default function SubscriptionSection({
     })
   }
 
-  const getDaysRemaining = (date: Date | null | undefined) => {
-    if (!date) return 0
-    const now = new Date()
-    const endDate = new Date(date)
-    const diffTime = endDate.getTime() - now.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const getDaysRemaining = (end: string | null) => {
+    if (!end) return 0
+    const now = Date.now()
+    const then = new Date(end).getTime()
+    const diffDays = Math.ceil((then - now) / (1000 * 60 * 60 * 24))
     return diffDays > 0 ? diffDays : 0
   }
 
@@ -62,23 +44,46 @@ export default function SubscriptionSection({
     }
   }
 
+  const handleManageSubscription = async () => {
+    if (!onManageSubscription) return
+    try {
+      setIsRedirecting(true)
+      const url = await onManageSubscription()
+      if (!url) throw new Error("No URL returned")
+      window.location.href = url
+    } catch (error) {
+      console.error("Error redirecting to customer portal:", error)
+      toast.error("Failed to redirect to subscription management.")
+    } finally {
+      setIsRedirecting(false)
+    }
+  }
+
   const { name, price } = getPlanDetails()
-  const isTrialActive = subscription?.status === SubscriptionStatus.TRIALING
-  const daysRemaining = isTrialActive && subscription?.trial_end ? getDaysRemaining(subscription.trial_end) : 0
+
+  // Only treat as “in trial” if Stripe says TRIALING *and* they haven’t consumed it yet
+  const isTrialActive = subscription?.status === SubscriptionStatus.TRIALING && subscription?.trial_end && new Date(subscription.trial_end) > new Date()
+
+  // Prefer the server‐computed days; fallback to date diff
+  const daysRemaining = isTrialActive ? getDaysRemaining(subscription!.trial_end || subscription!.current_period_end) : 0
 
   return (
     <div className="bg-white rounded-lg shadow p-6 mb-8">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Your Subscription</h2>
+      <h2 className="text-xl font-semibold mb-4 text-gray-800">
+        Your Subscription
+      </h2>
 
       {isLoading ? (
         <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5E2BFF]"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#5E2BFF]" />
         </div>
       ) : !subscription ? (
         <div className="text-center py-6 border border-dashed border-gray-300 rounded-lg">
-          <p className="text-gray-500 mb-4">You don't have an active subscription</p>
+          <p className="text-gray-500 mb-4">
+            You don't have an active subscription
+          </p>
           <a
-            href="/subscription"
+            href="/dashboard/subscription"
             className="inline-block py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#5E2BFF] hover:bg-[#4a22cc] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
           >
             Choose a Plan
@@ -91,19 +96,29 @@ export default function SubscriptionSection({
               <div className="flex items-center mb-2">
                 <h3 className="text-lg font-medium text-gray-900">{name}</h3>
                 {isTrialActive && (
-                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-[#ffde59] text-gray-900 rounded">TRIAL</span>
+                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-[#ffde59] text-gray-900 rounded">
+                    TRIAL
+                  </span>
                 )}
                 {subscription.status === SubscriptionStatus.ACTIVE && !isTrialActive && (
-                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-green-100 text-green-800 rounded">ACTIVE</span>
+                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-green-100 text-green-800 rounded">
+                    ACTIVE
+                  </span>
                 )}
                 {subscription.status === SubscriptionStatus.CANCELLED && (
-                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-gray-100 text-gray-800 rounded">CANCELED</span>
+                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-gray-100 text-gray-800 rounded">
+                    CANCELLED
+                  </span>
                 )}
                 {subscription.status === SubscriptionStatus.UNPAID && (
-                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded">UNPAID</span>
+                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-red-100 text-red-800 rounded">
+                    UNPAID
+                  </span>
                 )}
                 {subscription.status === SubscriptionStatus.PENDING && (
-                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-yellow-100 text-yellow-800 rounded">PENDING</span>
+                  <span className="ml-2 px-2 py-1 text-xs font-bold bg-yellow-100 text-yellow-800 rounded">
+                    PENDING
+                  </span>
                 )}
               </div>
               <p className="text-gray-600">{price}</p>
@@ -117,7 +132,7 @@ export default function SubscriptionSection({
                     {daysRemaining} {daysRemaining === 1 ? "day" : "days"} remaining in trial
                   </span>
                 </div>
-              ) : subscription.status === "active" ? (
+              ) : subscription.status === SubscriptionStatus.ACTIVE ? (
                 <div className="flex items-center text-sm text-gray-600">
                   <Calendar className="h-4 w-4 mr-1" />
                   <span>Renews on {formatDate(subscription.current_period_end)}</span>
@@ -135,8 +150,8 @@ export default function SubscriptionSection({
                   </div>
                   <div className="ml-3">
                     <p className="text-sm text-blue-700">
-                      You're currently in your 14-day free trial. You won't be charged until{" "}
-                      {formatDate(subscription.trial_end)}.
+                      You’re in your free trial and won’t be charged until{" "}
+                      {formatDate(subscription.trial_end)}
                     </p>
                   </div>
                 </div>
@@ -154,63 +169,17 @@ export default function SubscriptionSection({
               </div>
             </div>
 
-            {(isTrialActive || subscription.status === SubscriptionStatus.ACTIVE) && !showCancelConfirm && (
-              <button
-                onClick={() => setShowCancelConfirm(true)}
-                className="mt-4 w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
-              >
-                {isTrialActive ? "Cancel Trial" : "Cancel Subscription"}
-              </button>
-            )}
-
-            {showCancelConfirm && (
-              <div className="mt-4 border border-red-200 rounded-md p-4 bg-red-50">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <AlertCircle className="h-5 w-5 text-red-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Are you sure you want to cancel?</h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      <p>
-                        {isTrialActive
-                          ? "Your trial will end immediately and you'll lose access to premium features."
-                          : "You'll still have access until the end of your current billing period."}
-                      </p>
-                    </div>
-                    <div className="mt-4 flex space-x-3">
-                      <button
-                        type="button"
-                        onClick={handleCancelSubscription}
-                        disabled={isCanceling}
-                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        {isCanceling ? "Canceling..." : "Yes, Cancel"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelConfirm(false)}
-                        className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
-                      >
-                        No, Keep Subscription
-                      </button>
-                    </div>
-                  </div>
-                  <div className="ml-auto pl-3">
-                    <div className="-mx-1.5 -my-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setShowCancelConfirm(false)}
-                        className="inline-flex rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        <span className="sr-only">Dismiss</span>
-                        <X className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+            <button
+              onClick={handleManageSubscription}
+              disabled={isRedirecting}
+              className="mt-4 w-full py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#5E2BFF]"
+            >
+              {isRedirecting
+                ? "Redirecting..."
+                : subscription.status === SubscriptionStatus.ACTIVE || isTrialActive
+                  ? "Manage Subscription"
+                  : "View Subscription"}
+            </button>
           </div>
         </>
       )}

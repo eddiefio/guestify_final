@@ -1,4 +1,4 @@
-import { corsHeaders, formCorsHeaders, SubscriptionStatus } from "./mod.ts";
+import { corsHeaders, formCorsHeaders, SubscriptionPlan, SubscriptionStatus } from "./mod.ts";
 
 export const formatResponse = ({ data = {}, message = "ok", error = false }) => {
   return JSON.stringify({
@@ -28,7 +28,7 @@ export const formatResponseHeadersForForm = ({ headers = {}, status = 200 }) => 
   };
 };
 
-// Map Stripe status to your enum
+// Map Stripe status to database enum
 export const stripeStatusToAppStatus: { [key: string]: SubscriptionStatus } = {
   trialing: SubscriptionStatus.TRIALING,
   active: SubscriptionStatus.ACTIVE,
@@ -38,4 +38,10 @@ export const stripeStatusToAppStatus: { [key: string]: SubscriptionStatus } = {
   incomplete: SubscriptionStatus.PENDING,
   incomplete_expired: SubscriptionStatus.CANCELLED,
   paused: SubscriptionStatus.PAUSED,
+};
+
+// Map Stripe plan to database enum
+export const stripePlanToAppPlan: { [key: string]: SubscriptionPlan } = {
+  month: SubscriptionPlan.MONTHLY,
+  year: SubscriptionPlan.YEARLY,
 };
