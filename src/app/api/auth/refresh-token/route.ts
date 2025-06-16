@@ -44,7 +44,6 @@ export async function POST(req: NextRequest) {
         headers: res.headers,
       })
     }
-  )
 
     return new NextResponse(JSON.stringify({ session: data.session }), {
       status: 200,
