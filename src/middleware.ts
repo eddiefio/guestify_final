@@ -20,10 +20,11 @@ export async function middleware(request: NextRequest) {
     '/auth/confirm'
   ];
 
-  // Percorsi per le API pubbliche di pagamento
+  // Percorsi per le API pubbliche di pagamento e auth
   const publicApiPaths = [
     '/api/orders/',
-    '/api/create-payment-intent'
+    '/api/create-payment-intent',
+    '/api/auth/refresh-token'
   ];
 
   // Verifica esplicitamente se abbiamo un token_hash (link di recupero password)

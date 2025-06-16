@@ -58,9 +58,9 @@ export default function AddCityGuide() {
       return
     }
     
+    setUploading(true)
+    
     try {
-      setUploading(true)
-      
       // Prima verifichiamo che l'utente sia il proprietario
       const { data: propertyData, error: propertyError } = await supabase
         .from('properties')
@@ -119,12 +119,20 @@ export default function AddCityGuide() {
       if (error) throw error
       
       toast.success('City guide added successfully')
-      router.push(`/dashboard/property/${propertyId}/city-guide`)
       
-    } catch (error) {
+      // Reset form
+      setTitle('')
+      setFile(null)
+      setFilePreview(null)
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push(`/dashboard/property/${propertyId}/city-guide`)
+      }, 1000)
+      
+    } catch (error: any) {
       console.error('Error adding city guide:', error)
-      toast.error('Failed to add city guide')
-    } finally {
+      toast.error(error.message || 'Failed to add city guide')
       setUploading(false)
     }
   }

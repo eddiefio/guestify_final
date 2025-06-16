@@ -20,13 +20,73 @@ interface Property {
 }
 
 export default function DashboardClient() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading: authLoading } = useAuth()
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [hostName, setHostName] = useState('')
   const router = useRouter()
+  const isMounted = React.useRef(false)
+
+  // Function to fetch properties
+  const fetchProperties = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      
+      // Fetch properties
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('host_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      
+      // Fetch additional data for properties
+      if (data && data.length > 0) {
+        const propertiesWithData = await Promise.all(
+          data.map(async (property: {
+            id: string;
+            name: string;
+            address: string;
+            city?: string;
+            country?: string;
+          }) => {
+            // Check if property has wifi credentials
+            const { count: wifiCount, error: wifiError } = await supabase
+              .from('wifi_credentials')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            // Check if property has how things work guides
+            const { count: howThingsCount, error: howThingsError } = await supabase
+              .from('how_things_work')
+              .select('id', { count: 'exact', head: true })
+              .eq('property_id', property.id)
+            
+            return {
+              ...property,
+              has_wifi: wifiCount ? wifiCount > 0 : false,
+              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
+            }
+          })
+        )
+        
+        setProperties(propertiesWithData)
+      } else {
+        setProperties([])
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error)
+      toast.error('Error loading properties')
+      setProperties([]) // Set empty array on error to prevent infinite loading
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Load user profile and get full name
   useEffect(() => {
@@ -55,65 +115,69 @@ export default function DashboardClient() {
 
   // Load user properties
   useEffect(() => {
-    if (!user) return
+    // Track if component is mounted
+    isMounted.current = true
+    
+    // If auth is still loading, wait
+    if (authLoading) {
+      return
+    }
+    
+    // If no user after auth loaded, stop loading
+    if (!authLoading && !user) {
+      setLoading(false)
+      return
+    }
+    
+    // If we have a user, fetch properties
+    if (user) {
+      // Reset loading state first to ensure clean state
+      setLoading(true)
+      fetchProperties()
+    }
+    
+    // Cleanup
+    return () => {
+      isMounted.current = false
+      // Ensure loading is set to false on unmount
+      setLoading(false)
+    }
+  }, [authLoading, user])
 
-    const fetchProperties = async () => {
-      try {
-        setLoading(true)
-        
-        // Fetch properties
-        const { data, error } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('host_id', user.id)
-          .order('created_at', { ascending: false })
-
-        if (error) throw error
-        
-        // Fetch additional data for properties
-        if (data && data.length > 0) {
-          const propertiesWithData = await Promise.all(
-            data.map(async (property: {
-              id: string;
-              name: string;
-              address: string;
-              city?: string;
-              country?: string;
-            }) => {
-              // Check if property has wifi credentials
-              const { count: wifiCount, error: wifiError } = await supabase
-                .from('wifi_credentials')
-                .select('id', { count: 'exact', head: true })
-                .eq('property_id', property.id)
-              
-              // Check if property has how things work guides
-              const { count: howThingsCount, error: howThingsError } = await supabase
-                .from('how_things_work')
-                .select('id', { count: 'exact', head: true })
-                .eq('property_id', property.id)
-              
-              return {
-                ...property,
-                has_wifi: wifiCount ? wifiCount > 0 : false,
-                has_how_things_work: howThingsCount ? howThingsCount > 0 : false
-              }
-            })
-          )
-          
-          setProperties(propertiesWithData)
-        } else {
-          setProperties([])
-        }
-      } catch (error) {
-        console.error('Error fetching properties:', error)
-        toast.error('Error loading properties')
-      } finally {
-        setLoading(false)
+  // Handle page visibility change to refresh data when returning to the app
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    
+    const handleVisibilityChange = () => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
+      if (!document.hidden && user && !authLoading && isMounted.current) {
+        // Add a small delay to prevent race conditions with navigation
+        timeoutId = setTimeout(() => {
+          // Only refresh if component is still mounted and not already loading
+          if (isMounted.current && !loading) {
+            // Only refresh if we don't have properties or if it's been more than 30 seconds
+            const shouldRefresh = properties.length === 0
+            if (shouldRefresh) {
+              fetchProperties()
+            }
+          }
+        }, 100)
       }
     }
 
-    fetchProperties()
-  }, [user])
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [user, authLoading, loading])
 
   // Handle the Extra Services link click
   const handleExtraServicesClick = async (propertyId: string, e: React.MouseEvent) => {
@@ -185,46 +249,7 @@ export default function DashboardClient() {
       toast.success('Example property created successfully!')
       
       // Refresh properties list
-      const { data, error: fetchError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('host_id', user.id)
-        .order('created_at', { ascending: false })
-        
-      if (fetchError) throw fetchError
-      
-      // Fetch additional data for properties
-      if (data && data.length > 0) {
-        const propertiesWithData = await Promise.all(
-          data.map(async (property: {
-            id: string;
-            name: string;
-            address: string;
-            city?: string;
-            country?: string;
-          }) => {
-            // Check if property has wifi credentials
-            const { count: wifiCount, error: wifiError } = await supabase
-              .from('wifi_credentials')
-              .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id)
-            
-            // Check if property has how things work guides
-            const { count: howThingsCount, error: howThingsError } = await supabase
-              .from('how_things_work')
-              .select('id', { count: 'exact', head: true })
-              .eq('property_id', property.id)
-            
-            return {
-              ...property,
-              has_wifi: wifiCount ? wifiCount > 0 : false,
-              has_how_things_work: howThingsCount ? howThingsCount > 0 : false
-            }
-          })
-        )
-        
-        setProperties(propertiesWithData)
-      }
+      await fetchProperties()
       
     } catch (error) {
       console.error('Error creating template property:', error)
@@ -250,41 +275,43 @@ export default function DashboardClient() {
                 <h1 className="text-lg sm:text-xl font-bold text-[#5E2BFF]">
                   Welcome back, <span className="text-[#5E2BFF] border-b-2 border-[#ffde59]">{hostName}</span>!
                 </h1>
-                <div className="text-sm text-gray-600 font-medium mt-1 sm:mt-0">
-                  {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
-                </div>
               </div>
               <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1">
                 Your dashboard is ready.
               </p>
+              <div className="text-sm text-gray-600 font-medium mt-1">
+                {new Date().toLocaleDateString('en-US', {day: 'numeric', month: 'long', year: 'numeric'})}
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row w-full md:w-auto gap-2 mt-2 md:mt-0">
-              <div className="relative w-full md:w-60">
-                <input
-                  type="text"
-                  placeholder="Search properties..."
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
+            <div className="flex flex-col sm:flex-row w-full md:w-auto mt-2 md:mt-0">
+              <div className="flex flex-col sm:flex-row w-full md:w-auto md:flex-col md:items-end gap-2">
+                <Link href="/dashboard/add-property">
+                  <button className="bg-[#ffde59] text-black px-4 py-2 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto md:w-60 md:whitespace-nowrap">
+                    <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Add Property
+                  </button>
+                </Link>
+                <div className="relative w-full md:w-60">
+                  <input
+                    type="text"
+                    placeholder="Search properties..."
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#5E2BFF] font-medium"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
                 </div>
               </div>
-              <Link href="/dashboard/add-property">
-                <button className="bg-[#ffde59] text-black px-4 py-2 rounded-lg hover:bg-[#f8c70a] transition duration-200 font-bold shadow-sm w-full sm:w-auto">
-                  <svg className="w-5 h-5 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                  </svg>
-                  Add Property
-                </button>
-              </Link>
             </div>
           </div>
 
-          {loading ? (
+          {loading || authLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
               <div className="w-12 h-12 border-4 border-[#5E2BFF] border-t-[#ffde59] rounded-full animate-spin mb-4"></div>
               <p className="text-gray-600 font-medium">Loading properties...</p>

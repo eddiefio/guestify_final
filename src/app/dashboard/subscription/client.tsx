@@ -16,11 +16,11 @@ export default function PurchaseSubscription() {
   const router = useRouter()
 
   const features = [
-    "Unlimited access to all content",
-    "Ad-free experience",
-    "Premium support",
-    "Early access to new features",
-    "Download for offline use",
+    "Save time answering the same guest questions",
+    "Unlimited properties",
+    "Full access to all features",
+    "No commission on extra services",
+    "Cancel anytime",
   ];
 
   const handleSelectPlan = (id: string) => {
@@ -120,7 +120,7 @@ export default function PurchaseSubscription() {
             price="€9.90"
             period="per month"
             features={features}
-            buttonText={isRedirecting && selectedPlan === "monthly" ? "Redirecting..." : "Get Started"}
+            buttonText={isRedirecting && selectedPlan === "monthly" ? "Redirecting..." : "Start your 14-day free trial"}
             isPrimary={selectedPlan === "monthly"}
             isSelected={selectedPlan === "monthly"}
             onSelect={handleSelectPlan}
@@ -134,7 +134,7 @@ export default function PurchaseSubscription() {
             price="€89.90"
             period="per year"
             features={features}
-            buttonText={isRedirecting && selectedPlan === "yearly" ? "Redirecting..." : "Get Started"}
+            buttonText={isRedirecting && selectedPlan === "yearly" ? "Redirecting..." : "Start your 14-day free trial"}
             isPrimary={selectedPlan === "yearly"}
             badge={selectedPlan === "yearly" ? "BEST VALUE" : undefined}
             savings="Save €28.90 compared to monthly"
@@ -145,10 +145,7 @@ export default function PurchaseSubscription() {
         </div>
 
         <div className="mt-16 text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <Check className="h-5 w-5 text-[#5E2BFF]" />
-            <p className="text-gray-700">No credit card required</p>
-          </div>
+          
           <p className="text-gray-600 max-w-lg mx-auto">
             All plans come with a 14-day free trial. Cancel anytime during your trial and you won't be charged.
           </p>

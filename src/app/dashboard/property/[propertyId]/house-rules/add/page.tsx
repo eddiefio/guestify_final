@@ -26,9 +26,9 @@ export default function AddHouseRule() {
       return
     }
     
+    setLoading(true)
+    
     try {
-      setLoading(true)
-      
       // Prima verifichiamo che l'utente sia il proprietario
       const { data: propertyData, error: propertyError } = await supabase
         .from('properties')
@@ -59,12 +59,19 @@ export default function AddHouseRule() {
       if (error) throw error
       
       toast.success('House rule added successfully')
-      router.push(`/dashboard/property/${propertyId}/house-rules`)
       
-    } catch (error) {
+      // Reset form
+      setTitle('')
+      setDescription('')
+      
+      // Redirect after a short delay
+      setTimeout(() => {
+        router.push(`/dashboard/property/${propertyId}/house-rules`)
+      }, 1000)
+      
+    } catch (error: any) {
       console.error('Error adding house rule:', error)
-      toast.error('Failed to add house rule')
-    } finally {
+      toast.error(error.message || 'Failed to add house rule')
       setLoading(false)
     }
   }

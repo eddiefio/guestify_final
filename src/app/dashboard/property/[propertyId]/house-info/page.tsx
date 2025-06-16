@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
@@ -70,98 +70,148 @@ export default function HouseInfo() {
   const [editContent, setEditContent] = useState('')
   const { user } = useAuth()
   const router = useRouter()
+  const isMounted = useRef(false)
+
+  // Function to fetch property data
+  const fetchPropertyData = async () => {
+    if (!user || !propertyId || !isMounted.current) return
+    
+    try {
+      setLoading(true)
+      
+      // Carica i dati della proprietà
+      const { data: propertyData, error: propertyError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .eq('host_id', user.id)
+        .single()
+      
+      if (propertyError) throw propertyError
+      if (!propertyData) {
+        toast.error('Property not found or access denied')
+        router.push('/dashboard')
+        return
+      }
+      
+      setProperty(propertyData)
+      
+      // Carica le regole della casa
+      const { data: rulesData, error: rulesError } = await supabase
+        .from('house_rules')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+      
+      if (rulesError) throw rulesError
+      setHouseRules(rulesData || [])
+      
+      // Carica le credenziali WiFi
+      const { data: wifiData, error: wifiError } = await supabase
+        .from('wifi_credentials')
+        .select('*')
+        .eq('property_id', propertyId)
+        .single()
+      
+      // È normale che non ci siano credenziali WiFi, quindi non lanciamo errori
+      setWifiCredentials(wifiData || null)
+      
+      // Carica le istruzioni "How Things Work"
+      const { data: howThingsData, error: howThingsError } = await supabase
+        .from('how_things_work')
+        .select('*')
+        .eq('property_id', propertyId)
+        .order('created_at', { ascending: false })
+      
+      if (howThingsError) throw howThingsError
+      setHowThingsWork(howThingsData || [])
+      
+      // Carica le altre sezioni di house_info
+      const { data: sectionsData, error: sectionsError } = await supabase
+        .from('house_info')
+        .select('*')
+        .eq('property_id', propertyId)
+        .in('section_type', [
+          'checkin_information', 
+          'before_you_leave', 
+          'checkout_information', 
+          'useful_contacts', 
+          'book_again'
+        ])
+      
+      if (sectionsError) throw sectionsError
+      
+      // Organizza i dati per sezione
+      const sectionsMap = { ...houseInfoSections }
+      
+      if (sectionsData) {
+        sectionsData.forEach((section: HouseInfoItem) => {
+          sectionsMap[section.section_type] = section
+        })
+      }
+      
+      setHouseInfoSections(sectionsMap)
+      
+    } catch (error) {
+      console.error('Error fetching property data:', error)
+      toast.error('Failed to load property information')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Carica i dati della proprietà e tutte le informazioni correlate
   useEffect(() => {
-    if (!user || !propertyId) return
-
-    const fetchPropertyData = async () => {
-      try {
-        setLoading(true)
-        
-        // Carica i dati della proprietà
-        const { data: propertyData, error: propertyError } = await supabase
-          .from('properties')
-          .select('*')
-          .eq('id', propertyId)
-          .eq('host_id', user.id)
-          .single()
-        
-        if (propertyError) throw propertyError
-        if (!propertyData) {
-          toast.error('Property not found or access denied')
-          router.push('/dashboard')
-          return
-        }
-        
-        setProperty(propertyData)
-        
-        // Carica le regole della casa
-        const { data: rulesData, error: rulesError } = await supabase
-          .from('house_rules')
-          .select('*')
-          .eq('property_id', propertyId)
-          .order('created_at', { ascending: false })
-        
-        if (rulesError) throw rulesError
-        setHouseRules(rulesData || [])
-        
-        // Carica le credenziali WiFi
-        const { data: wifiData, error: wifiError } = await supabase
-          .from('wifi_credentials')
-          .select('*')
-          .eq('property_id', propertyId)
-          .single()
-        
-        // È normale che non ci siano credenziali WiFi, quindi non lanciamo errori
-        setWifiCredentials(wifiData || null)
-        
-        // Carica le istruzioni "How Things Work"
-        const { data: howThingsData, error: howThingsError } = await supabase
-          .from('how_things_work')
-          .select('*')
-          .eq('property_id', propertyId)
-          .order('created_at', { ascending: false })
-        
-        if (howThingsError) throw howThingsError
-        setHowThingsWork(howThingsData || [])
-        
-        // Carica le altre sezioni di house_info
-        const { data: sectionsData, error: sectionsError } = await supabase
-          .from('house_info')
-          .select('*')
-          .eq('property_id', propertyId)
-          .in('section_type', [
-            'checkin_information', 
-            'before_you_leave', 
-            'checkout_information', 
-            'useful_contacts', 
-            'book_again'
-          ])
-        
-        if (sectionsError) throw sectionsError
-        
-        // Organizza i dati per sezione
-        const sectionsMap = { ...houseInfoSections }
-        
-        if (sectionsData) {
-          sectionsData.forEach((section: HouseInfoItem) => {
-            sectionsMap[section.section_type] = section
-          })
-        }
-        
-        setHouseInfoSections(sectionsMap)
-        
-      } catch (error) {
-        console.error('Error fetching property data:', error)
-        toast.error('Failed to load property information')
-      } finally {
-        setLoading(false)
-      }
+    isMounted.current = true
+    
+    if (!user || !propertyId) {
+      setLoading(false)
+      return
     }
 
     fetchPropertyData()
-  }, [propertyId, user, router])
+    
+    return () => {
+      isMounted.current = false
+      // Ensure loading is set to false on unmount
+      setLoading(false)
+    }
+  }, [propertyId, user])
+
+  // Handle page visibility change to refresh data when returning to the app
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout | null = null
+    
+    const handleVisibilityChange = () => {
+      // Clear any existing timeout
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      
+      if (!document.hidden && user && propertyId && isMounted.current) {
+        // Add a small delay to prevent race conditions with navigation
+        timeoutId = setTimeout(() => {
+          // Only refresh if component is still mounted and not already loading
+          if (isMounted.current && !loading) {
+            // Only refresh if we don't have property data
+            const shouldRefresh = !property
+            if (shouldRefresh) {
+              fetchPropertyData()
+            }
+          }
+        }, 100)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+    }
+  }, [user, propertyId, loading])
 
   // Funzione per cambiare tab
   const handleTabChange = (tab: string) => {
@@ -364,7 +414,7 @@ export default function HouseInfo() {
         ) : (
           <div className={`rounded-lg p-6 bg-${sectionType === 'book_again' ? 'purple' : 'gray'}-50`}>
             <div className="prose max-w-none">
-              {section.content.split('\n').map((paragraph, index) => (
+              {section.content.split('\n').map((paragraph: string, index: number) => (
                 <p key={index} className="mb-2 text-gray-700">
                   {paragraph}
                 </p>
@@ -548,4 +598,4 @@ export default function HouseInfo() {
       </Layout>
     </ProtectedRoute>
   )
-} 
+}

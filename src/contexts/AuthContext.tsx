@@ -34,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isInitialized, setIsInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastRefreshAttempt, setLastRefreshAttempt] = useState<number>(0)
   const router = useRouter()
 
   const fetchUserDetails = async (userInfo: User) => {
@@ -93,38 +94,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  // Funzione per verificare e aggiornare la sessione
+  // Funzione per verificare e aggiornare la sessione - MIGLIORATA
   const refreshSession = async (forceRefresh = false) => {
     try {
-      setIsLoading(true)
       console.log('Refreshing auth session...')
 
-      // Tenta il refresh tramite API - metodo più affidabile
-      try {
-        const response = await fetch('/api/auth/refresh-token', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          cache: 'no-store',
-        })
-
-        if (!response.ok) throw new Error('Refresh failed')
-
-        const { session: apiSession } = await response.json()
-        setSession(apiSession)
-        await fetchUserDetails(apiSession.user)
-
-        setIsLoading(false)
-        return true
-      } catch (err) {
-        console.error('Error refreshing via API:', err)
-        // Continua con l'approccio Admin
+      // Prevent refresh if we're already loading
+      if (isLoading && !forceRefresh) {
+        console.log('Already loading, skipping refresh')
+        return !!session
       }
 
-      // Usa il metodo standard client come fallback
+      // Con @supabase/ssr, getSession è tutto quello che serve
       const { data, error } = await supabase.auth.getSession()
 
       if (error) {
         console.error('Error getting session:', error)
+        // Try to refresh the session if we get an error
+        if (session && forceRefresh) {
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          if (!refreshError && refreshData.session) {
+            console.log('Session refreshed successfully')
+            setSession(refreshData.session)
+            await fetchUserDetails(refreshData.session.user)
+            await fetchSubscriptionInfo(refreshData.session.user.id)
+            setIsLoading(false)
+            return true
+          }
+        }
         setSession(null)
         setUser(null)
         setSubscriptionInfo(null)
@@ -136,6 +133,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('Session found via client')
         setSession(data.session)
         await fetchUserDetails(data.session.user)
+        await fetchSubscriptionInfo(data.session.user.id)
         setIsLoading(false)
         return true
       } else {
@@ -150,6 +148,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error('Exception in refreshSession:', err)
       setSession(null)
       setUser(null)
+      setSubscriptionInfo(null)
       setIsLoading(false)
       return false
     }
@@ -364,32 +363,72 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const initAuth = async () => {
+    console.log('Initializing auth...')
+    
     try {
-      // Tenta di ottenere la sessione corrente
-      await refreshSession()
+      // Prima ottieni la sessione corrente
+      const { data, error } = await supabase.auth.getSession()
+      
+      if (!error && data.session) {
+        console.log('Initial session found')
+        setSession(data.session)
+        await fetchUserDetails(data.session.user)
+        await fetchSubscriptionInfo(data.session.user.id)
+      } else {
+        console.log('No initial session found')
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
+      }
 
       // Configura l'ascoltatore per i cambiamenti di autenticazione
       const { data: authListener } = supabase.auth.onAuthStateChange(
         async (event: string, newSession: Session | null) => {
-          console.log('Auth state changed:', event)
+          console.log('Auth state changed:', event, !!newSession)
 
-          if (event === 'SIGNED_IN' && newSession) {
-            setSession(newSession)
-            await fetchUserDetails(newSession.user)
-          } else if (event === 'SIGNED_OUT') {
-            setSession(null)
-            setUser(null)
-            setSubscriptionInfo(null)
+          switch (event) {
+            case 'SIGNED_IN':
+              if (newSession) {
+                setSession(newSession)
+                await fetchUserDetails(newSession.user)
+                await fetchSubscriptionInfo(newSession.user.id)
+              }
+              break
+            case 'SIGNED_OUT':
+              setSession(null)
+              setUser(null)
+              setSubscriptionInfo(null)
+              break
+            case 'TOKEN_REFRESHED':
+              if (newSession) {
+                setSession(newSession)
+                // No need to refetch user details on token refresh
+              }
+              break
+            case 'USER_UPDATED':
+              if (newSession) {
+                setSession(newSession)
+                await fetchUserDetails(newSession.user)
+              }
+              break
           }
+          
+          // Always ensure loading is false after auth state changes
+          setIsLoading(false)
         }
       )
+
+      setIsLoading(false)
+      setIsInitialized(true)
 
       return () => {
         authListener?.subscription.unsubscribe()
       }
     } catch (err) {
       console.error('Error in auth initialization:', err)
-    } finally {
+      setSession(null)
+      setUser(null)
+      setSubscriptionInfo(null)
       setIsLoading(false)
       setIsInitialized(true)
     }
@@ -401,25 +440,77 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initAuth()
   }, [isInitialized])
 
-  // Configura un timer per verificare e aggiornare periodicamente la sessione
+  // Timeout di sicurezza per evitare loading infinito
   useEffect(() => {
-    // Controlla ogni 5 minuti se la sessione deve essere aggiornata
-    const interval = setInterval(async () => {
-      if (!session) return
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        console.log('Force clearing loading state after timeout')
+        setIsLoading(false)
+      }, 5000) // 5 secondi di timeout
 
-      // Se mancano meno di 10 minuti alla scadenza
+      return () => clearTimeout(timeout)
+    }
+  }, [isLoading])
+
+  // Gestione semplificata della visibilità della scheda
+  useEffect(() => {
+    if (!isInitialized) return
+
+    let isRefreshing = false
+    
+    const handleVisibilityChange = async () => {
+      // Solo quando la scheda diventa visibile
+      if (!document.hidden && !isRefreshing) {
+        isRefreshing = true
+        console.log('Tab became visible, checking session...')
+        
+        try {
+          // Usa refreshSession invece di getSession direttamente
+          const hasSession = await refreshSession(false)
+          console.log('Session check result:', hasSession)
+        } catch (error) {
+          console.error('Error checking session on visibility change:', error)
+        } finally {
+          isRefreshing = false
+        }
+      }
+    }
+
+    // Aggiungi listener solo per visibilitychange
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [isInitialized, refreshSession])
+
+  // Timer semplificato per refresh sessione
+  useEffect(() => {
+    if (!session || !session.expires_at) return
+
+    // Controlla ogni 5 minuti se la sessione deve essere aggiornata
+    const interval = setInterval(() => {
       const expiresAt = session.expires_at
       const now = Math.floor(Date.now() / 1000)
       const timeLeft = expiresAt ? expiresAt - now : 0
 
-      if (timeLeft < 600) {
+      if (timeLeft < 600 && timeLeft > 0) {
         console.log('Session expiring soon, refreshing...')
-        refreshSession(true)
+        supabase.auth.getSession().then(({ data }: any) => {
+          if (data.session) {
+            setSession(data.session)
+          }
+        })
+      } else if (timeLeft <= 0) {
+        console.log('Session expired')
+        setSession(null)
+        setUser(null)
+        setSubscriptionInfo(null)
       }
     }, 300000) // Ogni 5 minuti
 
     return () => clearInterval(interval)
-  }, [session])
+  }, [session?.expires_at])
 
   useEffect(() => {
     if (user && !user?.user_metadata.is_staff) {

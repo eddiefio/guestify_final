@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useRouter } from 'next/navigation';
 
-// Funzione migliorata per verificare se Apple Pay è supportato
+// Funzione migliorata per verificare se Apple Pay è supporttato
 const isApplePaySupported = async () => {
   try {
     if (typeof window === 'undefined' || !window.ApplePaySession) {

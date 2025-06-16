@@ -260,12 +260,10 @@ export default function SignUpClient() {
             <span className="ml-2 text-sm text-gray-600">
               I have read and accept the{' '}
               <a 
-                href="#" 
+                href="https://guestify.shop/en/terms-conditions" 
                 className="text-indigo-600 hover:text-indigo-500"
-                onClick={(e) => {
-                  e.preventDefault()
-                  toast.success('Terms and Conditions will be available soon')
-                }}
+                target="_blank"
+                rel="noopener noreferrer"
               >
                 Terms and Conditions
               </a>

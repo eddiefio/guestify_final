@@ -13,54 +13,21 @@ export const getSupabase = () => {
     console.log('Inizializzazione del client Supabase');
     
     if (!supabaseUrl || !supabaseKey) {
-      console.error('Variabili di ambiente Supabase mancanti:', { 
-        urlPresente: !!supabaseUrl, 
-        keyPresente: !!supabaseKey 
+      console.error('Variabili di ambiente Supabase mancanti:', {
+        urlPresente: !!supabaseUrl,
+        keyPresente: !!supabaseKey
       });
       throw new Error('Configurazione Supabase incompleta');
     }
     
+    // Con @supabase/ssr, configuriamo opzioni aggiuntive per la gestione della sessione
     supabaseInstance = createBrowserClient(supabaseUrl, supabaseKey, {
-      cookies: {
-        get(name) {
-          if (typeof document === 'undefined') return ''
-          const cookies = document.cookie.split(';').map(c => c.trim())
-          const cookie = cookies.find(c => c.startsWith(`${name}=`))
-          return cookie ? cookie.split('=')[1] : ''
-        },
-        set(name, value, options) {
-          if (typeof document === 'undefined') return
-          let cookie = `${name}=${value}`
-          if (options.expires) {
-            cookie += `; expires=${options.expires.toUTCString()}`
-          }
-          if (options.path) {
-            cookie += `; path=${options.path}`
-          }
-          if (options.domain) {
-            cookie += `; domain=${options.domain}`
-          }
-          if (options.sameSite) {
-            cookie += `; samesite=${options.sameSite}`
-          }
-          if (options.secure) {
-            cookie += '; secure'
-          }
-          document.cookie = cookie
-        },
-        remove(name, options) {
-          if (typeof document === 'undefined') return
-          this.set(name, '', {
-            ...options,
-            expires: new Date(0),
-          })
-        }
-      },
-      global: {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
+      auth: {
+        persistSession: true,
+        storageKey: 'supabase-auth-token',
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce'
       }
     });
     

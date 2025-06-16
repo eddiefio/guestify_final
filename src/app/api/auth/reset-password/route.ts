@@ -1,4 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -17,8 +17,26 @@ export async function POST(req: NextRequest) {
     // Valida i dati inviati
     const { email, password, code } = schema.parse(body);
     
+    // Create response object for cookie handling
+    const response = new NextResponse();
+    
     // Inizializza il client Supabase
-    const supabase = createRouteHandlerClient({ cookies });
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get: (name) => cookieStore.get(name)?.value,
+          set: (name, value, options) => {
+            response.cookies.set({ name, value, ...options });
+          },
+          remove: (name, options) => {
+            response.cookies.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
     
     // Verificare l'OTP (one-time password) per il recupero password
     const { data, error } = await supabase.auth.verifyOtp({
@@ -29,10 +47,16 @@ export async function POST(req: NextRequest) {
     
     if (error) {
       console.error('Errore nella verifica OTP:', error);
-      return NextResponse.json({ 
-        success: false, 
-        error: error.message 
+      const errorResponse = NextResponse.json({
+        success: false,
+        error: error.message
       }, { status: 400 });
+      
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return errorResponse;
     }
     
     // Se la verifica ha successo, aggiorna la password
@@ -42,16 +66,28 @@ export async function POST(req: NextRequest) {
     
     if (updateError) {
       console.error('Errore nell\'aggiornamento della password:', updateError);
-      return NextResponse.json({ 
-        success: false, 
-        error: updateError.message 
+      const errorResponse = NextResponse.json({
+        success: false,
+        error: updateError.message
       }, { status: 400 });
+      
+      // Copy cookies from our response
+      response.cookies.getAll().forEach(cookie => {
+        errorResponse.cookies.set(cookie.name, cookie.value, cookie);
+      });
+      return errorResponse;
     }
     
-    return NextResponse.json({
+    const successResponse = NextResponse.json({
       success: true,
       message: 'Password aggiornata con successo'
     });
+    
+    // Copy cookies from our response
+    response.cookies.getAll().forEach(cookie => {
+      successResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    return successResponse;
     
   } catch (error) {
     console.error('Errore nell\'elaborazione della richiesta:', error);

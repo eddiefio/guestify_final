@@ -58,9 +58,9 @@ export default function AddExtraService() {
   const onSubmit = async (data: FormValues) => {
     if (!user || !propertyId) return
     
+    setLoading(true)
+    
     try {
-      setLoading(true)
-      
       // Insert the new service
       const { data: serviceData, error } = await supabase
         .from('extra_services')
@@ -86,13 +86,13 @@ export default function AddExtraService() {
         const photoPromises = uploadedPhotos.map(async (photo, index) => {
           try {
             // Mark photo as uploading
-            setUploadedPhotos(prev => 
+            setUploadedPhotos(prev =>
               prev.map((p, i) => i === index ? {...p, uploading: true} : p)
             )
             
             // Create a unique file name for the photo
             const fileExt = photo.file.name.split('.').pop()
-            const fileName = `${serviceId}/${Date.now()}.${fileExt}`
+            const fileName = `${serviceId}/${Date.now()}-${index}.${fileExt}`
             
             // Upload to storage
             const { error: uploadError } = await supabase.storage
@@ -121,11 +121,7 @@ export default function AddExtraService() {
             
           } catch (err) {
             console.error('Error uploading photo:', err)
-          } finally {
-            // Mark as not uploading regardless of outcome
-            setUploadedPhotos(prev => 
-              prev.map((p, i) => i === index ? {...p, uploading: false} : p)
-            )
+            toast.error(`Failed to upload photo ${index + 1}`)
           }
         })
         
@@ -134,12 +130,16 @@ export default function AddExtraService() {
       
       toast.success('Extra service added successfully')
       
-      // Redirect back to the services list
-      router.push(`/dashboard/property/${propertyId}/extra-services`)
-    } catch (error) {
+      // Clean up photo previews
+      uploadedPhotos.forEach(photo => URL.revokeObjectURL(photo.preview))
+      
+      // Redirect back to the services list after a short delay
+      setTimeout(() => {
+        router.push(`/dashboard/property/${propertyId}/extra-services`)
+      }, 1000)
+    } catch (error: any) {
       console.error('Error adding extra service:', error)
-      toast.error('Failed to add extra service')
-    } finally {
+      toast.error(error.message || 'Failed to add extra service')
       setLoading(false)
     }
   }

@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic'
 import { PlusIcon, Trash2Icon, ArrowUpIcon, ArrowDownIcon, PenIcon, XIcon, CheckIcon, ImageIcon, ArrowLeftIcon } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { processImageFile } from '@/utils/imageCompression'
 
 // Importazione dinamica di ProtectedRoute senza SSR
 const ProtectedRoute = dynamic(() => import('@/components/ProtectedRoute'), { ssr: false })
@@ -431,13 +432,49 @@ export default function HowThingsWork() {
     try {
       setUploadingImage(true)
       
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+      if (newItemImage.size > maxSize) {
+        toast.error('Image size must be less than 10MB')
+        setUploadingImage(false)
+        return
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heif', 'image/heic']
+      const fileExtension = newItemImage.name.toLowerCase().split('.').pop()
+      const isHeif = fileExtension === 'heif' || fileExtension === 'heic'
+      
+      if (!allowedTypes.includes(newItemImage.type) && !isHeif) {
+        toast.error('Please upload a valid image file (JPG, PNG, WebP, or HEIF)')
+        setUploadingImage(false)
+        return
+      }
+      
+      // Process image (convert HEIF if needed and compress if > 5MB)
+      let processedImage: File
+      try {
+        processedImage = await processImageFile(newItemImage, 10, 5)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to process image')
+        setUploadingImage(false)
+        return
+      }
+      
       // Carica l'immagine
-      const fileName = `${user.id}/${Date.now()}_${newItemImage.name}`
+      const fileExt = processedImage.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}_${newItemTitle.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('how-things-work-images')
-        .upload(fileName, newItemImage)
+        .upload(fileName, processedImage, {
+          cacheControl: '3600',
+          upsert: false
+        })
       
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
       
       // Aggiungi il nuovo elemento
       const { data, error } = await supabase
@@ -577,13 +614,49 @@ export default function HowThingsWork() {
     try {
       setUploadingPhoto(true)
       
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+      if (newPhotoImage.size > maxSize) {
+        toast.error('Image size must be less than 10MB')
+        setUploadingPhoto(false)
+        return
+      }
+      
+      // Validate file type
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heif', 'image/heic']
+      const fileExtension = newPhotoImage.name.toLowerCase().split('.').pop()
+      const isHeif = fileExtension === 'heif' || fileExtension === 'heic'
+      
+      if (!allowedTypes.includes(newPhotoImage.type) && !isHeif) {
+        toast.error('Please upload a valid image file (JPG, PNG, WebP, or HEIF)')
+        setUploadingPhoto(false)
+        return
+      }
+      
+      // Process image (convert HEIF if needed and compress if > 5MB)
+      let processedImage: File
+      try {
+        processedImage = await processImageFile(newPhotoImage, 10, 5)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to process image')
+        setUploadingPhoto(false)
+        return
+      }
+      
       // Carica l'immagine
-      const fileName = `${user.id}/${Date.now()}_${newPhotoImage.name}`
+      const fileExt = processedImage.name.split('.').pop()
+      const fileName = `${user.id}/${Date.now()}_photo.${fileExt}`
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('item-photos')
-        .upload(fileName, newPhotoImage)
+        .upload(fileName, processedImage, {
+          cacheControl: '3600',
+          upsert: false
+        })
       
-      if (uploadError) throw uploadError
+      if (uploadError) {
+        console.error('Upload error:', uploadError)
+        throw uploadError
+      }
       
       // Aggiungi la nuova foto
       const { data, error } = await supabase
@@ -797,13 +870,49 @@ export default function HowThingsWork() {
       if (editItemImage) {
         setUploadingImage(true)
         
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+        if (editItemImage.size > maxSize) {
+          toast.error('Image size must be less than 10MB')
+          setUploadingImage(false)
+          return
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heif', 'image/heic']
+        const fileExtension = editItemImage.name.toLowerCase().split('.').pop()
+        const isHeif = fileExtension === 'heif' || fileExtension === 'heic'
+        
+        if (!allowedTypes.includes(editItemImage.type) && !isHeif) {
+          toast.error('Please upload a valid image file (JPG, PNG, WebP, or HEIF)')
+          setUploadingImage(false)
+          return
+        }
+        
+        // Process image (convert HEIF if needed and compress if > 5MB)
+        let processedImage: File
+        try {
+          processedImage = await processImageFile(editItemImage, 10, 5)
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Failed to process image')
+          setUploadingImage(false)
+          return
+        }
+        
         // Carica la nuova immagine
-        const fileName = `${user.id}/${Date.now()}_${editItemImage.name}`
+        const fileExt = processedImage.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}_${editItemTitle.replace(/[^a-zA-Z0-9]/g, '_')}.${fileExt}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('how-things-work-images')
-          .upload(fileName, editItemImage)
+          .upload(fileName, processedImage, {
+            cacheControl: '3600',
+            upsert: false
+          })
         
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw uploadError
+        }
         
         // Elimina la vecchia immagine se presente
         if (updatedImagePath) {
@@ -868,20 +977,56 @@ export default function HowThingsWork() {
       return
     }
     
+    setUploadingPhoto(true)
+    
     try {
       let updatedPhotoPath = itemPhotos[selectedItem]?.find(photo => photo.id === editPhotoId)?.photo_path || '';
       
       // Se c'è una nuova immagine, caricarla e aggiornare il percorso
       if (editPhotoImage) {
-        setUploadingPhoto(true)
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+        if (editPhotoImage.size > maxSize) {
+          toast.error('Image size must be less than 10MB')
+          setUploadingPhoto(false)
+          return
+        }
+        
+        // Validate file type
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heif', 'image/heic']
+        const fileExtension = editPhotoImage.name.toLowerCase().split('.').pop()
+        const isHeif = fileExtension === 'heif' || fileExtension === 'heic'
+        
+        if (!allowedTypes.includes(editPhotoImage.type) && !isHeif) {
+          toast.error('Please upload a valid image file (JPG, PNG, WebP, or HEIF)')
+          setUploadingPhoto(false)
+          return
+        }
+        
+        // Process image (convert HEIF if needed and compress if > 5MB)
+        let processedImage: File
+        try {
+          processedImage = await processImageFile(editPhotoImage, 10, 5)
+        } catch (error) {
+          toast.error(error instanceof Error ? error.message : 'Failed to process image')
+          setUploadingPhoto(false)
+          return
+        }
         
         // Carica la nuova immagine
-        const fileName = `${user.id}/${Date.now()}_${editPhotoImage.name}`
+        const fileExt = processedImage.name.split('.').pop()
+        const fileName = `${user.id}/${Date.now()}_photo_edit.${fileExt}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('item-photos')
-          .upload(fileName, editPhotoImage)
+          .upload(fileName, processedImage, {
+            cacheControl: '3600',
+            upsert: false
+          })
         
-        if (uploadError) throw uploadError
+        if (uploadError) {
+          console.error('Upload error:', uploadError)
+          throw uploadError
+        }
         
         // Elimina la vecchia immagine se presente
         if (updatedPhotoPath) {
@@ -925,11 +1070,11 @@ export default function HowThingsWork() {
       setEditPhotoId(null)
       setEditPhotoDescription('')
       setEditPhotoImage(null)
+      setUploadingPhoto(false)
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating instruction:', error)
-      toast.error('Failed to update instruction')
-    } finally {
+      toast.error(error.message || 'Failed to update instruction')
       setUploadingPhoto(false)
     }
   }
@@ -1151,13 +1296,14 @@ export default function HowThingsWork() {
                                 </label>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heif,image/heic,.heif,.heic"
                                   onChange={(e) => setNewPhotoImage(e.target.files?.[0] || null)}
                                   className="w-full p-2 border border-gray-300 rounded-md"
                                   required
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Upload a clear image (max 5MB). Supported formats: JPG, PNG, WebP
+                                  Upload a clear image (max 10MB). Supported formats: JPG, PNG, WebP, HEIF/HEIC
+                                  <br />Images larger than 5MB will be automatically compressed.
                                 </p>
                               </div>
                               <div>
@@ -1202,7 +1348,7 @@ export default function HowThingsWork() {
                                 </label>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heif,image/heic,.heif,.heic"
                                   onChange={(e) => setEditPhotoImage(e.target.files?.[0] || null)}
                                   className="w-full p-2 border border-gray-300 rounded-md"
                                 />
@@ -1378,13 +1524,14 @@ export default function HowThingsWork() {
                                 </label>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heif,image/heic,.heif,.heic"
                                   onChange={(e) => setNewItemImage(e.target.files?.[0] || null)}
                                   className="w-full p-2 border border-gray-300 rounded-md"
                                   required
                                 />
                                 <p className="text-xs text-gray-500 mt-1">
-                                  Upload a clear image (max 5MB). Supported formats: JPG, PNG, WebP
+                                  Upload a clear image (max 10MB). Supported formats: JPG, PNG, WebP, HEIF/HEIC
+                                  <br />Images larger than 5MB will be automatically compressed.
                                 </p>
                               </div>
                               <div className="flex justify-end space-x-2">
@@ -1430,7 +1577,7 @@ export default function HowThingsWork() {
                                 </label>
                                 <input
                                   type="file"
-                                  accept="image/*"
+                                  accept="image/jpeg,image/jpg,image/png,image/webp,image/heif,image/heic,.heif,.heic"
                                   onChange={(e) => setEditItemImage(e.target.files?.[0] || null)}
                                   className="w-full p-2 border border-gray-300 rounded-md"
                                 />
